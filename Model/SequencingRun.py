@@ -1,33 +1,45 @@
-from Metadata import Metadata
-from SamplesList import SamplesList
-
 class SequencingRun:
 
 	def __init__(self):
 		self.samplesList=None
 		self.metadata=None
+		
 
 	def getAllMetadata(self):
-		return self.metadata.getAllMetadata()
+		return self.metadata
 
 	def setMetadata(self,metadataDict):
-		self.metadata=Metadata(metadataDict)
+		self.metadata=metadataDict
 		
 	def getWorkflow(self):
-		return self.metadata.getWorkflow()
+		return self.metadata["workflow"]
 
 	def getSamplesList(self):
-		return self.samplesList.getList()
+		return self.samplesList
 
-	def setSamplesList(self, samplesList):
-		self.samplesList=SamplesList(samplesList)
+	def setSamplesList(self, newSamplesList):
+		self.samplesList=newSamplesList
 
 
 	def getSample(self, sampleID):
-		return self.samplesList.getSample(sampleID)
+		retVal=None
+		
+		for sample in self.samplesList:
+			if sample.getID()==sampleID:
+				retVal=sample
+				break
+				
+		return retVal
+		
 	
 	def setPairFiles(self, sampleID, pairFileList):
-		self.samplesList.setPairFiles(sampleID,pairFileList)
+		
+		for sample in self.samplesList:
+			if sample.getID()==sampleID:
+				sample.setPairFiles(pairFileList)
+				break
+		
 	
 	def getPairFiles(self, sampleID):
-		return self.samplesList.getPairFiles(sampleID)
+		sample=self.getSample(sampleID)
+		return sample.getPairFiles()
