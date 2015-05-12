@@ -1,14 +1,14 @@
 """
     A Sample will store (key: value) pairs using a dictionary.
-    e.g  {"Sample_ID": "01-1111"}
+    e.g  {"sampleID": "01-1111"}
 """
 
 class Sample:
 	def __init__(self, newSampleDict):
 		self.sampleDict=dict(newSampleDict)
-
+		
 	def getID(self):
-		return self.get("Sample_ID")
+		return self.get("sampleID")
 
 	def getPairFiles(self):
 		return self.get("pairFiles")

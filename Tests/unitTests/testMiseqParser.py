@@ -1,14 +1,13 @@
 import unittest
 import sys
+#temp until setup.py is created for defining/referencing paths
 sys.path.append("../../Parsers")
 sys.path.append("../../Model")
 
-from SamplesList import SamplesList
-from Metadata import Metadata
-
+from Sample import Sample
 from os import path
 from csv import reader
-from miseqParser import parseMetadata, parseSamples, getCsvReader, getPairFiles
+from miseqParser import parseMetadata, parseSamples, getCsvReader, getPairFiles, camelCase, parseOutSequenceFile
 
 class TestMiSeqParser(unittest.TestCase):
 
@@ -37,69 +36,97 @@ class TestMiSeqParser(unittest.TestCase):
 	
 	def test_parseMetadata(self):
 		dataDir="fake_ngs_data"
-		newMetadata=parseMetadata(dataDir)		
-		metaData= Metadata(newMetadata)
+		metaData=parseMetadata(dataDir)		
 		
 		correctMetadata={'readLengths': ['251', '250'], 
-		'Assay': 'Nextera XT', 
-		'Description': 'Superbug', 
-		'Application': 'FASTQ Only', 
-		'Investigator Name': 'Some Guy', 
-		'Adapter': 'AAAAGGGGAAAAGGGGAAA', 
-		'Workflow': 'GenerateFASTQ', 
-		'ReverseComplement': '0', 
-		'IEMFileVersion': '4',
-		'Date': '10/15/2013', 
-		'Experiment Name': '1', 
-		'Chemistry': 'Amplicon'}
+		'assay': 'Nextera XT', 
+		'description': 'Superbug', 
+		'application': 'FASTQ Only', 
+		'investigatorName': 'Some Guy', 
+		'adapter': 'AAAAGGGGAAAAGGGGAAA', 
+		'workflow': 'GenerateFASTQ', 
+		'reversecomplement': '0', 
+		'iemfileversion': '4',
+		'date': '10/15/2013', 
+		'experimentName': '1', 
+		'chemistry': 'Amplicon'}
 
-		self.assertEqual(correctMetadata, metaData.getAllMetadata())
+		self.assertEqual(correctMetadata, metaData)
 	
 	
 	def test_parseSamples(self):
 		dataDir="fake_ngs_data"
-		newSamples=parseSamples(dataDir)
-		samplesList=SamplesList(newSamples)
+		samplesList=parseSamples(dataDir)
 		
 		correctSamples=[
-		{'index': 'AAAAAAAA', 
-		'Description': 'Super bug ', 
-		'Sample_Name': '01-1111', 
+		{'Sample_Well': '01', 
+		'index': 'AAAAAAAA', 
 		'Sample_Plate': '1', 
 		'I7_Index_ID': 'N01', 
-		'Sample_Well': '01', 
-		'Sample_Project': '6', 
-		'Sample_ID': '01-1111', 
+		'sampleName': '01-1111', 
+		'sampleProject': '6', 
+		'sequencerSampleId': '01-1111', 
+		'I5_Index_ID': 'S01', 
 		'index2': 'TTTTTTTT', 
-		'I5_Index_ID': 'S01'},
+		'description': 'Super bug '},
 		
-		{'index': 'GGGGGGGG', 
-		'Description': 'Scary bug ', 
-		'Sample_Name': '02-2222', 
+		{'Sample_Well': '02', 
+		'index': 'GGGGGGGG', 
 		'Sample_Plate': '2', 
 		'I7_Index_ID': 'N02', 
-		'Sample_Well': '02', 
-		'Sample_Project': '6', 
-		'Sample_ID': '02-2222', 
+		'sampleName': '02-2222', 
+		'sampleProject': '6', 
+		'sequencerSampleId': '02-2222', 
+		'I5_Index_ID': 'S02', 
 		'index2': 'CCCCCCCC', 
-		'I5_Index_ID': 'S02'},
+		'description': 'Scary bug '},
 		
-		{'index': 'CCCCCCCC', 
-		'Description': 'Deadly bug ', 
-		'Sample_Name': '03-3333', 
+		{'Sample_Well': '03', 
+		'index': 'CCCCCCCC', 
 		'Sample_Plate': '3', 
 		'I7_Index_ID': 'N03', 
+		'sampleName': '03-3333', 
+		'sampleProject': '6', 
+		'sequencerSampleId': '03-3333', 
+		'I5_Index_ID': 'S03', 
+		'index2': 'GGGGGGGG', 
+		'description': 'Deadly bug '}]
+		
+		sampleListValues=[sample.getDict() for sample in samplesList]
+		self.assertEqual( correctSamples, sampleListValues)
+	
+	
+	def test_parseOutSequenceFile(self):
+		dataDir="fake_ngs_data"
+		
+		sample=Sample({'Sample_Well': '03', 
+		'index': 'CCCCCCCC', 
+		'Sample_Plate': '3', 
+		'I7_Index_ID': 'N03', 
+		'sampleName': '03-3333', 
+		'sampleProject': '6', 
+		'sequencerSampleId': '03-3333', 
+		'I5_Index_ID': 'S03', 
+		'index2': 'GGGGGGGG', 
+		'description': 'Deadly bug '})
+		
+		correctSample={'description': 'Deadly bug ', 
+		'sampleName': '03-3333', 
+		'sequencerSampleId': '03-3333', 
+		'sampleProject': '6'}
+
+		correctSeqFile={'index': 'CCCCCCCC', 
+		'I7_Index_ID': 'N03', 
 		'Sample_Well': '03', 
-		'Sample_Project': '6', 
-		'Sample_ID': '03-3333', 
+		'Sample_Plate': '3', 
 		'index2': 'GGGGGGGG', 
 		'I5_Index_ID': 'S03'}
-		]
 		
-		sampleListValues=[sample.getDict() for sample in samplesList.getList()]
-		self.assertEqual(correctSamples, sampleListValues )
+		seqFile=parseOutSequenceFile(sample)
+		
+		self.assertEqual(sample.getDict(), correctSample)
+		self.assertEqual(seqFile, correctSeqFile)
 	
-		
 	def test_getPairFiles_invalidDir_invalidID(self):
 		
 		invalidDir="+/not a directory/+"
@@ -139,19 +166,63 @@ class TestMiSeqParser(unittest.TestCase):
 		correctPairList=["fake_ngs_data/Data/Intensities/BaseCalls/01-1111_S1_L001_R1_001.fastq.gz","fake_ngs_data/Data/Intensities/BaseCalls/01-1111_S1_L001_R2_001.fastq.gz"]
 		self.assertEqual(correctPairList,pairFileList)
 	
+	
+	def testCamelCase(self):
+		src="words with spaces"
+		result="wordsWithSpaces"
+		self.assertEqual(camelCase(src),result)
+		
+		src="words_with_underscores"
+		result="wordsWithUnderscores"
+		self.assertEqual(camelCase(src),result)
+		
+		src="space And Already Camel Cased"
+		result="spaceAndAlreadyCamelCased"
+		self.assertEqual(camelCase(src),result)
+		
+		src="underscore_And_Already_Camel_Cased"
+		result="underscoreAndAlreadyCamelCased"
+		self.assertEqual(camelCase(src),result)
+		
+		src="Space And Almost Camel Cased"
+		result="spaceAndAlmostCamelCased"
+		self.assertEqual(camelCase(src),result)
+		
+		src="Underscore_And_Almost_Camel_Cased"
+		result="underscoreAndAlmostCamelCased"
+		self.assertEqual(camelCase(src),result)
+		
+		src="FULLCAPS"
+		result="fullcaps"
+		self.assertEqual(camelCase(src),result)
+		
+		src="CAPS WITH SPACES"
+		result="capsWithSpaces"
+		self.assertEqual(camelCase(src),result)
+		
+		src="CAPS_WITH_UNDERSCORES"
+		result="capsWithUnderscores"
+		self.assertEqual(camelCase(src),result)
+		
+		src="CAPS_WITH_UNDERSCORES"
+		result="capsWithUnderscores"
+		self.assertEqual(camelCase(src),result)
 		
 if __name__=="__main__":
 	suiteList=[]
 	parserTestSuite= unittest.TestSuite()
+	
 	parserTestSuite.addTest( TestMiSeqParser("test_getCsvReader_invalidDir") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getCsvReader_validDir") )
 	parserTestSuite.addTest( TestMiSeqParser("test_parseMetadata") )
 	parserTestSuite.addTest( TestMiSeqParser("test_parseSamples") )
+	parserTestSuite.addTest( TestMiSeqParser("test_parseOutSequenceFile") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_invalidDir_invalidID") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_invalidDir_validID") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_invalidID") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_validID") )
 	
+	parserTestSuite.addTest( TestMiSeqParser("testCamelCase") )
 	
 	suiteList.append(parserTestSuite)
 	fullSuite = unittest.TestSuite(suiteList)
