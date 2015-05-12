@@ -8,32 +8,17 @@ from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 
-def camelCase(targStr):
-	splitChars=[' ','_']
-	
-	wasSplit=False
-	for c in splitChars:
-		
-		if c in targStr:
-			wasSplit=True
-			
-			uTokens=targStr.split(c)
-	
-			uTokens[0]=uTokens[0].lower()
-			for i in range(1,len(uTokens)):
-				uTokens[i]=uTokens[i].title()#capitalize first char and lower rest
-	
-			targStr= "".join(uTokens)
-			
-	if wasSplit==False:
-		targStr=targStr.lower()
-	
-	return targStr
 
 def parseMetadata(dataDir):
 	"""
-		Parse all lines under [Header], [Reads] and [Settings] in .csv file
-		All keys are turned in to camelCase
+	Parse all lines under [Header], [Reads] and [Settings] in .csv file
+	Lines under [Reads] are stored in a list with key name "readLengths"
+	All other key names are translated according to the metadataKeyTranslationDictionary
+	
+	arguments:
+		dataDir -- the directory that has SampleSheet.csv in it
+		
+	returns a dictionary containing the parsed key:pair values from .csv file
 	"""
 	
 	metadataDict={}
@@ -41,6 +26,20 @@ def parseMetadata(dataDir):
 	
 	csvReader=getCsvReader(dataDir)
 	addNextLineToDict=False
+	
+	metadataKeyTranslationDictionary = {
+		'Assay': 'assay',
+		'Description': 'description',
+		'Application': 'application',
+		'Investigator Name' : 'investigatorName',
+		'Adapter':'adapter',
+		'Workflow':'workflow',
+		'ReverseComplement':'reversecomplement',
+		'IEMFileVersion': 'iemfileversion',
+		'Date':'date',
+		'Experiment Name':'experimentName',
+		'Chemistry':'chemistry'
+	}
 	
 	for line in csvReader:
 		
@@ -50,7 +49,8 @@ def parseMetadata(dataDir):
 		elif addNextLineToDict==True:
 			
 			if len(line)==2:
-				metadataDict[ camelCase(line[0]) ]=line[1]
+				keyName=metadataKeyTranslationDictionary[line[0]]
+				metadataDict[ keyName ]=line[1]
 			
 			elif len(line)==1:#case for "[Reads]"
 				
@@ -67,14 +67,26 @@ def parseMetadata(dataDir):
 
 def parseSamples(dataDir):
 	"""
-		Parse all the lines under "[Data]" in .csv file
-		Keys in camelCasedKeys are turned in to camelCase for uploading to REST API
-		Sample_ID key is turned to sequencerSampleId
+	Parse all the lines under "[Data]" in .csv file
+	Keys in sampleKeyTranslationDictionary have their values changed for uploading to REST API
+	All other keys keep the same name that they have in .csv file
+	
+	arguments:
+		dataDir -- the directory that has SampleSheet.csv in it
+	
+	returns	a list containing Sample objects that have been created by a dictionary from the parsed out key:pair values from .csv file
 	"""
+	
 	csvReader=getCsvReader(dataDir)
 	sampleDict=OrderedDict()#start with an ordered dictionary so that keys are ordered in the same way that they are inserted.
 	samplesList=[]
-	camelCasedKeys=["Sample_Name","Description","Sample_Project"]
+
+	sampleKeyTranslationDictionary = {
+		'Sample_Name': 'sampleName',
+		'Description': 'description',
+		'Sample_ID': 'sequencerSampleId',
+		'Sample_Project' : 'sampleProject'
+	}
 	
 	#initilize dictionary keys from first line (data headers/attributes)
 	setAttributes=False
@@ -82,7 +94,14 @@ def parseSamples(dataDir):
 		
 		if setAttributes==True:
 			for item in line:
-				sampleDict[item]=""
+				
+				if item in sampleKeyTranslationDictionary:
+					keyName=sampleKeyTranslationDictionary[item]
+				else:
+					keyName=item
+					
+				sampleDict[keyName]=""
+					
 			break
 		
 		if "[Data]" in line:
@@ -97,31 +116,22 @@ def parseSamples(dataDir):
 			sampleDict[key]=line[i]#assumes values are never empty
 			i=i+1
 		
-		samplesList.append( deepcopy(sampleDict) )
+		sample=Sample( deepcopy(sampleDict) )
+		samplesList.append( sample )
 	
-	#apply camelCasing and required changes to keys
-	for sampleDict in samplesList[:]:#iterate through a copy
-	
-		for key in sampleDict.keys()[:]:#iterate through a copy
-			
-			if key in camelCasedKeys:
-				sampleDict[camelCase(key)]=sampleDict[key]
-				del sampleDict[key]
-				
-			elif key =="Sample_ID":
-				sampleDict["sequencerSampleId"]=sampleDict[key]
-				del sampleDict[key]
-	
-		sample=Sample(sampleDict)
-		samplesList[samplesList.index(sampleDict)]=sample
-		
 		
 	return samplesList
 	
 
 def parseOutSequenceFile(sample):
 	"""
-		Removes keys in argument "sample" that are not in sampleKeys and stores them in sequenceFileDict
+	Removes keys in argument sample that are not in sampleKeys and stores them in sequenceFileDict
+	
+	arguments:
+		sample -- Sample object
+		the dictionary inside the Sample object is changed
+		
+	returns a dictionary containing keys not in sampleKeys to be used to create a SequenceFile object
 	"""
 	
 	sampleKeys=["sampleName","description","sequencerSampleId","sampleProject"]
@@ -136,25 +146,44 @@ def parseOutSequenceFile(sample):
 	
 	
 def getCsvReader(dataDir):
-	csvFile=findCsvFile(dataDir)
-	csvReader=reader( open(csvFile, "rb" ) ) #open and read file in binary then send it to be parsed by csv's reader
+	"""
+	tries to create a csv.reader object which will be used to parse through the lines in SampleSheet.csv
+	raises an error if:
+		dataDir is not valid
+		SampleSheet.csv doesn't exist in dataDir
+	
+	arguments:
+		dataDir -- the directory that has SampleSheet.csv in it
+		
+	returns a csv.reader object
+	"""
+	
+	if path.isdir(dataDir):
+		
+		csvFile=dataDir+"/SampleSheet.csv"
+		if path.isfile(csvFile):
+			csvReader=reader( open(csvFile, "rb" ) ) #open and read file in binary then send it to be parsed by csv's reader
+		else:
+			msg="SampleSheet.csv not found in " + dataDir
+			raise IOError(msg)
+	else:
+		msg="Invalid directory " + dataDir
+		raise IOError(msg)
 	return csvReader
 	
-def findCsvFile(dataDir):
-	
-	csvPattern="*.csv"
-	resultList=recursiveFind(dataDir, csvPattern)
-	
-	if len(resultList)>0:
-		csvFile=resultList[0]
-	else:
-		msg="No '.csv' file found in "+ dataDir
-		raise IndexError(msg)
-	
-	return csvFile
 	
 def getPairFiles(dataDir, sampleID):
+	"""
+	find the pair sequence files for the given sampleID
+	raises an error if no sequence pair files found
 	
+	arguments:
+		dataDir -- the directory that has SampleSheet.csv in it
+		sampleID -- ID of the sample for the pair files
+	
+	
+	returns a list containing the path of the pair files starting from dataDir...
+	"""
     
 	pattern=sampleID+"*.fastq.gz"
 	pairFileList=recursiveFind(dataDir, pattern)
@@ -166,6 +195,15 @@ def getPairFiles(dataDir, sampleID):
 	return pairFileList
 	
 def recursiveFind(topDir, pattern):
+	"""
+	Traverse through a directory and its subdirectories looking for files that match given pattern
+	
+	arguments:
+		topDir -- top level directory to start searching from
+		pattern -- pattern to try and match using fnfilter/ fnmatch.filter
+		
+	returns list containing files that match pattern
+	"""
 	resultList=[]
 	
 	if path.isdir(topDir):

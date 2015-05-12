@@ -7,7 +7,7 @@ sys.path.append("../../Model")
 from Sample import Sample
 from os import path
 from csv import reader
-from miseqParser import parseMetadata, parseSamples, getCsvReader, getPairFiles, camelCase, parseOutSequenceFile
+from miseqParser import parseMetadata, parseSamples, getCsvReader, getPairFiles, parseOutSequenceFile
 
 class TestMiSeqParser(unittest.TestCase):
 
@@ -22,6 +22,14 @@ class TestMiSeqParser(unittest.TestCase):
 			csvReader=getCsvReader(dataDir)
 		
 		self.assertTrue("Invalid directory" in str(context.exception))
+	
+	def test_getCsvReader_noSampleSheet(self):
+		dataDir="fake_ngs_data/Data"
+		
+		with self.assertRaises(IOError) as context:
+			csvReader=getCsvReader(dataDir)
+		
+		self.assertTrue("SampleSheet.csv not found" in str(context.exception))
 	
 	
 	def test_getCsvReader_validDir(self):
@@ -167,42 +175,6 @@ class TestMiSeqParser(unittest.TestCase):
 		self.assertEqual(correctPairList,pairFileList)
 	
 	
-	def testCamelCase(self):
-		src="words with spaces"
-		result="wordsWithSpaces"
-		self.assertEqual(camelCase(src),result)
-		
-		src="words_with_underscores"
-		result="wordsWithUnderscores"
-		self.assertEqual(camelCase(src),result)
-		
-		src="space And Already Camel Cased"
-		result="spaceAndAlreadyCamelCased"
-		self.assertEqual(camelCase(src),result)
-		
-		src="underscore_And_Already_Camel_Cased"
-		result="underscoreAndAlreadyCamelCased"
-		self.assertEqual(camelCase(src),result)
-		
-		src="Space And Almost Camel Cased"
-		result="spaceAndAlmostCamelCased"
-		self.assertEqual(camelCase(src),result)
-		
-		src="Underscore_And_Almost_Camel_Cased"
-		result="underscoreAndAlmostCamelCased"
-		self.assertEqual(camelCase(src),result)
-		
-		src="FULLCAPS"
-		result="fullcaps"
-		self.assertEqual(camelCase(src),result)
-		
-		src="CAPS WITH SPACES"
-		result="capsWithSpaces"
-		self.assertEqual(camelCase(src),result)
-		
-		src="CAPS_WITH_UNDERSCORES"
-		result="capsWithUnderscores"
-		self.assertEqual(camelCase(src),result)
 		
 		
 if __name__=="__main__":
@@ -218,8 +190,8 @@ if __name__=="__main__":
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_invalidDir_validID") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_invalidID") )
 	parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_validID") )
+	parserTestSuite.addTest( TestMiSeqParser("test_getCsvReader_noSampleSheet") )
 	
-	parserTestSuite.addTest( TestMiSeqParser("testCamelCase") )
 	
 	suiteList.append(parserTestSuite)
 	fullSuite = unittest.TestSuite(suiteList)
