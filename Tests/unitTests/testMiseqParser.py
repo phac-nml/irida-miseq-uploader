@@ -204,9 +204,6 @@ class TestMiSeqParser(unittest.TestCase):
 		result="capsWithUnderscores"
 		self.assertEqual(camelCase(src),result)
 		
-		src="CAPS_WITH_UNDERSCORES"
-		result="capsWithUnderscores"
-		self.assertEqual(camelCase(src),result)
 		
 if __name__=="__main__":
 	suiteList=[]
