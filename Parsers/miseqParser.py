@@ -1,7 +1,7 @@
 import sys
-sys.path.append("../Model")
+sys.path.append("../")
 
-from Sample import Sample
+from Model.Sample import Sample
 from os import walk, path
 from fnmatch import filter as fnfilter
 from csv import reader
@@ -9,14 +9,14 @@ from collections import OrderedDict
 from copy import deepcopy
 
 
-def parseMetadata(dataDir):
+def parseMetadata(sampleSheetFile):
 	"""
 	Parse all lines under [Header], [Reads] and [Settings] in .csv file
 	Lines under [Reads] are stored in a list with key name "readLengths"
 	All other key names are translated according to the metadataKeyTranslationDictionary
 	
 	arguments:
-		dataDir -- the directory that has SampleSheet.csv in it
+		sampleSheetFile -- path to SampleSheet.csv 
 		
 	returns a dictionary containing the parsed key:pair values from .csv file
 	"""
@@ -24,7 +24,7 @@ def parseMetadata(dataDir):
 	metadataDict={}
 	metadataDict["readLengths"]=[]
 	
-	csvReader=getCsvReader(dataDir)
+	csvReader=getCsvReader(sampleSheetFile)
 	addNextLineToDict=False
 	
 	metadataKeyTranslationDictionary = {
@@ -65,19 +65,19 @@ def parseMetadata(dataDir):
 	
 	return metadataDict
 
-def parseSamples(dataDir):
+def parseSamples(sampleSheetFile):
 	"""
 	Parse all the lines under "[Data]" in .csv file
 	Keys in sampleKeyTranslationDictionary have their values changed for uploading to REST API
 	All other keys keep the same name that they have in .csv file
 	
 	arguments:
-		dataDir -- the directory that has SampleSheet.csv in it
+		sampleSheetFile -- path to SampleSheet.csv 
 	
 	returns	a list containing Sample objects that have been created by a dictionary from the parsed out key:pair values from .csv file
 	"""
 	
-	csvReader=getCsvReader(dataDir)
+	csvReader=getCsvReader(sampleSheetFile)
 	sampleDict=OrderedDict()#start with an ordered dictionary so that keys are ordered in the same way that they are inserted.
 	samplesList=[]
 
@@ -141,16 +141,15 @@ def parseOutSequenceFile(sample):
 		if key not in sampleKeys:
 			sequenceFileDict[key]=sampleDict[key]
 			del sampleDict[key]
-			
+		
 	return sequenceFileDict
 	
 	
-def getCsvReader(dataDir):
+def getCsvReader(sampleSheetFile):
 	"""
 	tries to create a csv.reader object which will be used to parse through the lines in SampleSheet.csv
 	raises an error if:
-		dataDir is not valid
-		SampleSheet.csv doesn't exist in dataDir
+		sampleSheetFile is not an existing file
 	
 	arguments:
 		dataDir -- the directory that has SampleSheet.csv in it
@@ -158,17 +157,15 @@ def getCsvReader(dataDir):
 	returns a csv.reader object
 	"""
 	
-	if path.isdir(dataDir):
+	
 		
-		csvFile=dataDir+"/SampleSheet.csv"
-		if path.isfile(csvFile):
-			csvReader=reader( open(csvFile, "rb" ) ) #open and read file in binary then send it to be parsed by csv's reader
-		else:
-			msg="SampleSheet.csv not found in " + dataDir
-			raise IOError(msg)
+	csvFile=sampleSheetFile
+	if path.isfile(csvFile):
+		csvReader=reader( open(csvFile, "rb" ) ) #open and read file in binary then send it to be parsed by csv's reader
 	else:
-		msg="Invalid directory " + dataDir
+		msg=sampleSheetFile + " is not a valid file"
 		raise IOError(msg)
+
 	return csvReader
 	
 	
@@ -209,7 +206,9 @@ def recursiveFind(topDir, pattern):
 	if path.isdir(topDir):
 		for root, dirs, files in walk(topDir):
 			for filename in fnfilter(files, pattern):
-				resultList.append( path.join(root, filename)) 
+				res=path.join(root, filename)
+				res=res.replace("/","\\")# windows paths give dir\\subDir\\ vs unix paths: dir/subDir
+				resultList.append( res ) 
 	else:
 		msg="Invalid directory "+ topDir
 		raise IOError(msg)	

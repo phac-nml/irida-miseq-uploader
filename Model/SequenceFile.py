@@ -20,8 +20,12 @@ class SequenceFile:
 		self.propertiesDict=newPropertiesDict
 	
 	def getFilesToUpload(self):
+		self.fileList.sort()
 		return self.fileList
-
+	
+	def addFilesToUpload(self, fileList):
+		self.fileList.extend(fileList)
+	
 	def addFileToUpload(self, newFile):
 		self.fileList.append(newFile)
 		
