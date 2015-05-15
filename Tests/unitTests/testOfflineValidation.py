@@ -27,10 +27,9 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertFalse( vRes.isValid() )
 		self.assertEqual( vRes.errorCount(), 3)
 		
-		self.assertTrue( "Missing required data header(s): Sample_ID, Sample_Name, Sample_Project, Description" in vRes.getErrors())
+		self.assertTrue( "Missing required data header(s): Sample_Project, Sample_Name, Description, Sample_ID" in vRes.getErrors())
 		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
 		self.assertTrue( "[Data] section not found in SampleSheet" in vRes.getErrors())
-		
 		
 	def test_validateSampleSheet_missing_DataHeader(self):
 		csvFile=pathToModule+"/testSampleSheets/missingDataHeader.csv"#has [Header]+[Data] but missing required data header (Sample_Project)

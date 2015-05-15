@@ -27,13 +27,13 @@ def validateSampleSheet(sampleSheetFile):
 	dataSectionFound=False
 	headerSectionFound=False
 	checkDataHeaders=False
-	requiredDataHeaders=[
-		"Sample_ID",
-		"Sample_Name",
-		"Sample_Project",
-		"Description"]
 	
-	availableDataHeaders=[False,False,False,False]
+	#status of required data headers
+	foundDataHeaders={
+		"Sample_ID":False,
+		"Sample_Name":False,
+		"Sample_Project":False,
+		"Description":False}
 	
 	for line in csvReader:
 		
@@ -46,11 +46,12 @@ def validateSampleSheet(sampleSheetFile):
 			
 		elif checkDataHeaders==True:
 			
+			for dataHeader in foundDataHeaders.keys():
+				if dataHeader in line:
+					foundDataHeaders[dataHeader]=True
 			
-			availableDataHeaders=[dataHeader in line for dataHeader in requiredDataHeaders]#list containing boolean for each value in requiredDataHeaders that was found in line
-			
-			#check if all values in requiredDataHeaders are found in the line
-			if all(availableDataHeaders):
+			#if all required dataHeaders are found
+			if all(foundDataHeaders.values()):
 				allDataHeadersFound=True
 			
 			checkDataHeaders=False
@@ -66,12 +67,12 @@ def validateSampleSheet(sampleSheetFile):
 			vRes.addErrorMsg("[Data] section not found in SampleSheet")
 			
 		if allDataHeadersFound==False:
-			missingList=[]#list containing which data headers are missing
-			for i in range(0,len(availableDataHeaders)):
-				if availableDataHeaders[i]==False:
-					missingList.append(requiredDataHeaders[i])
+			missingStr=""
+			for dataHeader in foundDataHeaders:
+				if  foundDataHeaders[dataHeader]==False:
+					missingStr=missingStr+dataHeader+", "
 			
-			missingStr=", ".join(map(str,missingList))
+			missingStr=missingStr[:-2]# remove last ", "
 			vRes.addErrorMsg("Missing required data header(s): " + missingStr)
 	
 	vRes.setValid(valid)
