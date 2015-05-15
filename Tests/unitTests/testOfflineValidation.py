@@ -18,19 +18,35 @@ class TestOfflineValidation(unittest.TestCase):
 
 	def test_validateSampleSheet_validSheet(self):
 		csvFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
-		self.assertTrue( validateSampleSheet(csvFile) )
+		vRes=validateSampleSheet(csvFile)
+		self.assertTrue( vRes.isValid() )
 	
 	def test_validateSampleSheet_emptySheet(self):
 		csvFile=pathToModule+"/testSampleSheets/emptySampleSheet.csv"
-		self.assertFalse( validateSampleSheet(csvFile) )
+		vRes=validateSampleSheet(csvFile)
+		self.assertFalse( vRes.isValid() )
+		self.assertEqual( vRes.errorCount(), 3)
 		
-	def test_validateSampleSheet_missing_DataHeaders(self):
-		csvFile=pathToModule+"/testSampleSheets/missingDataHeader.csv"#has [Header]+[Data] but missing required data headers (Sample_Project)
-		self.assertFalse( validateSampleSheet(csvFile) )
+		self.assertTrue( "Missing required data header(s): Sample_ID, Sample_Name, Sample_Project, Description" in vRes.getErrors())
+		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
+		self.assertTrue( "[Data] section not found in SampleSheet" in vRes.getErrors())
+		
+		
+	def test_validateSampleSheet_missing_DataHeader(self):
+		csvFile=pathToModule+"/testSampleSheets/missingDataHeader.csv"#has [Header]+[Data] but missing required data header (Sample_Project)
+		vRes=validateSampleSheet(csvFile)
+		self.assertFalse( vRes.isValid() )
+		self.assertEqual( vRes.errorCount(), 1)
+		
+		self.assertTrue( "Missing required data header(s): Sample_Project" in vRes.getErrors())
 	
 	def test_validateSampleSheet_missing_HeaderSection(self):
 		csvFile=pathToModule+"/testSampleSheets/missingHeaderSection.csv"#has [Data] and required data headers but missing [Header]
-		self.assertFalse( validateSampleSheet(csvFile) )
+		vRes=validateSampleSheet(csvFile)
+		self.assertFalse( vRes.isValid() )
+		self.assertEqual( vRes.errorCount(), 1)
+		
+		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
 	
 	def test_validatePairFiles_valid(self):
 		dataDir=pathToModule+"/fake_ngs_data"
@@ -120,7 +136,7 @@ class TestOfflineValidation(unittest.TestCase):
 offValidationTestSuite= unittest.TestSuite()
 	
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_validSheet") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_missing_DataHeaders") )
+offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_missing_DataHeader") )
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_emptySheet") )
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_missing_HeaderSection") )
 

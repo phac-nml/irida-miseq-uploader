@@ -4,6 +4,7 @@ sys.path.append("../")
 from csv import reader
 from copy import deepcopy
 from Parsers.miseqParser import getCsvReader
+from Model.ValidationResult import ValidationResult
 
 def validateSampleSheet(sampleSheetFile):
 	""" 
@@ -19,6 +20,8 @@ def validateSampleSheet(sampleSheetFile):
 	
 	csvReader=getCsvReader(sampleSheetFile)
 	
+	vRes=ValidationResult()
+	
 	valid=False
 	allDataHeadersFound=False
 	dataSectionFound=False
@@ -30,6 +33,8 @@ def validateSampleSheet(sampleSheetFile):
 		"Sample_Project",
 		"Description"]
 	
+	availableDataHeaders=[False,False,False,False]
+	
 	for line in csvReader:
 		
 		if "[Data]" in line:
@@ -40,18 +45,38 @@ def validateSampleSheet(sampleSheetFile):
 			headerSectionFound=True
 			
 		elif checkDataHeaders==True:
-			#print [dataHeader in line for dataHeader in requiredDataHeaders]
+			
+			
+			availableDataHeaders=[dataHeader in line for dataHeader in requiredDataHeaders]#list containing boolean for each value in requiredDataHeaders that was found in line
 			
 			#check if all values in requiredDataHeaders are found in the line
-			if all([dataHeader in line for dataHeader in requiredDataHeaders]):
+			if all(availableDataHeaders):
 				allDataHeadersFound=True
 			
 			checkDataHeaders=False
 	
 	if all([headerSectionFound==True, dataSectionFound==True, allDataHeadersFound==True]):
 		valid=True
+		
+	else:
+		if headerSectionFound==False:
+			vRes.addErrorMsg("[Header] section not found in SampleSheet")
+			
+		if dataSectionFound==False:
+			vRes.addErrorMsg("[Data] section not found in SampleSheet")
+			
+		if allDataHeadersFound==False:
+			missingList=[]#list containing which data headers are missing
+			for i in range(0,len(availableDataHeaders)):
+				if availableDataHeaders[i]==False:
+					missingList.append(requiredDataHeaders[i])
+			
+			missingStr=", ".join(map(str,missingList))
+			vRes.addErrorMsg("Missing required data header(s): " + missingStr)
 	
-	return valid
+	vRes.setValid(valid)
+	
+	return vRes
 
 	
 def validatePairFiles(fileList):
