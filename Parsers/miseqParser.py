@@ -2,6 +2,7 @@ import sys
 sys.path.append("../")
 
 from Model.Sample import Sample
+from Model.SequenceFile import SequenceFile
 from os import walk, path
 from fnmatch import filter as fnfilter
 from csv import reader
@@ -64,6 +65,32 @@ def parseMetadata(sampleSheetFile):
 			break
 	
 	return metadataDict
+
+def completeParseSamples(sampleSheetFile):
+	"""
+	Creates a complete Sample object:
+	Sample dict will only have the required (and already translated) keys: 'sampleName', 'description', 'sequencerSampleId' 'sampleProject'.
+	SequenceFile parsed out and holds Sample metadata (other keys) + pair files for the sample.
+	SequenceFile is then set as an attribute of Sample
+	These Sample objects will be stored in a list.
+	
+	arguments:
+		sampleSheetFile -- path to SampleSheet.csv 
+	
+	returns list containing complete Sample objects
+	"""
+	
+	samplesList=parseSamples(sampleSheetFile)
+	dataDir=path.dirname(sampleSheetFile)
+	for sample in samplesList:
+		
+		propertiesDict=parseOutSequenceFile(sample)
+		pfList=getPairFiles(dataDir, sample.getID())
+		sq=SequenceFile(propertiesDict, pfList)
+		
+		sample.setSeqFile( deepcopy (sq) )
+		
+	return samplesList
 
 def parseSamples(sampleSheetFile):
 	"""
