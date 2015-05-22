@@ -1,0 +1,2 @@
+class SampleSheetError(Exception):
+  pass
