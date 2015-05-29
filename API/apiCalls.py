@@ -6,15 +6,15 @@ import sys
 sys.path.append("../")
 
 from requests import Request
-from requests.exceptions import HTTPError
-from urllib2 import Request, urlopen, URLError
-from urlparse import urlparse
+from requests.exceptions import HTTPError as request_HTTPError
+from urllib2 import Request, urlopen, URLError, HTTPError
 
-from rauth import OAuth2Service
+
+from rauth import OAuth2Service, OAuth2Session
 
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
-
+from Validation.offlineValidation import validateURLForm
 
 clientId="testClient"
 clientSecret="testClientSecret"
@@ -24,7 +24,7 @@ MAX_TIMEOUT_WAIT=30
 
 def createSession(baseURL, username, password):
 
-    vRes=validateURL(baseURL)
+    vRes=validateURLForm(baseURL)
     if vRes.isValid():
         oauth_service=get_oauth_service(baseURL)
         access_token=get_access_token(oauth_service, username, password)
@@ -34,43 +34,45 @@ def createSession(baseURL, username, password):
 
     return session
 
-def validateURL(url, session=None):
+def validateURLexistance(url):
+    """
+        tries to validate existance of given url by trying to open it
+        the passed url are assumed to have passed validation via validateURLForm
+        expecting to receive status_code 401/UNAUTHORIZED when trying to validate baseURL/api
+
+        arguments:
+            url -- the url link to open and validate
+
+        returns ValidationResult object - stores bool valid and list of string error messages
+    """
+
     #move later to Validation/onlineValidation.py ?
 
-    vRes=ValidationResult()
 
+    vRes=ValidationResult()
+    valid=True
 
     try:
-        if session==None:
-            response = urlopen(url)
-        else:
-            response=session.get(url)
+        response = urlopen(url, timeout=MAX_TIMEOUT_WAIT)
 
-    except URLError, e:
+    except HTTPError, e:
 
-        if e.code!=UNAUTHORIZED:
-            msg="Failed to reach " + url +"\n"
-            if hasattr(e, 'reason'):
-                if len(str(e.reason))>0:
-                    msg= msg + str(e.reason)
+        if hasattr(e,'code'):
+            if e.code!=httplib.OK and e.code!=httplib.UNAUTHORIZED :
+                msg="Failed to reach " + url +"\n"
+                msg=msg + 'Error code: ' + str(e.code)
+                valid=False
+
+
+                if hasattr(e, 'reason'):
+                    if len(str(e.reason))>0:
+                        msg= msg + ". " + str(e.reason)
+
                 vRes.addErrorMsg( msg )
-            else:
-                msg=msg + 'Error code: ' + e.code
-                vRes.addErrorMsg( msg)
 
-            valid=False
-
-    except ValueError, e:
-
-        parsed=urlparse(url)
-        if len(parsed.scheme)==0:
-            vRes.addErrorMsg("URL must include scheme. (e.g http://, https://)")
         else:
-            vRes.addErrorMsg("The URL enterred is formed incorrectly. ")
-        valid=False
-
-    else:
-        valid=True
+            msg="Failed to reach " + url +"\n"
+            vRes.addErrorMsg( msg )
 
     vRes.setValid(valid)
 
@@ -81,7 +83,7 @@ def get_oauth_service(baseURL):
         get oauth service to be used to get access token
         checks if baseURL is valid and checks if baseURL/oauth/token is also valid.
         accessTokenUrl = baseURL + "oauth/token"
-        Raises Exception if either baseURL or accessTokenUrl is not valid AND it's error messages DOESN'T contain "Unauthorized"- expecting to get "Unauthorized" when validating. This is so that we still raise an error if the either URL is malformed(baseURL could be missing '/' at the end ) or even if baseURL is valid, it may not have a oauth/token path.
+        Raises request_HTTPError if accessTokenUrl.
 
         argument:
             baseURL -- URL of IRIDA server API
@@ -90,9 +92,9 @@ def get_oauth_service(baseURL):
     """
 
     accessTokenUrl = baseURL + "oauth/token"
-    vRes=validateURL(accessTokenUrl)
-    print accessTokenUrl
-    if vRes.isValid() or "Unauthorized" in vRes.getErrors() :
+
+    vRes=validateURLexistance(accessTokenUrl)
+    if vRes.isValid():
         oauth_serv = OAuth2Service(
         client_id=clientId,
         client_secret=clientSecret,
@@ -100,7 +102,8 @@ def get_oauth_service(baseURL):
         access_token_url = accessTokenUrl,
         base_url=baseURL)
 
-
+    else:
+        raise request_HTTPError(vRes.getErrors())
 
     return oauth_serv
 
@@ -153,12 +156,10 @@ def getProjects(session, baseURL):
     result=None
 
     url=baseURL+"projects"
-    vRes=validateURL(url, session)
+    vRes=validateURLexistance(url)
 
     if vRes.isValid():
-
         response = session.get(url)
-        #getProjects.response=response
         result = response.json()["resource"]["resources"]
     else:
         print vRes.getErrors()
@@ -182,10 +183,10 @@ def getSamples(session, projectID):
         result = response.json()["resource"]["resources"]
 
     elif response.status_code==httplib.NOT_FOUND:
-        raise HTTPError("The given project ID doesn't exist")
+        raise request_HTTPError("The given project ID doesn't exist")
 
     else:
-        raise HTTPError("Error: "+response.status_code+ " " + response.reason)
+        raise request_HTTPError("Error: "+response.status_code+ " " + response.reason)
 
     return result
 
@@ -232,12 +233,12 @@ def getSequenceFiles(session, projectID, sampleID):
 
     elif response.status_code==httplib.NOT_FOUND:
         if does_projectID_exist(session, projectID)==False:
-            raise HTTPError("The given project ID doesn't exist")
+            raise request_HTTPError("The given project ID doesn't exist")
         else:
-            raise HTTPError("The given sample ID doesn't exist")
+            raise request_HTTPError("The given sample ID doesn't exist")
 
     else:
-        raise HTTPError("Error: "+response.status_code+ " " + response.reason)
+        raise request_HTTPError("Error: "+response.status_code+ " " + response.reason)
 
     return result
 
@@ -278,6 +279,8 @@ if __name__=="__main__":
     password="password1"
 
     session=createSession(baseURL, username, password)
-    projectsList=getProjects(session,baseURL)
-    print len(projectsList)
-    print projectsList[0]
+    #projectsList=getProjects(session,baseURL)
+    #print len(projectsList)
+    #print projectsList[0])
+
+    

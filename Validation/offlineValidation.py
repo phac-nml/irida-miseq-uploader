@@ -5,6 +5,7 @@ from csv import reader
 from copy import deepcopy
 from Parsers.miseqParser import getCsvReader
 from Model.ValidationResult import ValidationResult
+from urlparse import urlparse
 
 def validateSampleSheet(sampleSheetFile):
 	"""
@@ -162,3 +163,28 @@ def validateSample(sample):
 	if sampleProj!=None and len(sampleProj)>0:
 		valid=True
 	return valid
+
+
+def validateURLForm(url):
+    """
+        offline 'validation' of url. parse through url, invalid if missing scheme, missing '/' at end, or missing location
+        '/' at the end is due to how the concatenations are set up
+        e.g: newUrl= url + path
+        newUrl would be urlpath instead of url/path if no '/'
+    """
+    vRes=ValidationResult()
+
+    valid=False
+
+    parsed=urlparse(url)
+    if len(parsed.scheme)==0:
+        vRes.addErrorMsg("URL must include scheme. (e.g http://, https://)")
+
+    if url[len(url)-1]!='/':
+        vRes.addErrorMsg("URL must end with '/'")
+
+    if vRes.errorCount()==0:
+        valid=True
+
+    vRes.setValid(valid)
+    return vRes

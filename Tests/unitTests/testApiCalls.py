@@ -13,10 +13,15 @@ from os import path
 
 import API.apiCalls
 from mock import patch, MagicMock
-from urllib2 import URLError, urlopen
+from urllib2 import URLError, urlopen, HTTPError
 from rauth import OAuth2Service
+from rauth.session import OAuth2Session
+from requests.exceptions import HTTPError as request_HTTPError
+from requests.models import Response
 
 def deadFunc(*args, **kwargs):
+	""" placeholder function that takes in arguments and does nothing. used to disable functions that are associated with Mock/MagicMock objects
+	"""
 	pass
 
 class TestApiCalls(unittest.TestCase):
@@ -28,7 +33,7 @@ class TestApiCalls(unittest.TestCase):
 		self.mock=None
 
 		#uncomment this to disable mocking. effect example: API.apiCalls.validateURL in test_validateURL will be actually making http connections/requests to the URLs that it's given.
-		self.setUpMock=self.setUpMockDisabled
+		#self.setUpMock=self.setUpMockDisabled
 
 	def setUpMockDisabled(self, func, nse=[]):
 		print "Mock disabled"
@@ -46,39 +51,39 @@ class TestApiCalls(unittest.TestCase):
 
 		return self.mock
 
-	def test_validateURL(self):
+	def test_validateURLexistance(self):
 		"""
-			replace the urlopen() being called in API.apiCalls.validateURL() with a mock/fake object
+			replace the urlopen() being called in API.apiCalls.validateURLexistance() with a mock/fake object
 			the side_effect being set to raisedErrorsList makes this object return one of these items per call to this function. They are returned in the same order (FIFO).
 			The items inside raisedErrorsList match the items in uDict (i.e.
-			http://validURL.com raises no errors (None),
-			'www.noscheme.com' raises ValueError,
-			http://validURL.com/invalidPath raises URLError)
+			http://google.com/ raises no errors (None),
+			http://localhost:8080/api/ raises no errors (None),
+			http://google.com/invalidPath/ raises HTTPError)
 
-			This tests for how these errors are handled when they are raised but it doesn't test that http://validURL.com/invalidPath will cause an URLError when used as an argument for urlopen because it's mocked and no actual connection/request is sent in this test.
+			This tests for how these errors are handled when they are raised but it doesn't test that http://google.com/invalidPath/ will cause an HTTPError when used as an argument for urlopen because it's mocked and no actual connection/request is sent in this test.
+			Disabling mock in setUp will show that http://google.com/invalidPath/ does raise an HTTPError
 		"""
 
 
-		validateURL=API.apiCalls.validateURL
+		validateURL=API.apiCalls.validateURLexistance
 
 		raisedErrorsList=[
 			None,
-			ValueError(""),
-			URLError("")
+			None,
+			HTTPError(url="http://google.com/invalidPath/",code=404,msg="Not found",hdrs="None",fp=None)
 		]
 
 		API.apiCalls.urlopen=self.setUpMock(urlopen, raisedErrorsList)
 
 
-		#link : tuple of expected results
 		urlList=[
-			{"url":"http://google.com",
+			{"url":"http://google.com/",
 			"valid":True, "msg":"No error messages"},
 
-			{"url":"www.google.com",
-			"valid":False, "msg":"URL must include scheme"},
+			{"url":"http://localhost:8080/api/",
+			"valid":True, "msg":"No error messages"},
 
-			{"url":"http://google.com/invalidPath",
+			{"url":"http://google.com/invalidPath/",
 			"valid":False, "msg":"Failed to reach"}
 		]
 
@@ -96,52 +101,75 @@ class TestApiCalls(unittest.TestCase):
 	def testCreateSession(self):
 		createSession=API.apiCalls.createSession
 
+		#URLError is raised by the validateURLForm so not included here
+		raisedErrorsList=[
+			None,
+			HTTPError(url="http://google.com/invalidPath/",code=404,msg="Not found",hdrs="None",fp=None)
+		]
+
+		API.apiCalls.urlopen=self.setUpMock(urlopen, raisedErrorsList)
+
+
+		urlList=[
+			{"url":"http://localhost:8080/api/",
+			"valid":True, "msg":"No error messages","assertion":None},
+
+			{"url":"http://localhost:8080/api",
+			"valid":False, "msg":"URL must end with '/'","assertion":URLError},
+
+			{"url":"http://google.com/invalidPath/",
+			"valid":False, "msg":"Failed to reach","assertion":request_HTTPError}
+		]
+
 		username="admin"
 		password="password1"
 
-		raisedErrorsList=[
-			None,
-			Exception,
-			Exception
-		]
-		urlList=[
-			{"url":"http://localhost:8080/api/",
-			"valid":True, "msg":"No error messages"},
-
-			{"url":"http://localhost:8080/api",
-			"valid":False, "msg":"URL must include scheme"},
-
-			{"url":"http://notasite.1",
-			"valid":False, "msg":"Failed to reach a server"}
-		]
 		for i in range(0,len(urlList)):
 			item= urlList[i]
 
-			print item["url"]
+
+			if item["assertion"]!=None:
+				print item["assertion"]
+				with self.assertRaises(item["assertion"]) as errMsg:
+					createSession(item["url"], username, password)
 
 
-			session=createSession(item["url"], username, password)
-			print session
+				self.assertTrue( item["msg"] in str(errMsg.exception) )
+
+
+			else:
+				session=createSession(item["url"], username, password)
+				API.apiCalls.urlopen.assert_called_with(item["url"]+"oauth/token", timeout=API.apiCalls.MAX_TIMEOUT_WAIT)
+
 
 
 	def test_getProjects(self):
 		createSession=API.apiCalls.createSession
 		getProjects=API.apiCalls.getProjects
 
-		#baseURL="http://localhost:8080/api/"
-		baseURL="http://feowmf.com/api"
+		baseURL="http://localhost:8080/api/"
 		username="admin"
 		password="password1"
 
-		session=createSession(baseURL, username, password)
-		#projList=getProjects(session, baseURL)
+		raisedErrorsList=[None, None]
 
-		#API.apiCalls.OAuth2Service=self.setUpMock(OAuth2Service)
+		API.apiCalls.urlopen=self.setUpMock(urlopen, raisedErrorsList)
+
+		session=createSession(baseURL, username, password)
+		o2=OAuth2Session('123','456', access_token='321')
+
+		jsonResponse={u'resource': {u'resources': [{u'projectDescription': None, u'identifier': u'1', u'name': u'Project 1', u'createdDate': 1432050859000}, {u'projectDescription': None, u'identifier': u'2', u'name': u'Project 3',u'createdDate': 1432050859000} ]}}
+		setattr(o2,"json", lambda : jsonResponse)
+		API.apiCalls.OAuth2Session.get=self.setUpMock(OAuth2Session.get, [o2] )
+
+		projList=getProjects(session, baseURL)
+		self.assertEqual(len(projList), 2)
+
 
 
 api_TestSuite= unittest.TestSuite()
-#api_TestSuite.addTest( TestApiCalls("test_validateURL") )
-#api_TestSuite.addTest( TestApiCalls("test_getProjects") )
+api_TestSuite.addTest( TestApiCalls("test_validateURLexistance") )
+api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 api_TestSuite.addTest( TestApiCalls("testCreateSession") )
 
 if __name__=="__main__":
