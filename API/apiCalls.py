@@ -165,16 +165,15 @@ def getProjects(session, baseURL):
     result=None
 
     url=baseURL+"projects"
-    vRes=validateURLexistance(url)
 
-    if vRes.isValid():
-        response = session.get(url)
+    response = session.get(url)
+    if response.status_code==httplib.OK:
         try:
             result = response.json()["resource"]["resources"]
         except KeyError, e:
             raise KeyError("Error:" + str(response.status_code) + " " + response.reason)
     else:
-        print vRes.getErrors()
+        raise request_HTTPError("Error: "+ str(response.status_code)+ " " + response.reason)
 
     return result
 
