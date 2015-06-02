@@ -32,22 +32,32 @@ class MainPanel(wx.Panel):
 		self.topSizer = wx.BoxSizer(wx.VERTICAL)
 		self.urlSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.directorySizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.userPassContainer= wx.BoxSizer(wx.VERTICAL)
 		self.usernameSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.passwordSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.logPanelContainer= wx.BoxSizer(wx.HORIZONTAL)
+		self.logPanelSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-		self.addURLsection()
 		self.addSelectSampleSheetSection()
+		self.addURLsection()
 		self.addUsernameSection()
 		self.addPasswordSection()
+		self.addLogPanelSection()
 
 
-		self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
 		self.topSizer.Add(self.directorySizer, proportion=0, flag=wx.ALL, border=5)
+		self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
 
-		self.topSizer.AddSpacer(50)
+		self.topSizer.AddSpacer(10)
 
-		self.topSizer.Add(self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
-		self.topSizer.Add(self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
+		self.userPassContainer.Add(self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
+		self.userPassContainer.Add(self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
+
+		self.logPanelContainer.Add(self.userPassContainer, proportion=0, flag=wx.ALL, border=5)
+		self.logPanelContainer.Add(self.logPanelSizer, proportion=0, flag=wx.ALL, border=5)
+
+
+		self.topSizer.Add(self.logPanelContainer, proportion=0, flag=wx.ALL, border=5)
 
 		self.addUploadButton()
 
@@ -56,6 +66,7 @@ class MainPanel(wx.Panel):
 
 		#self.progPanel=ProgressPanel(self.parent)
 		#self.progPanel.Hide()
+
 
 	def addURLsection(self):
 		"""
@@ -66,7 +77,6 @@ class MainPanel(wx.Panel):
 		"""
 		self.baseUrlLabel= wx.StaticText(parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="Base URL")
 		self.baseUrlBox= wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-		self.baseUrlBox.SetFocus()
 
 		self.urlSizer.Add(self.baseUrlLabel, 0, wx.ALL,5)
 		self.urlSizer.Add(self.baseUrlBox, 0, wx.ALL, 5)
@@ -86,9 +96,10 @@ class MainPanel(wx.Panel):
 		no return value
 		"""
 
-		self.directoryLabel= wx.StaticText(parent=self, id=-1,size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="Data directory")
+		self.directoryLabel= wx.StaticText(parent=self, id=-1,size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="File path")
 		self.directoryBox= wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-		self.browseButton =wx.Button(self, label="Choose directory")
+		self.browseButton =wx.Button(self, label="Choose samplesheet file")
+		self.browseButton.SetFocus()
 
 		self.directorySizer.Add(self.directoryLabel,0, wx.ALL, 5)
 		self.directorySizer.Add(self.directoryBox, 0, wx.ALL,5)
@@ -123,11 +134,20 @@ class MainPanel(wx.Panel):
 
 		no return value
 		"""
-		self.passwordLabel= wx.StaticText(self, -1, size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="Password")
+		self.passwordLabel= wx.StaticText(self, id=-1, size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="Password")
 		self.passwordBox= wx.TextCtrl(self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
 		self.passwordSizer.Add(self.passwordLabel)
 		self.passwordSizer.Add(self.passwordBox)
 
+
+	def addLogPanelSection(self):
+		"""
+		Adds log panel text control for displaying progress and errors
+
+		no return value
+		"""
+		self.logPanel=wx.TextCtrl(self, id=-1, value="Waiting for user to select SampleSheet file.\n", size=(300,200), style=wx.TE_MULTILINE | wx.TE_READONLY )
+		self.logPanelSizer.Add(self.logPanel)
 
 	def addUploadButton(self):
 		"""
@@ -136,10 +156,14 @@ class MainPanel(wx.Panel):
 		no return value
 		"""
 		self.uploadButton =wx.Button(self, label="Upload")
+		self.uploadButton.Disable()
 
 		self.topSizer.AddStretchSpacer()
 		self.topSizer.Add(self.uploadButton, 0, wx.BOTTOM|wx.ALIGN_CENTER)
 		self.Bind(wx.EVT_BUTTON, self.uploadToServer, self.uploadButton)
+
+		tip="Upload sequence files to IRIDA server. Select a valid SampleSheet file to enable button."
+		self.uploadButton.SetToolTipString(tip)
 
 
 	def displayWarning(self,warnMsg):
@@ -150,6 +174,7 @@ class MainPanel(wx.Panel):
 
 		no return value
 		"""
+		self.logPanel.AppendText(warnMsg+"\n")
 		warnDlg = wx.MessageDialog(parent=self, message=warnMsg, caption="Warning!", style=wx.OK | wx.ICON_WARNING)
 		warnDlg.ShowModal()
 		warnDlg.Destroy()
@@ -198,13 +223,28 @@ class MainPanel(wx.Panel):
 			try:
 				self.browsePath=self.fileDlg.GetDirectory()
 				vRes=validateSampleSheet(self.fileDlg.GetPath())
+
 				if vRes.isValid()==True:
 					self.sampleSheetFile=self.fileDlg.GetPath()
-					self.directoryBox.SetValue(self.sampleSheetFile)
-					self.createSeqRun()
+
+					try:
+						self.createSeqRun()
+						self.directoryBox.SetValue(self.sampleSheetFile)
+						self.uploadButton.Enable()
+						self.logPanel.AppendText("Selected SampleSheet is valid\n")
+
+					except (SampleSheetError, SequenceFileError),e:
+						self.displayWarning(str(e))
+						self.uploadButton.Disable()
+						self.directoryBox.SetValue("")
+						self.seqRun=None
+
 				else:
 					self.displayWarning(vRes.getErrors())
+					self.uploadButton.Disable()
+					self.directoryBox.SetValue("")
 					self.seqRun=None
+
 
 			except SampleSheetError, e:
 				self.displayWarning(str(e))
@@ -217,25 +257,24 @@ class MainPanel(wx.Panel):
 		"""
 		Try to create a SequencingRun object and store in to self.seqRun
 		Parses out the metadata dictionary and sampleslist from selected self.sampleSheetFile
-		Displays errors in warning messageBox
+		raises errors:
 			if parsing raises/throws Exceptions
 			if the parsed out samplesList fails validation
 			if a pair file for a sample in samplesList fails validation
+		these errors are expected to be caught by the calling function openDirDialog and it will be the one sending them to displayWarning
 
 		no return value
 		"""
+
 		try:
 			mDict=parseMetadata( self.sampleSheetFile )
 			sList=completeParseSamples( self.sampleSheetFile )
 
+		except SequenceFileError, e:
+			raise SequenceFileError( str(e) )
+
 		except SampleSheetError, e:
-			self.displayWarning(str(e))
-			return
-
-		except SequenceFileError,e:
-			self.displayWarning(str(e))
-			return
-
+			raise SampleSheetError( str(e) )
 
 		vRes=validateSampleList(sList)
 		if vRes.isValid()==True:
@@ -245,8 +284,7 @@ class MainPanel(wx.Panel):
 			self.seqRun.setSamplesList(sList)
 
 		else:
-			self.displayWarning(vRes.getErrors())
-			return
+			raise SequenceFileError( vRes.getErrors() )
 
 
 		for sample in self.seqRun.getSamplesList():
@@ -254,8 +292,8 @@ class MainPanel(wx.Panel):
 
 			vRes= validatePairFiles(pfList)
 			if vRes.isValid()==False:
-				self.displayWarning(vRes.getErrors())
-				break
+				raise SequenceFileError( vRes.getErrors() )
+
 
 
 class MainFrame(wx.Frame):
