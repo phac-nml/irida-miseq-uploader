@@ -5,6 +5,7 @@ import httplib
 import sys
 sys.path.append("../")
 
+from os import path
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from urllib2 import Request, urlopen, URLError, HTTPError
@@ -14,11 +15,20 @@ from rauth import OAuth2Service, OAuth2Session
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Validation.offlineValidation import validateURLForm
+from ConfigParser import RawConfigParser
 
-clientId="testClient"
-clientSecret="testClientSecret"
 
-MAX_TIMEOUT_WAIT=30
+pathToModule=path.dirname(__file__)
+if len(pathToModule)==0:
+	pathToModule='.'
+
+confParser=RawConfigParser()
+confParser.read(pathToModule+"/../apiCalls.conf")
+
+clientId=confParser.get("apiCalls","clientId")
+clientSecret=confParser.get("apiCalls","clientSecret")
+
+MAX_TIMEOUT_WAIT=int(confParser.get("apiCalls","maxWaitTime"))
 
 
 def createSession(baseURL, username, password):
