@@ -23,7 +23,7 @@ if len(pathToModule)==0:
 	pathToModule='.'
 
 confParser=RawConfigParser()
-confParser.read(pathToModule+"/../apiCalls.conf")
+confParser.read(pathToModule+"/../config.conf")
 
 clientId=confParser.get("apiCalls","clientId")
 clientSecret=confParser.get("apiCalls","clientSecret")
