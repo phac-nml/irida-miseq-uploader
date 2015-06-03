@@ -1,5 +1,12 @@
 iridaUploader
 
+
+Need to install wx for GUI libray
+
+sudo apt-get install python-wxgtk2.8
+
+###################
+
 Need to install mock for the tests:
 
 https://pypi.python.org/pypi/mock#downloads

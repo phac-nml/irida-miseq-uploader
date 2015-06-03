@@ -161,6 +161,39 @@ def decoder(return_dict):
     return irida_dict
 
 
+def getLink(session, baseURL, targetKey):
+    """
+    makes a call to baseURL(api) expecting a json response
+    tries to retrieve targetKey from response to find link to that resource
+
+    arguments:
+        session -- opened OAuth2Session
+        baseURL -- URL to retrieve link from
+        targetKey -- name of link (e.g projects or project/samples)
+
+    returns link if it exists
+
+    """
+    retVal=None
+    response=session.get(baseURL)
+    if response.status_code==httplib.OK:
+        try:
+            linksList=response.json()["resource"]["links"]
+            for link in linksList:
+
+                if link["rel"]==(targetKey):
+                    retVal=link["href"]
+                    break
+            else:
+                raise KeyError(targetKey+" not found in links. "+ "Available links: " + ",".join([ str(link["rel"]) for link in linksList])[:-1] )
+
+        except KeyError, e:
+            raise KeyError( str(e.message) +" key not found. Available keys:" + ",".join([ key for key in response.json().keys()]) )
+    else:
+        raise request_HTTPError("Error: "+ str(response.status_code)+ " " + response.reason)
+
+    return retVal
+
 def getProjects(session, baseURL):
     """
     API call to api/projects to get list of projects
@@ -174,7 +207,7 @@ def getProjects(session, baseURL):
 
     result=None
 
-    url=baseURL+"projects"
+    url=getLink(session, baseURL, "projects")
 
     response = session.get(url)
     if response.status_code==httplib.OK:
@@ -188,7 +221,7 @@ def getProjects(session, baseURL):
     return result
 
 
-def getSamples(session, projectID, baseURL):
+def getSamples(session, baseURL, projectID):
     """
     API call to api/projects/projectID/samples
 
@@ -200,7 +233,9 @@ def getSamples(session, projectID, baseURL):
     returns list of samples for the given projectID. each sample is a dictionary
     """
 
-    url=baseURL+"projects/"+projectID+"/samples"
+    projUrl=getLink(session, baseURL, "projects")+"/"+projectID
+    url=getLink(session, projUrl, "project/samples")
+    
     response = session.get(url)
     if response.status_code==httplib.OK:
         result = response.json()["resource"]["resources"]
@@ -236,7 +271,7 @@ def does_sampleID_exist(session,projectID,sampleID):
 
     return retVal
 
-def getSequenceFiles(session, projectID, sampleID, baseURL):
+def getSequenceFiles(session, baseURL, projectID, sampleID):
     """
     API call to api/projects/projectID/sampleID/sequenceFiles
 
@@ -268,7 +303,7 @@ def getSequenceFiles(session, projectID, sampleID, baseURL):
     return result
 
 
-def sendProjects(session, projectDict, baseURL):
+def sendProjects(session, baseURL, projectDict):
     """
     post request to send a project to irida via API
     the project being sent requires a name
@@ -315,8 +350,11 @@ if __name__=="__main__":
     projectsList=getProjects(session,baseURL)
     print "\n# of projects:", len(projectsList)
 
-    print sendProjects(session , {"name":"projectX"}, baseURL)
+    print sendProjects(session , baseURL, {"name":"projectX"})
 
     projectsList=getProjects(session,baseURL)
     print "\n# of projects:", len(projectsList)
     print "Added project:", projectsList[len(projectsList)-1]
+
+    sList=getSamples(session, baseURL, "4")
+    print len(sList)

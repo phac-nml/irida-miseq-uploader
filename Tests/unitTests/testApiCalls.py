@@ -150,22 +150,27 @@ class TestApiCalls(unittest.TestCase):
 
 		session=createSession(baseURL, username, password)
 
-		mockResponse=OAuth2Session('123','456', access_token='321')
-		jsonResponse={u'resource': {u'resources': [{u'projectDescription': None, u'identifier': u'1', u'name': u'Project 1', u'createdDate': 1432050859000},
-		{u'projectDescription': None, u'identifier': u'2', u'name': u'Project 3', u'createdDate': 1432050853000} ]}}
-		setattr(mockResponse,"json", lambda : jsonResponse)#lambda returns function - since json attribute will be a callable function (i.e mockResponse.json() instead of mockResponse.json)
-		setattr(mockResponse,"status_code", httplib.OK)
+		projectLinkResponse=OAuth2Session('123','456', access_token='321')
+		projectsListResponse=OAuth2Session('123','456', access_token='321')
+
+		projectLinkJson={u'resource':{u'links':[{'rel':u'projects',u'href':u'http://localhost:8080/api/projects'}]}}
+		projectsListJson={u'resource':{u'resources': [{u'projectDescription': None, u'identifier': u'1', u'name': u'Project1',u'createdDate':1432050859000},{u'projectDescription': None, u'identifier': u'2', u'name':u'Project 3', u'createdDate':1432050853000}]}, u'links':[		{'rel':u'projects',u'href':u'http://localhost:8080/api/projects'}]}
+
+		setattr(projectLinkResponse,"json", lambda : projectLinkJson)#lambda returns function - since json attribute will be a callable function (i.e mockResponse.json() instead of mockResponse.json)
+		setattr(projectLinkResponse,"status_code", httplib.OK)
+		setattr(projectsListResponse,"json", lambda : projectsListJson)
+		setattr(projectsListResponse,"status_code", httplib.OK)
 
 		funcHolder=API.apiCalls.OAuth2Session.get
-		API.apiCalls.OAuth2Session.get=self.setUpMock(OAuth2Session.get, [mockResponse] )
+		API.apiCalls.OAuth2Session.get=self.setUpMock(OAuth2Session.get, [projectLinkResponse, projectsListResponse] )
 
 		projList=getProjects(session, baseURL)
 
 		if self.mocking==True:#only test if mocking enabled since irida server actually returns number of projects (>100)
-			API.apiCalls.OAuth2Session.get.assert_called_with(baseURL+"projects")
+			API.apiCalls.OAuth2Session.get.assert_called_with(projectLinkJson["resource"]["links"][0]["href"])
 			self.assertEqual(len(projList), 2)
 			projNames= [ proj["name"] for proj in projList ]
-			expectedRes= [ proj["name"] for proj in jsonResponse["resource"]["resources"] ]
+			expectedRes= [ proj["name"] for proj in projectsListJson["resource"]["resources"] ]
 			self.assertEqual(projNames, expectedRes)
 
 
@@ -208,7 +213,7 @@ class TestApiCalls(unittest.TestCase):
 		session=createSession(baseURL, username, password)
 
 		projToSend= {"name":"testProject", "projectDescription": "This is a test project"}
-		res=sendProjects(session , projToSend, baseURL)
+		res=sendProjects(session , baseURL, projToSend)
 
 		if self.mocking==True:
 			API.apiCalls.OAuth2Session.post.assert_called_with(baseURL+"projects", json.dumps(projToSend), **headers  )
@@ -253,7 +258,7 @@ class TestApiCalls(unittest.TestCase):
 		projToSend= {"projectDescription": "This project has no name"}
 
 		with self.assertRaises(API.apiCalls.ProjectError) as context:
-			res=sendProjects(session , projToSend, baseURL)
+			res=sendProjects(session , baseURL, projToSend)
 
 		self.assertTrue("Missing project name" in str(context.exception))
 
