@@ -7,11 +7,16 @@ from Validation.offlineValidation import validateSampleSheet, validatePairFiles,
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
+from ConfigParser import RawConfigParser
 from pprint import pprint
+from os import path
 
 import wx
-import os
-#from ProgressPanel import ProgressPanel
+
+
+pathToModule=path.dirname(__file__)
+if len(pathToModule)==0:
+	pathToModule='.'
 
 class MainPanel(wx.Panel):
 
@@ -23,6 +28,9 @@ class MainPanel(wx.Panel):
 		self.seqRun=None
 		self.browsePath="../"#os.getcwd()
 		self.fileDlg=None
+		self.confParser=RawConfigParser()
+		self.configFile=pathToModule+"/../config.conf"
+		self.confParser.read(self.configFile)
 
 		self.LONG_BOX_SIZE=(300,32) #url and directories
 		self.SHORT_BOX_SIZE=(200,32) #user and pass
@@ -64,6 +72,7 @@ class MainPanel(wx.Panel):
 		self.SetSizer(self.topSizer)
 		self.Layout()
 
+		self.parent.Bind(wx.EVT_CLOSE, self.closeHandler)
 		#self.progPanel=ProgressPanel(self.parent)
 		#self.progPanel.Hide()
 
@@ -77,9 +86,19 @@ class MainPanel(wx.Panel):
 		"""
 		self.baseUrlLabel= wx.StaticText(parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label="Base URL")
 		self.baseUrlBox= wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+		self.prevUrl=self.confParser.get("iridaUploader","baseURL")
+		self.baseUrlBox.SetValue(self.prevUrl)
+
+		self.saveUrlCheckbox = wx.CheckBox(parent=self, id=-1, label="Save URL for future use")
+		if len(self.prevUrl)>0:
+			self.saveUrlCheckbox.SetValue(True)
+		else:
+			self.saveUrlCheckbox.SetValue(False)
+		self.Bind(wx.EVT_CHECKBOX, self.urlCheckboxHandler, self.saveUrlCheckbox)
 
 		self.urlSizer.Add(self.baseUrlLabel, 0, wx.ALL,5)
 		self.urlSizer.Add(self.baseUrlBox, 0, wx.ALL, 5)
+		self.urlSizer.Add(self.saveUrlCheckbox, 0, wx.ALL, 5)
 
 		tip="Enter the URL for the IRIDA server"
 		self.baseUrlBox.SetToolTipString(tip)
@@ -178,6 +197,35 @@ class MainPanel(wx.Panel):
 		warnDlg = wx.MessageDialog(parent=self, message=warnMsg, caption="Warning!", style=wx.OK | wx.ICON_WARNING)
 		warnDlg.ShowModal()
 		warnDlg.Destroy()
+
+	def closeHandler(self, event):
+		"""
+		Function bound to window/MainFrame being closed (close button/alt+f4)
+		Check status of url checkbox to see whether a new url to save has been entered
+		this handles the case of the checkbox starting already checked, a new base url is typed and the checbkox is not clicked so it still remains checked. since the checkbox is not clicked the handler bound to it is not invoked so we call it here when closing the window to save if a new url has been enterred"
+		destroy parent(MainFrame) to continue with regular closing procedure
+
+		no return value
+		"""
+		self.urlCheckboxHandler()
+		self.parent.Destroy()
+
+	def urlCheckboxHandler(self, event=""):
+		"""
+		Function bound to url checkbox being clicked.
+		If the checkbox is checked then save the url currently in the baseUrlBox to the config file
+		If the checkbox is unchecked then write back the original value of baseURL.
+		"""
+		if self.saveUrlCheckbox.IsChecked():
+			self.confParser.set("iridaUploader","baseURL",self.baseUrlBox.GetValue())
+			with open(self.configFile, 'wb') as configfile:
+				self.confParser.write(configfile)
+
+		else:
+			self.confParser.set("iridaUploader","baseURL",self.prevUrl)
+			with open(self.configFile, 'wb') as configfile:
+				self.confParser.write(configfile)
+
 
 	def uploadToServer(self, event):
 		"""
