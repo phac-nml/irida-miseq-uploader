@@ -56,7 +56,7 @@ class MainPanel(wx.Panel):
 		self.topSizer.Add(self.directorySizer, proportion=0, flag=wx.ALL, border=5)
 		self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
 
-		self.topSizer.AddSpacer(10)
+		self.topSizer.AddSpacer(30)
 
 		self.userPassContainer.Add(self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
 		self.userPassContainer.Add(self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
