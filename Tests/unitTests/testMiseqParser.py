@@ -192,10 +192,10 @@ class TestMiSeqParser(unittest.TestCase):
 		validDir=pathToModule+"/fake_ngs_data"
 		invalidSampleID= "-1"
 
-		with self.assertRaises(SequenceFileError) as context:
-			pairFileList=getPairFiles(validDir,invalidSampleID)
 
-		self.assertTrue("No sequence pair files found" in str(context.exception))
+		pairFileList=getPairFiles(validDir,invalidSampleID)
+
+		self.assertEqual(len(pairFileList),0)
 
 
 	def test_getPairFiles_validDir_validID(self):

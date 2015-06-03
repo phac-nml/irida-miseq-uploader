@@ -214,9 +214,6 @@ def getPairFiles(dataDir, sampleID):
 	pattern=sampleID+"*.fastq.gz"
 	pairFileList=recursiveFind(dataDir, pattern)
 	pairFileList.sort()
-	if len(pairFileList)==0:
-		msg="No sequence pair files found"
-		raise SequenceFileError(msg)
 
 	return pairFileList
 
