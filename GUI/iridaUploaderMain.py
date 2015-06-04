@@ -32,7 +32,7 @@ class MainPanel(wx.Panel):
 		self.configFile=pathToModule+"/../config.conf"
 		self.confParser.read(self.configFile)
 
-		self.LONG_BOX_SIZE=(300,32) #url and directories
+		self.LONG_BOX_SIZE=(400,32) #url and directories
 		self.SHORT_BOX_SIZE=(200,32) #user and pass
 		self.LABEL_TEXT_WIDTH=70
 		self.LABEL_TEXT_HEIGHT=32
@@ -56,7 +56,7 @@ class MainPanel(wx.Panel):
 		self.topSizer.Add(self.directorySizer, proportion=0, flag=wx.ALL, border=5)
 		self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
 
-		self.topSizer.AddSpacer(30)
+		self.topSizer.AddSpacer(40)
 
 		self.userPassContainer.Add(self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
 		self.userPassContainer.Add(self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
@@ -165,7 +165,7 @@ class MainPanel(wx.Panel):
 
 		no return value
 		"""
-		self.logPanel=wx.TextCtrl(self, id=-1, value="Waiting for user to select SampleSheet file.\n", size=(300,200), style=wx.TE_MULTILINE | wx.TE_READONLY )
+		self.logPanel=wx.TextCtrl(self, id=-1, value="Waiting for user to select SampleSheet file.\n\n", size=(500,250), style=wx.TE_MULTILINE | wx.TE_READONLY )
 		self.logPanelSizer.Add(self.logPanel)
 
 	def addUploadButton(self):
@@ -346,7 +346,7 @@ class MainPanel(wx.Panel):
 
 class MainFrame(wx.Frame):
 	def __init__(self):
-		self.WindowSize=(600,400)
+		self.WindowSize=(700,500)
 		wx.Frame.__init__(self, parent=None, id=wx.ID_ANY, title="IRIDA Uploader", size=self.WindowSize, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)#use default frame style but disable border resize and maximize
 
 		self.mp=MainPanel(self)
