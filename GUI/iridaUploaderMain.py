@@ -316,25 +316,30 @@ class MainPanel(wx.Panel):
 		if self.fileDlg.ShowModal() == wx.ID_OK:
 
 			self.browsePath=self.fileDlg.GetDirectory()
-			vRes=validateSampleSheet(self.fileDlg.GetPath())
 
-			if vRes.isValid()==True:
-				self.sampleSheetFile=self.fileDlg.GetPath()
+			try:
+				vRes=validateSampleSheet(self.fileDlg.GetPath())
 
-				try:
-					self.createSeqRun()
-					self.directoryBox.SetValue(self.sampleSheetFile)
-					self.uploadButton.Enable()
-					self.logPanel.AppendText("Selected SampleSheet is valid\n")
-					self.progressLabel.Show()
-					self.progressBar.Show()
-					self.Layout()
+				if vRes.isValid()==True:
+					self.sampleSheetFile=self.fileDlg.GetPath()
 
-				except (SampleSheetError, SequenceFileError),e:
-					self.handleInvalidSheetOrSeqFile(str(e))
+					try:
+						self.createSeqRun()
+						self.directoryBox.SetValue(self.sampleSheetFile)
+						self.uploadButton.Enable()
+						self.logPanel.AppendText("Selected SampleSheet is valid\n")
+						self.progressLabel.Show()
+						self.progressBar.Show()
+						self.Layout()
 
-			else:
-				self.handleInvalidSheetOrSeqFile(vRes.getErrors())
+					except (SampleSheetError, SequenceFileError),e:
+						self.handleInvalidSheetOrSeqFile(str(e))
+
+				else:
+					self.handleInvalidSheetOrSeqFile(vRes.getErrors())
+
+			except SampleSheetError, e:
+				self.handleInvalidSheetOrSeqFile(str(e))
 
 
 		self.fileDlg.Destroy()
