@@ -13,7 +13,6 @@ from os import path
 
 import wx
 
-
 pathToModule=path.dirname(__file__)
 if len(pathToModule)==0:
 	pathToModule='.'
@@ -31,6 +30,7 @@ class MainPanel(wx.Panel):
 		self.confParser=RawConfigParser()
 		self.configFile=pathToModule+"/../config.conf"
 		self.confParser.read(self.configFile)
+		self.pBarPercent=0
 
 		self.LONG_BOX_SIZE=(400,32) #url and directories
 		self.SHORT_BOX_SIZE=(200,32) #user and pass
@@ -43,38 +43,45 @@ class MainPanel(wx.Panel):
 		self.userPassContainer= wx.BoxSizer(wx.VERTICAL)
 		self.usernameSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.passwordSizer = wx.BoxSizer(wx.HORIZONTAL)
-		self.logPanelContainer= wx.BoxSizer(wx.HORIZONTAL)
+		self.userPassLogContainer= wx.BoxSizer(wx.HORIZONTAL)
 		self.logPanelSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.progressBarSizer = wx.BoxSizer(wx.VERTICAL)
+		self.uploadButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
 
 		self.addSelectSampleSheetSection()
 		self.addURLsection()
 		self.addUsernameSection()
 		self.addPasswordSection()
 		self.addLogPanelSection()
+		self.addProgressBar()
+		self.addUploadButton()
 
+		self.topSizer.AddSpacer(10)
 
 		self.topSizer.Add(self.directorySizer, proportion=0, flag=wx.ALL, border=5)
 		self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
 
-		self.topSizer.AddSpacer(40)
+		self.topSizer.AddSpacer(30)
 
 		self.userPassContainer.Add(self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
 		self.userPassContainer.Add(self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
 
-		self.logPanelContainer.Add(self.userPassContainer, proportion=0, flag=wx.ALL, border=5)
-		self.logPanelContainer.Add(self.logPanelSizer, proportion=0, flag=wx.ALL, border=5)
+		self.userPassLogContainer.Add(self.userPassContainer, proportion=0, flag=wx.ALL, border=5)
+		self.userPassLogContainer.Add(self.logPanelSizer, proportion=0, flag=wx.ALL, border=5)
 
+		self.topSizer.Add(self.userPassLogContainer, proportion=0, flag=wx.ALL, border=5)
+		self.topSizer.AddStretchSpacer()
 
-		self.topSizer.Add(self.logPanelContainer, proportion=0, flag=wx.ALL, border=5)
+		self.topSizer.Add(self.progressBarSizer, proportion=0, flag=wx.ALL|wx.ALIGN_CENTER, border=5)
+		self.topSizer.AddStretchSpacer()
 
-		self.addUploadButton()
+		self.topSizer.Add(self.uploadButtonSizer, proportion=0, flag=wx.BOTTOM|wx.ALIGN_CENTER, border=5)
+
 
 		self.SetSizer(self.topSizer)
 		self.Layout()
 
 		self.parent.Bind(wx.EVT_CLOSE, self.closeHandler)
-		#self.progPanel=ProgressPanel(self.parent)
-		#self.progPanel.Hide()
 
 
 	def addURLsection(self):
@@ -165,8 +172,22 @@ class MainPanel(wx.Panel):
 
 		no return value
 		"""
-		self.logPanel=wx.TextCtrl(self, id=-1, value="Waiting for user to select SampleSheet file.\n\n", size=(500,250), style=wx.TE_MULTILINE | wx.TE_READONLY )
+		self.logPanel=wx.TextCtrl(self, id=-1, value="Waiting for user to select SampleSheet file.\n\n", size=(500,200), style=wx.TE_MULTILINE | wx.TE_READONLY )
 		self.logPanelSizer.Add(self.logPanel)
+
+	def addProgressBar(self):
+		"""
+		Adds progress bar. Will be used for displaying progress of sequence files upload.
+
+		no return value
+		"""
+		self.progressLabel= wx.StaticText(self, id=-1, size=(self.LABEL_TEXT_WIDTH,self.LABEL_TEXT_HEIGHT), label=str(self.pBarPercent)+"%")
+		self.progressBar=wx.Gauge(self, range=100, size=(self.parent.WindowSize[0]*0.95,self.LABEL_TEXT_HEIGHT))
+		self.progressBarSizer.Add(self.progressLabel)
+		self.progressBarSizer.Add(self.progressBar)
+		self.progressLabel.Hide()
+		self.progressBar.Hide()
+
 
 	def addUploadButton(self):
 		"""
@@ -177,8 +198,7 @@ class MainPanel(wx.Panel):
 		self.uploadButton =wx.Button(self, label="Upload")
 		self.uploadButton.Disable()
 
-		self.topSizer.AddStretchSpacer()
-		self.topSizer.Add(self.uploadButton, 0, wx.BOTTOM|wx.ALIGN_CENTER)
+		self.uploadButtonSizer.Add(self.uploadButton)
 		self.Bind(wx.EVT_BUTTON, self.uploadToServer, self.uploadButton)
 
 		tip="Upload sequence files to IRIDA server. Select a valid SampleSheet file to enable button."
@@ -189,7 +209,7 @@ class MainPanel(wx.Panel):
 		"""Displays warning message
 
 		arguments:
-			warnMsg -- message to display in warning dialog baseUrlBox
+			warnMsg -- message to display in warning dialog message box
 
 		no return value
 		"""
@@ -239,12 +259,39 @@ class MainPanel(wx.Panel):
 		"""
 
 		print ("Server URL: " + self.baseUrlBox.GetValue() + "\n" + "User: " +self.usernameBox.GetValue() + "\n" + "Password: " + self.passwordBox.GetValue()).strip()
+		self.pBarPercent+=1
+		self.progressLabel.SetLabel(str(self.pBarPercent)+"%")
+		self.progressBar.SetValue(self.pBarPercent)
 
 		if self.seqRun!=None:
 			print self.seqRun.getWorkflow()
 			pprint([self.seqRun.getPairFiles(sample.getID()) for sample in self.seqRun.getSamplesList()])
 
+	def handleInvalidSheetOrSeqFile(self, msg):
+		"""
+		i couldn't come up with a better name
+		disable GUI elements and reset variables when an error happens
 
+		displays warning message for the given msg
+		disables upload button - greyed out and unclickable
+		progress bar and label are hidden
+		progress bar percent counter is reset back to 0
+		self.seqRun set to None
+
+			arguments:
+				msg -- message to display in warning dialog message box
+
+		no return value
+		"""
+		self.displayWarning(msg)
+		self.uploadButton.Disable()
+		self.directoryBox.SetValue("")
+		self.progressLabel.Hide()
+		self.progressBar.Hide()
+		self.pBarPercent=0
+		self.progressLabel.SetLabel(str(self.pBarPercent)+"%")
+		self.progressBar.SetValue(self.pBarPercent)
+		self.seqRun=None
 
 	def openDirDialog(self,event):
 		"""
@@ -268,35 +315,27 @@ class MainPanel(wx.Panel):
 
 		if self.fileDlg.ShowModal() == wx.ID_OK:
 
-			try:
-				self.browsePath=self.fileDlg.GetDirectory()
-				vRes=validateSampleSheet(self.fileDlg.GetPath())
+			self.browsePath=self.fileDlg.GetDirectory()
+			vRes=validateSampleSheet(self.fileDlg.GetPath())
 
-				if vRes.isValid()==True:
-					self.sampleSheetFile=self.fileDlg.GetPath()
+			if vRes.isValid()==True:
+				self.sampleSheetFile=self.fileDlg.GetPath()
 
-					try:
-						self.createSeqRun()
-						self.directoryBox.SetValue(self.sampleSheetFile)
-						self.uploadButton.Enable()
-						self.logPanel.AppendText("Selected SampleSheet is valid\n")
+				try:
+					self.createSeqRun()
+					self.directoryBox.SetValue(self.sampleSheetFile)
+					self.uploadButton.Enable()
+					self.logPanel.AppendText("Selected SampleSheet is valid\n")
+					self.progressLabel.Show()
+					self.progressBar.Show()
+					self.Layout()
 
-					except (SampleSheetError, SequenceFileError),e:
-						self.displayWarning(str(e))
-						self.uploadButton.Disable()
-						self.directoryBox.SetValue("")
-						self.seqRun=None
+				except (SampleSheetError, SequenceFileError),e:
+					self.handleInvalidSheetOrSeqFile(str(e))
 
-				else:
-					self.displayWarning(vRes.getErrors())
-					self.uploadButton.Disable()
-					self.directoryBox.SetValue("")
-					self.seqRun=None
+			else:
+				self.handleInvalidSheetOrSeqFile(vRes.getErrors())
 
-
-			except SampleSheetError, e:
-				self.displayWarning(str(e))
-				self.seqRun=None
 
 		self.fileDlg.Destroy()
 
