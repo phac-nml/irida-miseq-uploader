@@ -1,9 +1,9 @@
 import unittest
-import sys
 import json
 import httplib
 
-sys.path.append("../../")
+from sys import path, argv
+path.append("../../")
 
 import API.apiCalls
 from mock import patch, MagicMock
@@ -12,6 +12,11 @@ from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
+
+DISABLE_MOCK=False
+def disableMock():
+	global DISABLE_MOCK
+	DISABLE_MOCK=True
 
 def deadFunc(*args, **kwargs):
 	""" placeholder function that takes in arguments and does nothing. used to disable functions that are associated with Mock/MagicMock objects
@@ -24,8 +29,9 @@ class TestApiCalls(unittest.TestCase):
 	def setUp(self):
 		print "\nStarting ", self._testMethodName
 		self.mocking=True
-		#uncomment this to disable mocking. effect example: API.apiCalls.validateURL in test_validateURL will be actually making http connections/requests to the URLs that it's given.
-		#self.setUpMock=self.setUpMockDisabled
+		#effect example: API.apiCalls.validateURL in test_validateURL will be actually making http connections/requests to the URLs that it's given.
+		if DISABLE_MOCK==True:
+			self.setUpMock=self.setUpMockDisabled
 
 
 	def setUpMockDisabled(self, func, mockResults=[]):
@@ -277,6 +283,13 @@ api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
 if __name__=="__main__":
 	suiteList=[]
+
+	if len(argv)>1:
+		if argv[1]=="d":
+			#disables mocking in testApiCalls
+			#i.e the test will actually open a connection to the URL that it's given
+			#instead of normally just mocking/faking the results from the connection
+			disableMock()
 
 	suiteList.append(api_TestSuite)
 	fullSuite = unittest.TestSuite(suiteList)

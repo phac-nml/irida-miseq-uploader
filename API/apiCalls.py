@@ -20,7 +20,7 @@ from ConfigParser import RawConfigParser
 
 pathToModule=path.dirname(__file__)
 if len(pathToModule)==0:
-	pathToModule='.'
+    pathToModule='.'
 
 confParser=RawConfigParser()
 confParser.read(pathToModule+"/../config.conf")
@@ -235,7 +235,7 @@ def getSamples(session, baseURL, projectID):
 
     projUrl=getLink(session, baseURL, "projects")+"/"+projectID
     url=getLink(session, projUrl, "project/samples")
-    
+
     response = session.get(url)
     if response.status_code==httplib.OK:
         result = response.json()["resource"]["resources"]
@@ -284,7 +284,9 @@ def getSequenceFiles(session, baseURL, projectID, sampleID):
     returns list of sequenceFiles for given sampleID
     """
 
-    url=baseURL+"projects/"+projectID+"/samples/"+sampleID+"/sequenceFiles"
+    projUrl=getLink(session, baseURL, "projects")+"/"+projectID
+    sampleUrl=getLink(session, projUrl, "project/samples")+"/"+sampleID
+    url=getLink(session, sampleUrl, "sample/sequenceFiles")
 
     response = session.get(url)
 
@@ -335,26 +337,3 @@ def sendProjects(session, baseURL, projectDict):
         raise ProjectError("Missing project name. A project requires 'name' as one of its keys")
 
     return jsonRes
-
-
-
-#just for your testing - will be removed before merge to develop
-if __name__=="__main__":
-    #temp- will become data taken from user input
-    baseURL="http://localhost:8080/api/"
-    username="admin"
-    password="password1"
-
-    session=createSession(baseURL, username, password)
-
-    projectsList=getProjects(session,baseURL)
-    print "\n# of projects:", len(projectsList)
-
-    print sendProjects(session , baseURL, {"name":"projectX"})
-
-    projectsList=getProjects(session,baseURL)
-    print "\n# of projects:", len(projectsList)
-    print "Added project:", projectsList[len(projectsList)-1]
-
-    sList=getSamples(session, baseURL, "4")
-    print len(sList)
