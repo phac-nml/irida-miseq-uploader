@@ -167,24 +167,16 @@ def validateSample(sample):
 
 def validateURLForm(url):
     """
-        offline 'validation' of url. parse through url, invalid if missing scheme, missing '/' at end, or missing location
-        '/' at the end is due to how the concatenations are set up
-        e.g: newUrl= url + path
-        newUrl would be urlpath instead of url/path if no '/'
+        offline 'validation' of url. parse through url and see if its malformed
+
     """
-    vRes=ValidationResult()
 
     valid=False
 
     parsed=urlparse(url)
-    if len(parsed.scheme)==0:
-        vRes.addErrorMsg("URL must include scheme. (e.g http://, https://)")
 
-    if url[len(url)-1]!='/':
-        vRes.addErrorMsg("URL must end with '/'")
-
-    if vRes.errorCount()==0:
+    if len(parsed.scheme)>0:
         valid=True
 
-    vRes.setValid(valid)
-    return vRes
+
+    return valid
