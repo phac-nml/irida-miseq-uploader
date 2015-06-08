@@ -1,18 +1,23 @@
 class Project:
 
-  def __init__(self, projectID, projectName, projectDescription=None):
-    self.projectID=str(projectID)
-    self.projectName=projectName
-    self.projectDescription=str(projectDescription)
+    def __init__(self, projectName, projectDescription=None, projectID=None):#projectID is optional because it's not necessary when creating a Project object to send.
+    #projectID is the identifier key when getting projects from the API.
 
-  def getID(self):
-    return self.projectID
+        self.projectName=projectName
+        self.projectDescription=str(projectDescription)
+        self.projectID=str(projectID)
 
-  def getName(self):
-    return self.projectName
+    def getID(self):
+        return self.projectID
 
-  def getDescription(self):
-    return self.projectDescription
+    def getName(self):
+        return self.projectName
 
-  def __str__(self):
-    return "ID:" + self.projectID + " Name:" + self.projectName + " Description: " + self.projectDescription
+    def getDescription(self):
+        return self.projectDescription
+
+    def getDict(self):#for sending
+        return {"name":self.projectName, "projectDescription":self.projectDescription}
+
+    def __str__(self):
+        return "ID:" + self.projectID + " Name:" + self.projectName + " Description: " + self.projectDescription
