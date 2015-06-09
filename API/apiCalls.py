@@ -249,13 +249,11 @@ class ApiCalls:
         return sampleList
 
 
-    def getSequenceFiles(session, baseURL, project, sample):
+    def getSequenceFiles(self, project, sample):
         """
         API call to api/projects/projectID/sampleID/sequenceFiles
 
         arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
             project -- a Project object used to get projectID
             sample -- a Sample object used to get sampleID
 
@@ -266,15 +264,15 @@ class ApiCalls:
         sampleID=sample.getID()
 
         try:
-            projUrl=getLink(session, baseURL, "projects")
-            sampleUrl=getLink(session, projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
+            projUrl=self.getLink(self.baseURL, "projects")
+            sampleUrl=self.getLink(projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
 
         except StopIteration:
             raise Exception("The given project ID: "+ projectID +" doesn't exist")
 
         try:
-            url=getLink(session, sampleUrl, "sample/sequenceFiles",targDict={"key":"sequencerSampleId","value":sampleID})
-            response = session.get(url)
+            url=self.getLink(sampleUrl, "sample/sequenceFiles",targDict={"key":"sequencerSampleId","value":sampleID})
+            response = self.session.get(url)
 
         except StopIteration:
             raise Exception("The given sample ID: "+ sampleID +" doesn't exist")
@@ -362,3 +360,7 @@ if __name__=="__main__":
     projTarg=projList[3]
     sList=api.getSamples(projTarg)
     print "#Sample count:", len(sList)
+
+
+    seqFiles=api.getSequenceFiles(projTarg, sList[len(sList)-1])
+    print seqFiles
