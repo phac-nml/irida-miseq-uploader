@@ -23,20 +23,8 @@ from Validation.offlineValidation import validateURLForm
 from ConfigParser import RawConfigParser
 
 
-pathToModule=path.dirname(__file__)
-if len(pathToModule)==0:
-    pathToModule='.'
-
-confParser=RawConfigParser()
-confParser.read(pathToModule+"/../config.conf")
-
-clientId=confParser.get("apiCalls","clientId")
-clientSecret=confParser.get("apiCalls","clientSecret")
-
-MAX_TIMEOUT_WAIT=int(confParser.get("apiCalls","maxWaitTime"))
-
 class ApiCalls:
-    def __init__(self, clientId, clientSecret, baseURL, username, password):
+    def __init__(self, clientId, clientSecret, baseURL, username, password, maxWaitTime=20):
         """
         Create OAuth2Session and store it
 
@@ -54,6 +42,7 @@ class ApiCalls:
         self.baseURL=baseURL
         self.username=username
         self.password=password
+        self.maxWaitTime=maxWaitTime
 
         self.session=self.createSession()
 
@@ -157,7 +146,7 @@ class ApiCalls:
                 raise Exception( str(response.status_code) + response.reason)
 
         else:
-            response = urlopen(url, timeout=MAX_TIMEOUT_WAIT)
+            response = urlopen(url, timeout=self.maxWaitTime)
 
             if response.code==httplib.OK:
                 return True
@@ -211,7 +200,6 @@ class ApiCalls:
         returns list containing projects. each project is Project object.
         """
 
-        projectList=[]
 
         url=self.getLink(self.baseURL, "projects")
         response = self.session.get(url)
@@ -232,7 +220,6 @@ class ApiCalls:
         returns list of samples for the given project. each sample is a Sample object.
         """
 
-        sampleList=[]
         projectID=project.getID()
 
         try:
@@ -309,7 +296,7 @@ class ApiCalls:
                 raise ProjectError("Error: " + str(response.status_code) + " "+ response.text)
 
         else:
-            raise ProjectError("Missing project name. A project requires a name that must be 5 or more characters.")
+            raise ProjectError("Invalid project name. A project requires a name that must be 5 or more characters.")
 
         return jsonRes
 
@@ -353,6 +340,16 @@ if __name__=="__main__":
     baseURL="http://localhost:8080/api"
     username="admin"
     password="password1"
+
+    pathToModule=path.dirname(__file__)
+    if len(pathToModule)==0:
+        pathToModule='.'
+
+    confParser=RawConfigParser()
+    confParser.read(pathToModule+"/../config.conf")
+    clientId=confParser.get("apiCalls","clientId")
+    clientSecret=confParser.get("apiCalls","clientSecret")
+
     api=ApiCalls(clientId, clientSecret, baseURL, username, password )
 
     projList=api.getProjects()
