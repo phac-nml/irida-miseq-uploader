@@ -233,7 +233,6 @@ def recursiveFind(topDir, pattern):
 		for root, dirs, files in walk(topDir):
 			for filename in fnfilter(files, pattern):
 				res=path.join(root, filename)
-				res=res.replace("/","\\")# windows paths give dir\\subDir\\ vs unix paths: dir/subDir
 				resultList.append( res )
 	else:
 		msg="Invalid directory "+ topDir
