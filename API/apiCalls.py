@@ -221,13 +221,11 @@ class ApiCalls:
         return projectList
 
 
-    def getSamples(session, baseURL, project):
+    def getSamples(self, project):
         """
         API call to api/projects/projectID/samples
 
         arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
             project -- a Project object used to get projectID
 
         returns list of samples for the given project. each sample is a Sample object.
@@ -237,59 +235,19 @@ class ApiCalls:
         projectID=project.getID()
 
         try:
-            projUrl=getLink(session, baseURL, "projects")
-            url=getLink(session, projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
+            projUrl=self.getLink(self.baseURL, "projects")
+            url=self.getLink(projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
 
 
         except StopIteration:
             raise Exception("The given project ID: "+ projectID +" doesn't exist")
 
-        response = session.get(url)
+        response = self.session.get(url)
         result = response.json()["resource"]["resources"]
         sampleList=[Sample(sampleDict) for sampleDict in result]
 
         return sampleList
 
-
-    def does_projectID_exist(session, baseURL, project):
-        """
-        Retrieves list of projects in irida then
-        checks if the projectID of given project exists in this list
-
-        arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
-            project -- a Project object used to get ID for comparison
-
-        return True if project.getID() is found else return False
-        """
-        retVal=False
-        projectsList=getProjects(session, baseURL)
-
-        if any( [project.getID()==p.getID() for p in projectsList] ):
-            retVal=True
-
-        return retVal
-
-    def does_sampleID_exist(session, baseURL, project , sample):
-        """
-        Retrieves list of samples in irida for projectID of given project then checks if sampleID of given sample exists in this list
-
-        arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
-            project -- a Project object used to get samplesList
-            sample -- a Sample object used to get ID for comparison
-
-        return True if sample.getID() is found else return False
-        """
-        retVal=False
-        samplesList=getSamples(session, baseURL, project)
-
-        if any( [sample.getID()==s.getID() for s in samplesList] ):
-            retVal=True
-
-        return retVal
 
     def getSequenceFiles(session, baseURL, project, sample):
         """
@@ -400,3 +358,7 @@ if __name__=="__main__":
     api=ApiCalls(clientId, clientSecret, baseURL, username, password )
     projList=api.getProjects()
     print "#Project count:", len(projList)
+
+    projTarg=projList[3]
+    sList=api.getSamples(projTarg)
+    print "#Sample count:", len(sList)
