@@ -36,6 +36,18 @@ MAX_TIMEOUT_WAIT=int(confParser.get("apiCalls","maxWaitTime"))
 
 class ApiCalls:
     def __init__(self, clientId, clientSecret, baseURL, username, password):
+        """
+        Create OAuth2Session and store it
+
+        arguments:
+            clientId -- clientId for creating access token. Found in iridaUploader/config.conf
+            clientSecret -- clientSecret for creating access token. Found in iridaUploader/config.conf
+            baseURL -- url of the IRIDA server
+            username -- username for server
+            password -- password for given username
+
+        return ApiCalls object
+        """
         self.clientId=clientId
         self.clientSecret=clientSecret
         self.baseURL=baseURL
@@ -47,7 +59,8 @@ class ApiCalls:
 
     def createSession(self, baseURL, username, password):
         """
-        create session to be re-used for get and post calls
+        create session to be re-used until expiry for get and post calls
+
         arguments:
             baseURL -- url of the IRIDA server
             username -- username for server
@@ -115,33 +128,34 @@ class ApiCalls:
 
     def decoder(self, return_dict):
         """
-            safely parse given dictionary
+        safely parse given dictionary
 
-            arguments:
-                return_dict -- access token dictionary
+        arguments:
+            return_dict -- access token dictionary
 
-            returns evaluated dictionary
+        returns evaluated dictionary
         """
 
         irida_dict = ast.literal_eval(return_dict)
         return irida_dict
 
 
-    def validateURLexistence(url, session=None):
+    def validateURLexistence(self, url, useSession=False):
         """
         tries to validate existence of given url by trying to open it.
         true if HTTP OK, false if HTTP NOT FOUND otherwise raises error containing error code and message
 
         arguments:
             url -- the url link to open and validate
-            session -- optional OAuth2Session object.  if provided then this uses session.get(url) instead of urlopen(url) to get response
+            useSession -- if True then this uses self.session.get(url) instead of urlopen(url) to get response
+
         returns
             true if http response OK 200
             false if http response NOT FOUND 404
         """
 
-        if session!=None:
-            response=session.get(url)
+        if useSession==True:
+            response=self.session.get(url)
 
             if response.status_code==httplib.OK:
                 return True
@@ -161,14 +175,13 @@ class ApiCalls:
                 raise Exception( str(response.code) + response.msg)
 
 
-    def getLink(session, baseURL, targetKey, targDict=""):
+    def getLink(self, baseURL, targetKey, targDict=""):
         """
         makes a call to baseURL(api) expecting a json response
         tries to retrieve targetKey from response to find link to that resource
         raises exceptions if targetKey not found or baseURL is invalid
 
         arguments:
-            session -- opened OAuth2Session
             baseURL -- URL to retrieve link from
             targetKey -- name of link (e.g projects or project/samples)
             targDict -- optional dict containing key and value to search for in targets.
@@ -178,8 +191,8 @@ class ApiCalls:
         """
         retVal=None
 
-        if validateURLexistence(baseURL, session):
-            response=session.get(baseURL)
+        if self.validateURLexistence(baseURL, useSession=True):
+            response=self.session.get(baseURL)
 
             if len(targDict)>0:
                 resourcesList=response.json()["resource"]["resources"]
@@ -199,12 +212,11 @@ class ApiCalls:
         return retVal
 
 
-    def getProjects(session, baseURL):
+    def getProjects(self, baseURL):
         """
         API call to api/projects to get list of projects
 
         arguments:
-            session -- opened OAuth2Session
             baseURL -- URL of IRIDA server API
 
         returns list containing projects. each project is Project object.
@@ -212,12 +224,11 @@ class ApiCalls:
 
         projectList=[]
 
-        url=getLink(session, baseURL, "projects")
-        response = session.get(url)
+        url=self.getLink(baseURL, "projects")
+        response = self.session.get(url)
 
         result= response.json()["resource"]["resources"]
         projectList=[Project(projDict["name"], projDict["projectDescription"], projDict["identifier"]) for projDict in result]
-
 
         return projectList
 
@@ -399,3 +410,5 @@ if __name__=="__main__":
     username="admin"
     password="password1"
     api=ApiCalls(clientId, clientSecret, baseURL, username, password )
+    projList=api.getProjects(baseURL)
+    print "#Project count:", len(projList)
