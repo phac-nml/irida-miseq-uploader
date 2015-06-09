@@ -282,14 +282,12 @@ class ApiCalls:
         return result
 
 
-    def sendProjects(session, baseURL, project):
+    def sendProjects(self, project):
         """
         post request to send a project to IRIDA via API
-        the project being sent requires a name
+        the project being sent requires a name that is at least 5 characters long
 
         arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
             project -- a Project object to be sent.
 
         returns a dictionary containing the result of post request. when post is successful the dictionary it returns will contain the same name and projectDescription that was originally sent as well as additional keys like createdDate and identifier.
@@ -297,12 +295,12 @@ class ApiCalls:
         """
 
         jsonRes=None
-        if len(project.getName())>5:
-            url=getLink(session, baseURL, "projects")
+        if len(project.getName())>=5:
+            url=self.getLink(self.baseURL, "projects")
             jsonObj=json.dumps(project.getDict())
             headers = {'headers': {'Content-Type':'application/json'}}
 
-            response =session.post(url,jsonObj, **headers)
+            response =self.session.post(url,jsonObj, **headers)
 
             if response.status_code==httplib.CREATED:#201
                 jsonRes= json.loads(response.text)
@@ -354,8 +352,16 @@ if __name__=="__main__":
     username="admin"
     password="password1"
     api=ApiCalls(clientId, clientSecret, baseURL, username, password )
+
     projList=api.getProjects()
     print "#Project count:", len(projList)
+
+    p=Project("projectX",projectDescription="orange")
+    print api.sendProjects(p)
+
+    projList=api.getProjects()
+    print "#Project count:", len(projList)
+
 
     projTarg=projList[3]
     sList=api.getSamples(projTarg)
