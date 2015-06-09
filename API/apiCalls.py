@@ -18,6 +18,7 @@ from Model.Project import Project
 from Model.Sample import Sample
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
 from Validation.offlineValidation import validateURLForm
 from ConfigParser import RawConfigParser
 
@@ -240,7 +241,7 @@ class ApiCalls:
 
 
         except StopIteration:
-            raise Exception("The given project ID: "+ projectID +" doesn't exist")
+            raise ProjectError("The given project ID: "+ projectID +" doesn't exist")
 
         response = self.session.get(url)
         result = response.json()["resource"]["resources"]
@@ -268,14 +269,14 @@ class ApiCalls:
             sampleUrl=self.getLink(projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
 
         except StopIteration:
-            raise Exception("The given project ID: "+ projectID +" doesn't exist")
+            raise ProjectError("The given project ID: "+ projectID +" doesn't exist")
 
         try:
             url=self.getLink(sampleUrl, "sample/sequenceFiles",targDict={"key":"sequencerSampleId","value":sampleID})
             response = self.session.get(url)
 
         except StopIteration:
-            raise Exception("The given sample ID: "+ sampleID +" doesn't exist")
+            raise SampleError("The given sample ID: "+ sampleID +" doesn't exist")
 
         result=response.json()["resource"]["resources"]
 
@@ -313,39 +314,40 @@ class ApiCalls:
         return jsonRes
 
 
-    def sendSamples(session, baseURL, project, samplesList):
+    def sendSamples(self, project, samplesList):
         """
-        post request to send sample(s) to the project of given projectID
+        post request to send sample(s) to the given project
 
         arguments:
-            session -- opened OAuth2Session
-            baseURL -- URL of IRIDA server API
             project -- a Project object used to get project ID
             samplesList -- list containing Sample object(s) to send
+
+        returns a dictionary containing the result of post request.
         """
 
         jsonRes=None
         projectID=project.getID()
         try:
-            projUrl=getLink(session, baseURL, "projects")
-            url=getLink(session, projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
-            response = session.get(url)
+            projUrl=self.getLink(baseURL, "projects")
+            url=self.getLink(projUrl, "project/samples", targDict={"key":"identifier","value":projectID})
+            response = self.session.get(url)
 
         except StopIteration:
-            raise Exception("The given project ID: "+ projectID +" doesn't exist")
+            raise ProjectError("The given project ID: "+ projectID +" doesn't exist")
 
         headers = {'headers': {'Content-Type':'application/json'}}
 
         for sample in samplesList:
             jsonObj=json.dumps(sample.getDict())
-            response =session.post(url, jsonObj, **headers)
+            response = self.session.post(url, jsonObj, **headers)
 
             if response.status_code==httplib.CREATED:#201
                 jsonRes= json.loads(response.text)
             else:
-                raise ProjectError("Error: " + str(response.status_code) + " "+ response.text)
+                raise SampleError("Error: " + str(response.status_code) + " "+ response.text)
 
         return jsonRes
+
 
 if __name__=="__main__":
     baseURL="http://localhost:8080/api"
@@ -362,11 +364,23 @@ if __name__=="__main__":
     projList=api.getProjects()
     print "#Project count:", len(projList)
 
+    print "#"*20
 
-    projTarg=projList[3]
+
+    projTarg=projList[0]
+    sList=api.getSamples(projTarg)
+    print "#Sample count:", len(sList)
+
+    s=Sample({"sequencerSampleId":"09-9999","sampleName":"09-9999"})
+    print api.sendSamples(projTarg, [s])#raises error on second run because ID won't be unique anymore for same projTarg
+
     sList=api.getSamples(projTarg)
     print "#Sample count:", len(sList)
 
 
+    print "#"*20
+
+    projTarg=projList[3]
+    sList=api.getSamples(projTarg)
     seqFiles=api.getSequenceFiles(projTarg, sList[len(sList)-1])
     print seqFiles
