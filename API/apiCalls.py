@@ -54,27 +54,22 @@ class ApiCalls:
         self.username=username
         self.password=password
 
-        self.session=self.createSession(self.baseURL, self.username, self.password)
+        self.session=self.createSession()
 
 
-    def createSession(self, baseURL, username, password):
+    def createSession(self):
         """
         create session to be re-used until expiry for get and post calls
-
-        arguments:
-            baseURL -- url of the IRIDA server
-            username -- username for server
-            password -- password for given username
 
         returns session (OAuth2Session object)
         """
 
-        if baseURL[-1:]!='/':
-            baseURL=baseURL+'/'
+        if self.baseURL[-1:]!='/':
+            self.baseURL=self.baseURL+'/'
 
-        if validateURLForm(baseURL):
-            oauth_service=self.get_oauth_service(baseURL)
-            access_token=self.get_access_token(oauth_service, username, password)
+        if validateURLForm(self.baseURL):
+            oauth_service=self.get_oauth_service()
+            access_token=self.get_access_token(oauth_service)
             session=oauth_service.get_session(access_token)
         else:
             raise URLError(vRes.getErrors())
@@ -82,35 +77,31 @@ class ApiCalls:
         return session
 
 
-    def get_oauth_service(self, baseURL):
+    def get_oauth_service(self):
         """
         get oauth service to be used to get access token
 
-        argument:
-            baseURL -- URL of IRIDA server API
 
         returns oauthService
         """
 
-        accessTokenUrl = urljoin(baseURL,"oauth/token")
+        accessTokenUrl = urljoin(self.baseURL,"oauth/token")
         oauth_serv = OAuth2Service(
         client_id=clientId,
         client_secret=clientSecret,
         name="irida",
         access_token_url = accessTokenUrl,
-        base_url=baseURL)
+        base_url=self.baseURL)
 
 
         return oauth_serv
 
-    def get_access_token(self, oauth_service, username, password):
+    def get_access_token(self, oauth_service):
         """
         get access token to be used to get session from oauth_service
 
         arguments:
             oauth_service -- O2AuthService from get_oauth_service
-            username -- username for IRIDA
-            password -- password for given IRIDA username
 
         returns access token
         """
@@ -118,8 +109,8 @@ class ApiCalls:
         params = {'data' : {'grant_type' : 'password',
             'client_id' : clientId,
             'client_secret' : clientSecret,
-            'username' : username,
-            'password' : password}}
+            'username' : self.username,
+            'password' : self.password}}
 
         access_token =    oauth_service.get_access_token(decoder=self.decoder,**params)
 
@@ -175,14 +166,14 @@ class ApiCalls:
                 raise Exception( str(response.code) + response.msg)
 
 
-    def getLink(self, baseURL, targetKey, targDict=""):
+    def getLink(self, targURL, targetKey, targDict=""):
         """
-        makes a call to baseURL(api) expecting a json response
+        makes a call to targURL(api) expecting a json response
         tries to retrieve targetKey from response to find link to that resource
-        raises exceptions if targetKey not found or baseURL is invalid
+        raises exceptions if targetKey not found or targURL is invalid
 
         arguments:
-            baseURL -- URL to retrieve link from
+            targURL -- URL to retrieve link from
             targetKey -- name of link (e.g projects or project/samples)
             targDict -- optional dict containing key and value to search for in targets.
             (e.g {key='identifier',value='100'} to retrieve where identifier=100 )
@@ -191,8 +182,8 @@ class ApiCalls:
         """
         retVal=None
 
-        if self.validateURLexistence(baseURL, useSession=True):
-            response=self.session.get(baseURL)
+        if self.validateURLexistence(targURL, useSession=True):
+            response=self.session.get(targURL)
 
             if len(targDict)>0:
                 resourcesList=response.json()["resource"]["resources"]
@@ -207,24 +198,21 @@ class ApiCalls:
                 raise KeyError(targetKey+" not found in links. "+ "Available links: " + ",".join([ str(link["rel"]) for link in linksList])[:-1] )
 
         else:
-            raise request_HTTPError("Error: " + baseURL +" is not a valid URL")
+            raise request_HTTPError("Error: " + targURL +" is not a valid URL")
 
         return retVal
 
 
-    def getProjects(self, baseURL):
+    def getProjects(self):
         """
         API call to api/projects to get list of projects
-
-        arguments:
-            baseURL -- URL of IRIDA server API
 
         returns list containing projects. each project is Project object.
         """
 
         projectList=[]
 
-        url=self.getLink(baseURL, "projects")
+        url=self.getLink(self.baseURL, "projects")
         response = self.session.get(url)
 
         result= response.json()["resource"]["resources"]
@@ -410,5 +398,5 @@ if __name__=="__main__":
     username="admin"
     password="password1"
     api=ApiCalls(clientId, clientSecret, baseURL, username, password )
-    projList=api.getProjects(baseURL)
+    projList=api.getProjects()
     print "#Project count:", len(projList)
