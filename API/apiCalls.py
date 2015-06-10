@@ -153,7 +153,7 @@ class ApiCalls:
             elif response.code==httplib.NOT_FOUND:
                 return False
             else:
-                raise Exception( str(response.code) + response.msg)
+                raise Exception( str(response.code) +" " + response.msg)
 
 
     def getLink(self, targURL, targetKey, targDict=""):
