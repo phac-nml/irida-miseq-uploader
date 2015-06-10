@@ -45,7 +45,7 @@ class ApiCalls:
         self.password = password
         self.max_wait_time = max_wait_time
 
-        self.session = self.create_session()
+        self.create_session()
 
     def create_session(self):
 
@@ -61,11 +61,13 @@ class ApiCalls:
         if validate_URL_Form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            session = oauth_service.get_session(access_token)
+            self.session = oauth_service.get_session(access_token)
+
+            if self.validate_URL_existence(self.base_URL, use_session=True)==False:
+                raise Exception("Cannot create session. Verify your credentials are correct.")
+
         else:
             raise URLError(self.base_URL + " is not a valid URL")
-
-        return session
 
     def get_oauth_service(self):
 
@@ -148,7 +150,7 @@ class ApiCalls:
             elif response.status_code == httplib.NOT_FOUND:
                 return False
             else:
-                raise Exception(str(response.status_code) + response.reason)
+                raise Exception(str(response.status_code) + " " + response.reason)
 
         else:
             response = urlopen(url, timeout=self.max_wait_time)
@@ -158,7 +160,7 @@ class ApiCalls:
             elif response.code == httplib.NOT_FOUND:
                 return False
             else:
-                raise Exception(str(response.code) + response.msg)
+                raise Exception(str(response.code) + " " + response.msg)
 
 
     def get_link(self, targURL, targetKey, targ_Dict=""):
