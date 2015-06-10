@@ -1,17 +1,17 @@
 import unittest
 import json
 import httplib
-
 from sys import path, argv
 path.append("../../")
-
-import API.apiCalls
-from mock import patch, MagicMock
 from urllib2 import URLError, urlopen, HTTPError
+
+from mock import patch, MagicMock
 from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
+
+import API.apiCalls
 
 class Foo(object):
 	"""
@@ -23,109 +23,113 @@ class Foo(object):
 class TestApiCalls(unittest.TestCase):
 
 	def setUp(self):
+
 		print "\nStarting ", self._testMethodName
 
+	@patch("API.apiCalls.urlopen")
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_validate_URL_existence(self, mock_cs, mock_url):
 
-	def test_validateURLexistence(self):
 		"""
-		replace the urlopen() being called in ApiCalls.validateURLexistence() with a mock/fake object.
+		replace the urlopen() being called in ApiCalls.validate_URL_existence() with a mock/fake object.
 		The side_effect being set to urlOpenResults makes the mock object return one of these items per call to this function. They are returned in the same order (FIFO).
 		The items inside raisedErrorsList match the items in uDict (i.e.
 		http://google.com/ returns urlOpenOk,
 		http://localhost:8080/api/ urlOpenRaise ,
 		notAWebSite returns urlOpenNotFound)
-
 		"""
-		API.apiCalls.ApiCalls.createSession=MagicMock()
-		api=API.apiCalls.ApiCalls("","","","","")
-		validateURL=api.validateURLexistence
 
+		url_ok = Foo()
+		url_raise_err = Foo()
+		url_not_found = Foo()
+		err_msg = "Unauthorized"
+		setattr(url_ok,"code", httplib.OK)
+		setattr(url_raise_err, "code", httplib.UNAUTHORIZED)
+		setattr(url_raise_err, "msg", err_msg)
+		setattr(url_not_found, "code", httplib.NOT_FOUND)
 
-		urlOpenOk= Foo()
-		urlOpenRaise= Foo()
-		urlOpenNotFound= Foo()
-		errMsg="Unauthorized"
-		setattr(urlOpenOk,"code", httplib.OK)
-		setattr(urlOpenRaise,"code", httplib.UNAUTHORIZED)
-		setattr(urlOpenRaise,"msg", errMsg)
-		setattr(urlOpenNotFound,"code", httplib.NOT_FOUND)
-
-		urlOpenResults=[
-			urlOpenOk,
-			urlOpenRaise,
-			urlOpenNotFound
+		urlopen_results=[
+			url_ok,
+			url_raise_err,
+			url_not_found
 		]
 
+		mock_url.side_effect = urlopen_results
+		mock_cs.side_effect = [None]
 
-		API.apiCalls.urlopen=MagicMock(side_effect=urlOpenResults)
+		api = API.apiCalls.ApiCalls("","","","","")
+		validate_URL = api.validate_URL_existence
 
-		urlList=[
+		url_List=[
 			{"url":"http://google.com",
 			"valid":True},
 
-			{"url":"http://localhost:8080/api/","assertion":Exception, "msg":errMsg, "valid":False},
+			{"url":"http://localhost:8080/api/",
+			"assertion":Exception, "msg":err_msg, "valid":False},
 
 			{"url":"notAWebSite",
 			"valid":False}
 		]
 
-		for item in urlList:
+		for item in url_List:
 
 			if item.has_key("assertion"):
 				with self.assertRaises(item["assertion"]) as err:
-					isValid=validateURL( item["url"] )
+					isValid = validate_URL(item["url"])
 
-				self.assertTrue( item["msg"] in str(err.exception) )
-
-
-			else:
-				isValid=validateURL( item["url"] )
-				self.assertEqual( isValid, item["valid"] )
-
-			API.apiCalls.urlopen.assert_called_with( item["url"], timeout=api.maxWaitTime)
-
-
-
-	def testCreateSession(self):
-		createSession=API.apiCalls.createSession
-		#URLError in second item of urlList is raised by the validateURLForm so not included here. These are items raised by urlopen
-		raisedErrorsList=[
-			None,
-			HTTPError(url="http://google.com/invalidPath/",code=404,msg="Not found",hdrs="None",fp=None)
-		]
-
-		API.apiCalls.urlopen=self.setUpMock(urlopen, raisedErrorsList)
-
-		urlList=[
-			{"url":"http://localhost:8080/api/",
-			"valid":True, "msg":"No error messages","assertion":None},
-
-			{"url":"http://localhost:8080/api",
-			"valid":False, "msg":"URL must end with '/'","assertion":URLError},
-
-			{"url":"http://google.com/invalidPath/",
-			"valid":False, "msg":"Failed to reach","assertion":request_HTTPError}
-		]
-
-		username="admin"
-		password="password1"
-
-		for i in range(0,len(urlList)):
-			item= urlList[i]
-
-			if item["assertion"]!=None:
-
-				with self.assertRaises(item["assertion"]) as errMsg:
-					createSession(item["url"], username, password)
-
-				self.assertTrue( item["msg"] in str(errMsg.exception) )
+				self.assertTrue(item["msg"] in str(err.exception))
 
 			else:
-				session=createSession(item["url"], username, password)
-				API.apiCalls.urlopen.assert_called_with(item["url"]+"oauth/token", timeout=API.apiCalls.MAX_TIMEOUT_WAIT)
+				isValid=validate_URL( item["url"] )
+				self.assertEqual(isValid, item["valid"])
 
+			API.apiCalls.urlopen.assert_called_with( item["url"], timeout=api.max_wait_time)
+
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	@patch("API.apiCalls.ApiCalls.get_access_token")
+	@patch("API.apiCalls.ApiCalls.get_oauth_service")
+	@patch("API.apiCalls.validate_URL_Form")
+	def test_create_session_valid(self, mock_validate_url_form,
+								mock_get_oauth_service, mock_get_access_token,
+								mock_validate_url_existence):
+
+		oauth_service=Foo()
+		access_token=Foo()
+		setattr(oauth_service, "get_session", lambda x: "newSession")
+
+		mock_validate_url_form.side_effect = [True]*2
+		mock_get_oauth_service.side_effect = [oauth_service]*2
+		mock_get_access_token.side_effect = [access_token]*2
+		mock_validate_url_existence.side_effect=[True]*2
+
+
+		base_URL1="http://localhost:8080"
+		api=API.apiCalls.ApiCalls(
+		  client_id="",
+		  client_secret="",
+		  base_URL=base_URL1,
+		  username="",
+		  password=""
+		)
+
+		self.assertEqual(api.session, oauth_service.get_session(access_token))
+		mock_validate_url_existence.assert_called_with(base_URL1 + "/", use_session=True)
+
+
+		base_URL2="http://localhost:8080/"
+		api=API.apiCalls.ApiCalls(
+		  client_id="",
+		  client_secret="",
+		  base_URL=base_URL2,
+		  username="",
+		  password=""
+		)
+
+		self.assertEqual(api.session, oauth_service.get_session(access_token))
+		mock_validate_url_existence.assert_called_with(base_URL2, use_session=True)
 
 	def test_getProjects(self):
+
 		createSession=API.apiCalls.createSession
 		getProjects=API.apiCalls.getProjects
 
@@ -256,8 +260,8 @@ class TestApiCalls(unittest.TestCase):
 
 
 api_TestSuite= unittest.TestSuite()
-api_TestSuite.addTest( TestApiCalls("test_validateURLexistence") )
-#api_TestSuite.addTest( TestApiCalls("testCreateSession") )
+api_TestSuite.addTest( TestApiCalls("test_validate_URL_existence") )
+api_TestSuite.addTest( TestApiCalls("test_create_session_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
