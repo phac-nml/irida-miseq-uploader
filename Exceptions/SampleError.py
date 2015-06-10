@@ -1,0 +1,3 @@
+class SampleError(Exception):
+  pass
+

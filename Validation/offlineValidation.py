@@ -5,6 +5,7 @@ from csv import reader
 from copy import deepcopy
 from Parsers.miseqParser import getCsvReader
 from Model.ValidationResult import ValidationResult
+from urlparse import urlparse
 
 def validateSampleSheet(sampleSheetFile):
 	"""
@@ -162,3 +163,20 @@ def validateSample(sample):
 	if sampleProj!=None and len(sampleProj)>0:
 		valid=True
 	return valid
+
+
+def validateURLForm(url):
+    """
+        offline 'validation' of url. parse through url and see if its malformed
+
+    """
+
+    valid=False
+
+    parsed=urlparse(url)
+
+    if len(parsed.scheme)>0:
+        valid=True
+
+
+    return valid

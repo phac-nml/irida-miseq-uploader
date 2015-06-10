@@ -5,7 +5,7 @@ import unittest
 
 from os import path
 from Parsers.miseqParser import parseSamples,getPairFiles
-from Validation.offlineValidation import validateSampleSheet, validatePairFiles, validateSampleList
+from Validation.offlineValidation import validateSampleSheet, validatePairFiles, validateSampleList, validateURLForm
 
 pathToModule=path.dirname(__file__)
 if len(pathToModule)==0:
@@ -195,6 +195,34 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertEqual( vRes.errorCount(), 1 )
 		self.assertTrue( "The given list of samples is empty" in vRes.getErrors() )
 
+	def test_validateURLForm(self):
+		urlList=[
+			{"url":"http://google.com/",
+			"valid":True, "msgs":["No error messages"]},
+
+			{"url":"http://localhost:8080/",
+			"valid":True, "msgs":["No error messages"]},
+
+			{"url":"www.google.com/",
+			"valid":False, "msgs":["must include scheme"]},
+
+			{"url":"http://google.com",
+			"valid":False, "msgs":["must end with '/'"]},
+
+			{"url":"www.google.com",
+			"valid":False, "msgs":["must include scheme","must end with '/'"]},
+
+			{"url":"google.com",
+			"valid":False, "msgs":["must include scheme","must end with '/'"]}
+		]
+
+		for item in urlList:
+			vRes= validateURLForm( item["url"] )
+
+			self.assertEqual( vRes.isValid(), item["valid"] )
+			self.assertTrue( all( [msg in vRes.getErrors() for msg in item["msgs"] ] ) )
+
+
 offValidationTestSuite= unittest.TestSuite()
 
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_validSheet") )
@@ -209,6 +237,8 @@ offValidationTestSuite.addTest( TestOfflineValidation("test_validatePairFiles_in
 
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleList_valid") )
 offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleList_invalid_noSampleProj") )
+
+offValidationTestSuite.addTest( TestOfflineValidation("test_validateURLForm") )
 
 
 if __name__=="__main__":
