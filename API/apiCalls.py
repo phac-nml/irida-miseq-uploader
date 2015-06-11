@@ -186,8 +186,16 @@ class ApiCalls:
 
             if len(targ_dict)>0:
                 resources_List = response.json()["resource"]["resources"]
-                links_list = next(resource["links"] for resource in resources_List
+                try:
+                    links_list = next(resource["links"] for resource in resources_List
                                 if resource[targ_dict["key"]] == targ_dict["value"])
+
+                except KeyError:
+                    raise KeyError(targ_dict["key"] + " not found." +
+                                    "Available keys:" + resource.keys())
+
+                except StopIteration:
+                    raise KeyError(targ_dict["value"] + " not found.")
 
             else:
                 links_list = response.json()["resource"]["links"]
@@ -196,7 +204,7 @@ class ApiCalls:
                         if link["rel"] == target_key)
 
             except StopIteration:
-                raise KeyError(target_key+" not found in links. " +
+                raise KeyError(target_key + " not found in links. " +
                 "Available links: " +
                 ",".join([ str(link["rel"]) for link in links_list]))
 
