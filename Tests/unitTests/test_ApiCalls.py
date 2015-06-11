@@ -209,8 +209,9 @@ class TestApiCalls(unittest.TestCase):
 
 	@patch("API.apiCalls.ApiCalls.create_session")
 	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
-	def test_get_link_valid(self, mock_validate_url_existence,
-	          			mock_cs):
+	def test_get_link_valid(self,
+							mock_validate_url_existence,
+	          				mock_cs):
 
 		mock_validate_url_existence.side_effect=[True]
 		mock_cs.side_effect=[None]
@@ -223,9 +224,9 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		targ_URL="http://localtoast.com"
+		targ_URL="http://localhost:8080/api/"
 		targ_key="project"
-		targ_link="http://localtoast.com/project"
+		targ_link="http://localhost:8080/api/project"
 
 		session=Foo()
 		json_obj={
@@ -252,6 +253,33 @@ class TestApiCalls(unittest.TestCase):
 
 		api.session.get.assert_called_with(targ_URL)
 		self.assertEqual(link, targ_link)
+
+	@patch("API.apiCalls.ApiCalls.create_session")
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	def test_get_link_invalid_url_not_found(self,
+											mock_validate_url_existence,
+	          								mock_cs):
+
+		mock_validate_url_existence.side_effect=[False]
+		mock_cs.side_effect=[None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		targ_URL="http://localhost:8080/api/"
+		targ_key="project"
+
+		with self.assertRaises(request_HTTPError) as err:
+			link=api.get_link(targ_URL, targ_key)
+		
+		self.assertTrue("not a valid URL" in str(err.exception))
+		mock_validate_url_existence.assert_called_with(targ_URL,
+														use_session=True)
 
 	###Below still needs to be updated
 	def test_getProjects(self):
@@ -395,6 +423,7 @@ api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
 api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form"))
 api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session"))
 api_TestSuite.addTest( TestApiCalls("test_get_link_valid"))
+api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_url_not_found"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
