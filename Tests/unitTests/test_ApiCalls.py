@@ -28,62 +28,67 @@ class TestApiCalls(unittest.TestCase):
 
 	@patch("API.apiCalls.urlopen")
 	@patch("API.apiCalls.ApiCalls.create_session")
-	def test_validate_URL_existence(self, mock_cs, mock_url):
-
-		"""
-		replace the urlopen() being called in ApiCalls.validate_URL_existence() with a mock/fake object.
-		The side_effect being set to urlOpenResults makes the mock object return one of these items per call to this function. They are returned in the same order (FIFO).
-		The items inside raisedErrorsList match the items in uDict (i.e.
-		http://google.com/ returns urlOpenOk,
-		http://localhost:8080/api/ urlOpenRaise ,
-		notAWebSite returns urlOpenNotFound)
-		"""
+	def test_validate_URL_existence_url_ok(self, mock_cs, mock_url):
 
 		url_ok = Foo()
-		url_raise_err = Foo()
-		url_not_found = Foo()
-		err_msg = "Unauthorized"
 		setattr(url_ok,"code", httplib.OK)
-		setattr(url_raise_err, "code", httplib.UNAUTHORIZED)
-		setattr(url_raise_err, "msg", err_msg)
-		setattr(url_not_found, "code", httplib.NOT_FOUND)
 
-		urlopen_results=[
-			url_ok,
-			url_raise_err,
-			url_not_found
-		]
-
-		mock_url.side_effect = urlopen_results
+		mock_url.side_effect = [url_ok]
 		mock_cs.side_effect = [None]
 
 		api = API.apiCalls.ApiCalls("","","","","")
 		validate_URL = api.validate_URL_existence
 
-		url_List=[
-			{"url":"http://google.com",
-			"valid":True},
+		url = "http://google.com"
+		valid = True
 
-			{"url":"http://localhost:8080/api/",
-			"assertion":Exception, "msg":err_msg, "valid":False},
+		is_valid = validate_URL(url)
+		self.assertEqual(is_valid, valid)
+		API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
-			{"url":"notAWebSite",
-			"valid":False}
-		]
+	@patch("API.apiCalls.urlopen")
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_validate_URL_existence_url_raise_err(self, mock_cs, mock_url):
 
-		for item in url_List:
+		url_raise_err = Foo()
+		err_msg = "Unauthorized"
+		setattr(url_raise_err, "code", httplib.UNAUTHORIZED)
+		setattr(url_raise_err, "msg", err_msg)
 
-			if item.has_key("assertion"):
-				with self.assertRaises(item["assertion"]) as err:
-					isValid = validate_URL(item["url"])
+		mock_url.side_effect = [url_raise_err]
+		mock_cs.side_effect = [None]
 
-				self.assertTrue(item["msg"] in str(err.exception))
+		api = API.apiCalls.ApiCalls("","","","","")
+		validate_URL = api.validate_URL_existence
 
-			else:
-				isValid=validate_URL( item["url"] )
-				self.assertEqual(isValid, item["valid"])
+		url = "http://localhost:8080/api/"
+		valid = True
 
-			API.apiCalls.urlopen.assert_called_with( item["url"], timeout=api.max_wait_time)
+		with self.assertRaises(Exception) as err:
+			is_valid = validate_URL(url)
+
+		self.assertTrue(err_msg in str(err.exception))
+		API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
+
+	@patch("API.apiCalls.urlopen")
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_validate_URL_existence_url_not_found(self, mock_cs, mock_url):
+
+		url_not_found = Foo()
+		setattr(url_not_found, "code", httplib.NOT_FOUND)
+
+		mock_url.side_effect = [url_not_found]
+		mock_cs.side_effect = [None]
+
+		api = API.apiCalls.ApiCalls("","","","","")
+		validate_URL = api.validate_URL_existence
+
+		url = "notAWebSite"
+		valid = False
+
+		is_valid = validate_URL(url)
+		self.assertEqual(is_valid, valid)
+		API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
 	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
 	@patch("API.apiCalls.ApiCalls.get_access_token")
@@ -260,8 +265,10 @@ class TestApiCalls(unittest.TestCase):
 
 
 api_TestSuite= unittest.TestSuite()
-api_TestSuite.addTest( TestApiCalls("test_validate_URL_existence") )
-api_TestSuite.addTest( TestApiCalls("test_create_session_valid") )
+api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
+api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
+api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
+api_TestSuite.addTest(TestApiCalls("test_create_session_valid"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
