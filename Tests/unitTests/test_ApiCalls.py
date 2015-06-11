@@ -56,9 +56,17 @@ class TestApiCalls(unittest.TestCase):
 		setattr(url_raise_err, "msg", err_msg)
 
 		mock_url.side_effect = [url_raise_err]
+
 		mock_cs.side_effect = [None]
 
-		api = API.apiCalls.ApiCalls("","","","","")
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
 		validate_URL = api.validate_URL_existence
 
 		url = "http://localhost:8080/api/"
@@ -150,6 +158,56 @@ class TestApiCalls(unittest.TestCase):
 		self.assertEqual(api2.session, oauth_service.get_session(access_token))
 		mock_validate_url_existence.assert_called_with(base_URL2, use_session=True)
 
+	@patch("API.apiCalls.validate_URL_Form")
+	def test_create_session_invalid_form(self, mock_validate_url_form):
+
+		mock_validate_url_form.side_effect = [False]
+
+		base_URL = "invalidForm.com/"
+		with self.assertRaises(URLError) as err:
+			api=API.apiCalls.ApiCalls(
+			  client_id="",
+			  client_secret="",
+			  base_URL=base_URL,
+			  username="",
+			  password=""
+			)
+
+		self.assertTrue("not a valid URL" in str(err.exception))
+		mock_validate_url_form.assert_called_with(base_URL)
+
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	@patch("API.apiCalls.ApiCalls.get_access_token")
+	@patch("API.apiCalls.ApiCalls.get_oauth_service")
+	@patch("API.apiCalls.validate_URL_Form")
+	def test_create_session_invalid_session(self, mock_validate_url_form,
+											mock_get_oauth_service,
+											mock_get_access_token,
+											mock_validate_url_existence):
+
+		oauth_service = Foo()
+		access_token = Foo()
+		setattr(oauth_service, "get_session", lambda x: "newSession")
+
+		mock_validate_url_form.side_effect = [True]
+		mock_get_oauth_service.side_effect = [oauth_service]
+		mock_get_access_token.side_effect = [access_token]
+		mock_validate_url_existence.side_effect = [False]
+
+		with self.assertRaises(Exception) as err:
+			api=API.apiCalls.ApiCalls(
+			  client_id="",
+			  client_secret="",
+			  base_URL="",
+			  username="",
+			  password=""
+			)
+
+		expectedErrMsg = "Cannot create session. Verify your credentials are correct."
+		self.assertTrue(expectedErrMsg in str(err.exception))
+		mock_validate_url_form.assert_called_with("/")
+
+	###Below still needs to be updated
 	def test_getProjects(self):
 
 		createSession=API.apiCalls.createSession
@@ -282,11 +340,15 @@ class TestApiCalls(unittest.TestCase):
 
 
 api_TestSuite= unittest.TestSuite()
+
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_no_slash"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
+api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form") )
+api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session") )
+#api_TestSuite.addTest( TestApiCalls("test_get_link") )
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
