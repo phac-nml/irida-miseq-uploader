@@ -213,8 +213,8 @@ class TestApiCalls(unittest.TestCase):
 							mock_validate_url_existence,
 	          				mock_cs):
 
-		mock_validate_url_existence.side_effect=[True]
-		mock_cs.side_effect=[None]
+		mock_validate_url_existence.side_effect = [True]
+		mock_cs.side_effect = [None]
 
 		api=API.apiCalls.ApiCalls(
 			client_id="",
@@ -224,12 +224,12 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		targ_URL="http://localhost:8080/api/"
-		targ_key="project"
-		targ_link="http://localhost:8080/api/project"
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
+		targ_link = "http://localhost:8080/api/project"
 
-		session=Foo()
-		json_obj={
+		session = Foo()
+		json_obj = {
 			"resource" : {
 				"links" : [
 					{
@@ -242,13 +242,13 @@ class TestApiCalls(unittest.TestCase):
 
 		#session.get will return json_response
 		#json_response has a callable json attribute that returns json_obj
-		json_response=Foo()
+		json_response = Foo()
 		setattr(json_response,"json", lambda: json_obj)
 
-		session_get=MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[json_response])
 		setattr(session,"get", session_get)
 
-		api.session=session
+		api.session = session
 		link=api.get_link(targ_URL, targ_key)
 
 		api.session.get.assert_called_with(targ_URL)
@@ -260,8 +260,8 @@ class TestApiCalls(unittest.TestCase):
 											mock_validate_url_existence,
 	          								mock_cs):
 
-		mock_validate_url_existence.side_effect=[False]
-		mock_cs.side_effect=[None]
+		mock_validate_url_existence.side_effect = [False]
+		mock_cs.side_effect = [None]
 
 		api=API.apiCalls.ApiCalls(
 			client_id="",
@@ -271,15 +271,65 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		targ_URL="http://localhost:8080/api/"
-		targ_key="project"
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
 
 		with self.assertRaises(request_HTTPError) as err:
-			link=api.get_link(targ_URL, targ_key)
-		
+			api.get_link(targ_URL, targ_key)
+
 		self.assertTrue("not a valid URL" in str(err.exception))
 		mock_validate_url_existence.assert_called_with(targ_URL,
 														use_session=True)
+
+	@patch("API.apiCalls.ApiCalls.create_session")
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	def test_get_link_invalid_key_not_found(self,
+											mock_validate_url_existence,
+	          								mock_cs):
+
+		mock_validate_url_existence.side_effect = [True]
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
+		targ_link = "http://localhost:8080/api/project"
+		invalid_key = "notProject"
+
+		session = Foo()
+		json_obj = {
+			"resource" : {
+				"links" : [
+					{
+						"rel" : invalid_key,
+						"href" : targ_link
+					}
+				]
+			}
+		}
+
+		#session.get will return json_response
+		#json_response has a callable json attribute that returns json_obj
+		json_response = Foo()
+		setattr(json_response,"json", lambda: json_obj)
+
+		session_get = MagicMock(side_effect=[json_response])
+		setattr(session,"get", session_get)
+
+		api.session = session
+		with self.assertRaises(KeyError) as err:
+			api.get_link(targ_URL, targ_key)
+
+		self.assertTrue(targ_key + " not found in links" in str(err.exception))
+		self.assertTrue("Available links: " + invalid_key in str(err.exception))
+		api.session.get.assert_called_with(targ_URL)
 
 	###Below still needs to be updated
 	def test_getProjects(self):
@@ -424,6 +474,7 @@ api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form"))
 api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session"))
 api_TestSuite.addTest( TestApiCalls("test_get_link_valid"))
 api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_url_not_found"))
+api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_key_not_found"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
