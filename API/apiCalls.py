@@ -163,16 +163,16 @@ class ApiCalls:
                 raise Exception(str(response.code) + " " + response.msg)
 
 
-    def get_link(self, targURL, targetKey, targ_Dict=""):
+    def get_link(self, targ_url, target_key, targ_Dict=""):
 
         """
-        makes a call to targURL(api) expecting a json response
-        tries to retrieve targetKey from response to find link to that resource
-        raises exceptions if targetKey not found or targURL is invalid
+        makes a call to targ_url(api) expecting a json response
+        tries to retrieve target_key from response to find link to that resource
+        raises exceptions if target_key not found or targ_url is invalid
 
         arguments:
-            targURL -- URL to retrieve link from
-            targetKey -- name of link (e.g projects or project/samples)
+            targ_url -- URL to retrieve link from
+            target_key -- name of link (e.g projects or project/samples)
             targ_Dict -- optional dict containing key and value to search for in targets.
             (e.g {key="identifier",value="100"} to retrieve where identifier=100 )
 
@@ -181,8 +181,8 @@ class ApiCalls:
 
         retVal=None
 
-        if self.validate_URL_existence(targURL, use_session=True):
-            response = self.session.get(targURL)
+        if self.validate_URL_existence(targ_url, use_session=True):
+            response = self.session.get(targ_url)
 
             if len(targ_Dict)>0:
                 resources_List = response.json()["resource"]["resources"]
@@ -193,16 +193,16 @@ class ApiCalls:
                 links_list = response.json()["resource"]["links"]
 
             retVal = next(link["href"] for link in links_list
-                        if link["rel"] == targetKey)
+                        if link["rel"] == target_key)
 
             if retVal == None:
-                raise KeyError(targetKey+" not found in links. " +
+                raise KeyError(target_key+" not found in links. " +
                 "Available links: " +
                 ",".join([ str(link["rel"]) for link in links_list])[:-1])
 
         else:
             raise request_HTTPError("Error: " +
-                                    targURL + " is not a valid URL")
+                                    targ_url + " is not a valid URL")
 
         return retVal
 
@@ -306,7 +306,7 @@ class ApiCalls:
 
         return result
 
-    def sendProjects(self, project):
+    def send_projects(self, project):
 
         """
         post request to send a project to IRIDA via API
@@ -319,7 +319,7 @@ class ApiCalls:
         when post fails then an error will be raised so return statement is not even reached.
         """
 
-        jsonRes = None
+        json_res = None
         if len(project.getName()) >= 5:
             url = self.get_link(self.base_URL, "projects")
             json_obj = json.dumps(project.getDict())
@@ -332,7 +332,7 @@ class ApiCalls:
             response = self.session.post(url,json_obj, **headers)
 
             if response.status_code == httplib.CREATED:#201
-                jsonRes = json.loads(response.text)
+                json_res = json.loads(response.text)
             else:
                 raise ProjectError("Error: " +
                                 str(response.status_code) + " " + response.text)
@@ -342,7 +342,7 @@ class ApiCalls:
                                 project.getName() +
                                 ". A project requires a name that must be 5 or more characters.")
 
-        return jsonRes
+        return json_res
 
     def send_samples(self, project, samples_list):
 
@@ -356,7 +356,7 @@ class ApiCalls:
         returns a dictionary containing the result of post request.
         """
 
-        jsonRes = None
+        json_res = None
         project_id = project.getID()
         try:
             proj_URL = self.get_link(base_URL, "projects")
@@ -383,12 +383,12 @@ class ApiCalls:
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:#201
-                jsonRes = json.loads(response.text)
+                json_res = json.loads(response.text)
             else:
                 raise SampleError("Error: " +
                                 str(response.status_code) + " " + response.text)
 
-        return jsonRes
+        return json_res
 
 
 if __name__=="__main__":
@@ -411,7 +411,7 @@ if __name__=="__main__":
     print "#Project count:", len(proj_list)
 
     p=Project("projectX",projectDescription="orange")
-    print api.sendProjects(p)
+    print api.send_projects(p)
 
     proj_list=api.get_projects()
     print "#Project count:", len(proj_list)
