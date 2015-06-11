@@ -191,14 +191,14 @@ class ApiCalls:
 
             else:
                 links_list = response.json()["resource"]["links"]
-
-            retVal = next(link["href"] for link in links_list
+            try:
+                retVal = next(link["href"] for link in links_list
                         if link["rel"] == target_key)
 
-            if retVal == None:
+            except StopIteration:
                 raise KeyError(target_key+" not found in links. " +
                 "Available links: " +
-                ",".join([ str(link["rel"]) for link in links_list])[:-1])
+                ",".join([ str(link["rel"]) for link in links_list]))
 
         else:
             raise request_HTTPError("Error: " +
