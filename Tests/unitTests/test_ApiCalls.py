@@ -94,22 +94,22 @@ class TestApiCalls(unittest.TestCase):
 	@patch("API.apiCalls.ApiCalls.get_access_token")
 	@patch("API.apiCalls.ApiCalls.get_oauth_service")
 	@patch("API.apiCalls.validate_URL_Form")
-	def test_create_session_valid(self, mock_validate_url_form,
+	def test_create_session_valid_base_url_no_slash(
+								self, mock_validate_url_form,
 								mock_get_oauth_service, mock_get_access_token,
 								mock_validate_url_existence):
 
 		oauth_service=Foo()
 		access_token=Foo()
-		setattr(oauth_service, "get_session", lambda x: "newSession")
+		setattr(oauth_service, "get_session", lambda x: "newSession1")
 
-		mock_validate_url_form.side_effect = [True]*2
-		mock_get_oauth_service.side_effect = [oauth_service]*2
-		mock_get_access_token.side_effect = [access_token]*2
-		mock_validate_url_existence.side_effect=[True]*2
-
+		mock_validate_url_form.side_effect = [True]
+		mock_get_oauth_service.side_effect = [oauth_service]
+		mock_get_access_token.side_effect = [access_token]
+		mock_validate_url_existence.side_effect=[True]
 
 		base_URL1="http://localhost:8080"
-		api=API.apiCalls.ApiCalls(
+		api1=API.apiCalls.ApiCalls(
 		  client_id="",
 		  client_secret="",
 		  base_URL=base_URL1,
@@ -117,12 +117,29 @@ class TestApiCalls(unittest.TestCase):
 		  password=""
 		)
 
-		self.assertEqual(api.session, oauth_service.get_session(access_token))
+		self.assertEqual(api1.session, oauth_service.get_session(access_token))
 		mock_validate_url_existence.assert_called_with(base_URL1 + "/", use_session=True)
 
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	@patch("API.apiCalls.ApiCalls.get_access_token")
+	@patch("API.apiCalls.ApiCalls.get_oauth_service")
+	@patch("API.apiCalls.validate_URL_Form")
+	def test_create_session_valid_base_url_slash(
+								self, mock_validate_url_form,
+								mock_get_oauth_service, mock_get_access_token,
+								mock_validate_url_existence):
+
+		oauth_service=Foo()
+		access_token=Foo()
+		setattr(oauth_service, "get_session", lambda x: "newSession2")
+
+		mock_validate_url_form.side_effect = [True]
+		mock_get_oauth_service.side_effect = [oauth_service]
+		mock_get_access_token.side_effect = [access_token]
+		mock_validate_url_existence.side_effect=[True]
 
 		base_URL2="http://localhost:8080/"
-		api=API.apiCalls.ApiCalls(
+		api2=API.apiCalls.ApiCalls(
 		  client_id="",
 		  client_secret="",
 		  base_URL=base_URL2,
@@ -130,7 +147,7 @@ class TestApiCalls(unittest.TestCase):
 		  password=""
 		)
 
-		self.assertEqual(api.session, oauth_service.get_session(access_token))
+		self.assertEqual(api2.session, oauth_service.get_session(access_token))
 		mock_validate_url_existence.assert_called_with(base_URL2, use_session=True)
 
 	def test_getProjects(self):
@@ -268,7 +285,8 @@ api_TestSuite= unittest.TestSuite()
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
-api_TestSuite.addTest(TestApiCalls("test_create_session_valid"))
+api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_no_slash"))
+api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
