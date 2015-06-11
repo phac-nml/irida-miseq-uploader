@@ -436,6 +436,60 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue(t_dict["value"] + " not found." in str(err.exception))
 		api.session.get.assert_called_with(targ_URL)
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	def test_get_link_invalid_targ_dict_key(self, mock_validate_url_existence,
+	          								mock_cs):
+
+		mock_validate_url_existence.side_effect = [True]
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
+		targ_link = "http://localhost:8080/api/project"
+
+		session = Foo()
+		json_obj = {
+			"resource" : {
+				"resources" : [
+					{
+						"identifier" : "1",
+						"links" : [
+							{
+								"rel" : targ_key,
+								"href" : targ_link
+							}
+						]
+					}
+				]
+			}
+		}
+
+		#session.get will return json_response
+		#json_response has a callable json attribute that returns json_obj
+		json_response = Foo()
+		setattr(json_response,"json", lambda: json_obj)
+
+		session_get = MagicMock(side_effect=[json_response])
+		setattr(session,"get", session_get)
+
+		api.session = session
+		t_dict={"key":"notIdentifier","value":"1"}
+		with self.assertRaises(KeyError) as err:
+			api.get_link(targ_URL, targ_key, targ_dict=t_dict)
+
+		self.assertTrue(t_dict["key"] + " not found." in str(err.exception))
+		self.assertTrue("Available keys: identifier" in str(err.exception))
+		api.session.get.assert_called_with(targ_URL)
+
 	###Below still needs to be updated
 	def test_getProjects(self):
 
@@ -575,13 +629,14 @@ api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_no_slash"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
-api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form"))
-api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session"))
-api_TestSuite.addTest( TestApiCalls("test_get_link_valid"))
-api_TestSuite.addTest( TestApiCalls("test_get_link_valid_targ_dict"))
-api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_url_not_found"))
-api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_key_not_found"))
-api_TestSuite.addTest( TestApiCalls("test_get_link_invalid_targ_dict_value"))
+api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_form"))
+api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_session"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_valid"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_valid_targ_dict"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_url_not_found"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
+api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )

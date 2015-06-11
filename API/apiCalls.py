@@ -192,7 +192,7 @@ class ApiCalls:
 
                 except KeyError:
                     raise KeyError(targ_dict["key"] + " not found." +
-                                    "Available keys:" + resource.keys())
+                                    " Available keys: " + ", ".join(resources_List[0].keys()))
 
                 except StopIteration:
                     raise KeyError(targ_dict["value"] + " not found.")
