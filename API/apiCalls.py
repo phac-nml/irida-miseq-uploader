@@ -163,7 +163,7 @@ class ApiCalls:
                 raise Exception(str(response.code) + " " + response.msg)
 
 
-    def get_link(self, targ_url, target_key, targ_Dict=""):
+    def get_link(self, targ_url, target_key, targ_dict=""):
 
         """
         makes a call to targ_url(api) expecting a json response
@@ -173,7 +173,7 @@ class ApiCalls:
         arguments:
             targ_url -- URL to retrieve link from
             target_key -- name of link (e.g projects or project/samples)
-            targ_Dict -- optional dict containing key and value to search for in targets.
+            targ_dict -- optional dict containing key and value to search for in targets.
             (e.g {key="identifier",value="100"} to retrieve where identifier=100 )
 
         returns link if it exists
@@ -184,10 +184,10 @@ class ApiCalls:
         if self.validate_URL_existence(targ_url, use_session=True):
             response = self.session.get(targ_url)
 
-            if len(targ_Dict)>0:
+            if len(targ_dict)>0:
                 resources_List = response.json()["resource"]["resources"]
                 links_list = next(resource["links"] for resource in resources_List
-                                if resource[targ_Dict["key"]] == targ_Dict["value"])
+                                if resource[targ_dict["key"]] == targ_dict["value"])
 
             else:
                 links_list = response.json()["resource"]["links"]
@@ -245,7 +245,7 @@ class ApiCalls:
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"identifier",
                                     "value":project_id
                                 })
@@ -280,7 +280,7 @@ class ApiCalls:
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
             sample_URL = self.get_link(proj_URL, "project/samples",
-                                        targ_Dict={
+                                        targ_dict={
                                             "key":"identifier",
                                             "value":project_id
                                         })
@@ -291,7 +291,7 @@ class ApiCalls:
 
         try:
             url = self.get_link(sample_URL, "sample/sequenceFiles",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"sequencerSampleId",
                                     "value":sample_id
                                 })
@@ -361,7 +361,7 @@ class ApiCalls:
         try:
             proj_URL = self.get_link(base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"identifier",
                                     "value":project_id
                                 })
