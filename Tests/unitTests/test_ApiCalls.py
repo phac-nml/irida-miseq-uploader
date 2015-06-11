@@ -207,6 +207,52 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue(expectedErrMsg in str(err.exception))
 		mock_validate_url_form.assert_called_with("/")
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	@patch("API.apiCalls.ApiCalls.validate_URL_existence")
+	def test_get_link_valid(self, mock_validate_url_existence,
+	          			mock_cs):
+
+		mock_validate_url_existence.side_effect=[True]
+		mock_cs.side_effect=[None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		targ_URL="http://localtoast.com"
+		targ_key="project"
+		targ_link="http://localtoast.com/project"
+
+		session=Foo()
+		json_obj={
+			"resource" : {
+				"links" : [
+					{
+						"rel" : targ_key,
+						"href" : targ_link
+					}
+				]
+			}
+		}
+
+		#session.get will return json_response
+		#json_response has a callable json attribute that returns json_obj
+		json_response=Foo()
+		setattr(json_response,"json", lambda: json_obj)
+
+		session_get=MagicMock(side_effect=[json_response])
+		setattr(session,"get", session_get)
+
+		api.session=session
+		link=api.get_link(targ_URL, targ_key)
+
+		api.session.get.assert_called_with(targ_URL)
+		self.assertEqual(link, targ_link)
+
 	###Below still needs to be updated
 	def test_getProjects(self):
 
@@ -346,9 +392,9 @@ api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_no_slash"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
-api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form") )
-api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session") )
-#api_TestSuite.addTest( TestApiCalls("test_get_link") )
+api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_form"))
+api_TestSuite.addTest( TestApiCalls("test_create_session_invalid_session"))
+api_TestSuite.addTest( TestApiCalls("test_get_link_valid"))
 #api_TestSuite.addTest( TestApiCalls("test_getProjects") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
