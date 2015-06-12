@@ -206,7 +206,7 @@ class ApiCalls:
             except StopIteration:
                 raise KeyError(target_key + " not found in links. " +
                 "Available links: " +
-                ",".join([ str(link["rel"]) for link in links_list]))
+                ", ".join([ str(link["rel"]) for link in links_list]))
 
         else:
             raise request_HTTPError("Error: " +
@@ -226,14 +226,21 @@ class ApiCalls:
         response = self.session.get(url)
 
         result = response.json()["resource"]["resources"]
-        project_list = [
-            Project(
-                projDict["name"],
-                projDict["projectDescription"],
-                projDict["identifier"]
-            )
-            for projDict in result
-        ]
+        try:
+            project_list = [
+                Project(
+                    projDict["name"],
+                    projDict["projectDescription"],
+                    projDict["identifier"]
+                )
+                for projDict in result
+            ]
+
+        except KeyError, e:
+            e.args = map(str,e.args)
+            msgArg = " ".join(e.args)
+            raise KeyError(msgArg + " not found." + " Available keys: " +
+            ", ".join(result[0].keys()))
 
         return project_list
 

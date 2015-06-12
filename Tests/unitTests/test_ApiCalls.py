@@ -543,6 +543,61 @@ class TestApiCalls(unittest.TestCase):
 		self.assertEqual(proj_list[1].getDescription(),
 							p2_dict["projectDescription"])
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_projects_invalid_missing_key(self, mock_cs):
+
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
+		targ_link = "http://localhost:8080/api/project"
+
+		p1_dict={
+			"identifier" : "1",
+
+			"projectDescription" : ""
+		}
+
+		p2_dict={
+			"identifier" : "2",
+
+			"projectDescription" : "p2"
+		}
+
+		json_obj = {
+			"resource" : {
+				"resources" : [
+					p1_dict,
+					p2_dict
+				]
+			}
+		}
+
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
+
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"get", session_get)
+
+		api.session = session
+		api.get_link = lambda x,y :None
+
+		with self.assertRaises(KeyError) as err:
+			api.get_projects()
+
+		self.assertTrue("name not found" in str(err.exception))
+		self.assertTrue("Available keys: projectDescription, identifier"
+						in str(err.exception))
+
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
 		sendProjects=API.apiCalls.sendProjects
@@ -646,7 +701,7 @@ api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
 api_TestSuite.addTest(TestApiCalls("test_get_projects_valid"))
-#api_TestSuite.addTest(TestApiCalls("test_getProjects_invalid_missing_key"))
+api_TestSuite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
