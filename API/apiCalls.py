@@ -321,7 +321,7 @@ class ApiCalls:
 
         return result
 
-    def send_projects(self, project):
+    def send_project(self, project):
 
         """
         post request to send a project to IRIDA via API
@@ -426,7 +426,7 @@ if __name__=="__main__":
     print "#Project count:", len(proj_list)
 
     p=Project("projectX",projectDescription="orange")
-    print api.send_projects(p)
+    print api.send_project(p)
 
     proj_list=api.get_projects()
     print "#Project count:", len(proj_list)

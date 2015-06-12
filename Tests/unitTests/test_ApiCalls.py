@@ -762,49 +762,43 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue(sample.getID() + " doesn't exist"
 						in str(err.exception))
 
-	def test_sendProjects_valid(self):
-		createSession=API.apiCalls.createSession
-		sendProjects=API.apiCalls.sendProjects
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_send_project_valid(self, mock_cs):
 
-		baseURL="http://localhost:8080/api/"
-		username="admin"
-		password="password1"
-		headers = {'headers': {'Content-Type':'application/json'}}
+		mock_cs.side_effect = [None]
 
-		mockResponse=OAuth2Session('123','456', access_token='321')
-		expectedDict={
-			"resource":
-			{
-				"projectDescription" : "This is a test project",
-				"name" : "testProject",
-				"identifier" : "123",
-				"createdDate" : 1433173545000
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		json_dict = {
+			"resource" : {
+				"name" : "project1",
+				"projectDescription" : "projectDescription",
+				"identifier" : "1"
 			}
 		}
 
-		jsonResponse=json.dumps(expectedDict)
-		setattr(mockResponse,"text", jsonResponse)
-		setattr(mockResponse,"status_code", httplib.CREATED)
+		json_obj = json.dumps(json_dict)
 
-		API.apiCalls.urlopen=self.setUpMock(urlopen)
+		session_response = Foo()
+		setattr(session_response,"status_code", httplib.CREATED)
+		setattr(session_response,"text", json_obj)
 
-		funcHolder=API.apiCalls.OAuth2Session.post
-		API.apiCalls.OAuth2Session.post=self.setUpMock(API.apiCalls.OAuth2Session.post, [mockResponse] )
+		session_post = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"post", session_post)
 
-		session=createSession(baseURL, username, password)
+		api.session = session
+		api.get_link = lambda x, y, targ_dict="" :None
+		proj = API.apiCalls.Project("project1","projectDescription", "1")
 
-		projToSend= {"name":"testProject", "projectDescription": "This is a test project"}
-		res=sendProjects(session , baseURL, projToSend)
-
-		if self.mocking==True:
-			API.apiCalls.OAuth2Session.post.assert_called_with(baseURL+"projects", json.dumps(projToSend), **headers  )
-
-		#check that names and project descriptions are the same
-		for key in projToSend.keys():
-			self.assertEqual(res["resource"][key], expectedDict["resource"][key])
-
-		API.apiCalls.OAuth2Session.post=funcHolder
-
+		jsonRes=api.send_project(proj)
+		self.assertEqual(json_dict, jsonRes)
 
 	def test_sendProjects_invalid(self):
 		createSession=API.apiCalls.createSession
@@ -876,6 +870,9 @@ api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
+
+api_TestSuite.addTest(TestApiCalls("test_send_project_valid"))
+
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
