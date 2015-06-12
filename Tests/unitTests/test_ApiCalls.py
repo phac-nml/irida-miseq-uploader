@@ -522,7 +522,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"get", session_get)
 
 		api.session = session
-		api.get_link = lambda x, y :None
+		api.get_link = lambda x, y : None
 
 		proj_list=api.get_projects()
 		self.assertEqual(len(proj_list), 2)
@@ -579,7 +579,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"get", session_get)
 
 		api.session = session
-		api.get_link = lambda x,y :None
+		api.get_link = lambda x,y : None
 
 		with self.assertRaises(KeyError) as err:
 			api.get_projects()
@@ -624,7 +624,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"get", session_get)
 
 		api.session = session
-		api.get_link = lambda x, y, targ_dict="" :None
+		api.get_link = lambda x, y, targ_dict="" : None
 
 		proj=API.apiCalls.Project("project1","projectDescription", "1")
 		sample_list = api.get_samples(proj)
@@ -694,7 +694,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"get", session_get)
 
 		api.session = session
-		api.get_link = lambda x, y, targ_dict="" :None
+		api.get_link = lambda x, y, targ_dict="" : None
 
 		sample_dict = {
 			"sequencerSampleId" : "03-3333",
@@ -794,7 +794,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"post", session_post)
 
 		api.session = session
-		api.get_link = lambda x, y, targ_dict="" :None
+		api.get_link = lambda x, y, targ_dict="" : None
 		proj = API.apiCalls.Project("project1","projectDescription", "1")
 
 		json_res = api.send_project(proj)
@@ -845,7 +845,7 @@ class TestApiCalls(unittest.TestCase):
 		setattr(session,"post", session_post)
 
 		api.session = session
-		api.get_link = lambda x, y, targ_dict="" :None
+		api.get_link = lambda x, y, targ_dict="" : None
 
 		proj = API.apiCalls.Project("project1","projectDescription", "1")
 
@@ -855,6 +855,53 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue(str(session_response.status_code) + " " +
 						session_response.text in str(err.exception))
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_send_samples_valid(self, mock_cs):
+
+		mock_cs.side_effect = [None]
+
+		api = API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		json_dict = {
+			"resource" : {
+				"sequencerSampleId" : "03-3333",
+	      		"description" : "The 53rd sample",
+	      		"sampleName" : "03-3333",
+				"identifier" : "1"
+			}
+		}
+
+		json_obj = json.dumps(json_dict)
+
+		session_response = Foo()
+		setattr(session_response,"status_code", httplib.CREATED)
+		setattr(session_response,"text", json_obj)
+
+		session_post = MagicMock(side_effect=[session_response])
+		session=Foo()
+		setattr(session,"post", session_post)
+
+		api.get_link = lambda x, y, targ_dict="" : None
+		api.session = session
+
+		sample_dict = {
+			"sequencerSampleId" : "03-3333",
+      		"description" : "The 53rd sample",
+      		"sampleName" : "03-3333",
+			"identifier" : "1"
+		}
+
+		proj = API.apiCalls.Project("project1","projectDescription", "1")
+		sample = API.apiCalls.Sample(sample_dict)
+		json_res=api.send_samples(proj, [sample])
+
+		self.assertEqual(json_res, json_dict)
 
 api_TestSuite= unittest.TestSuite()
 
@@ -888,6 +935,7 @@ api_TestSuite.addTest(TestApiCalls("test_send_project_valid"))
 api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_name"))
 api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_server_res"))
 
+api_TestSuite.addTest(TestApiCalls("test_send_samples_valid"))
 
 if __name__=="__main__":
 	suiteList=[]

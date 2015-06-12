@@ -374,14 +374,12 @@ class ApiCalls:
         json_res = None
         project_id = project.getID()
         try:
-            proj_URL = self.get_link(base_URL, "projects")
+            proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
                                 targ_dict={
                                     "key":"identifier",
                                     "value":project_id
                                 })
-
-            response = self.session.get(url)
 
         except StopIteration:
             raise ProjectError("The given project ID: " +
