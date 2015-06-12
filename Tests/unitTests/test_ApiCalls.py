@@ -11,7 +11,6 @@ from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
 
-
 import API.apiCalls
 
 class Foo(object):
@@ -711,6 +710,30 @@ class TestApiCalls(unittest.TestCase):
 		self.assertEqual(len(seqRes),1)
 		self.assertEqual(seq_dict.items(), seqRes[0].items())
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_sequence_files_invalid_proj(self, mock_cs):
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		api.get_link = MagicMock(side_effect=[StopIteration])
+
+		proj = API.apiCalls.Project("project1","projectDescription", "999")
+		sample = API.apiCalls.Sample({})
+
+		with self.assertRaises(API.apiCalls.ProjectError) as err:
+			seqRes=api.get_sequence_files(proj, sample)
+
+		self.assertTrue(proj.getID() + " doesn't exist"
+						in str(err.exception))
+
+
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
 		sendProjects=API.apiCalls.sendProjects
@@ -823,6 +846,7 @@ api_TestSuite.addTest(TestApiCalls("test_get_samples_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
 
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_valid"))
+api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
