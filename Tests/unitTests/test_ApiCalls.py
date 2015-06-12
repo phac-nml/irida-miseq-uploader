@@ -11,7 +11,6 @@ from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
 
-from Model.Project import Project
 
 import API.apiCalls
 
@@ -109,8 +108,8 @@ class TestApiCalls(unittest.TestCase):
 								mock_get_oauth_service, mock_get_access_token,
 								mock_validate_url_existence):
 
-		oauth_service=Foo()
-		access_token=Foo()
+		oauth_service = Foo()
+		access_token = Foo()
 		setattr(oauth_service, "get_session", lambda x: "newSession1")
 
 		mock_validate_url_form.side_effect = [True]
@@ -118,8 +117,8 @@ class TestApiCalls(unittest.TestCase):
 		mock_get_access_token.side_effect = [access_token]
 		mock_validate_url_existence.side_effect=[True]
 
-		base_URL1="http://localhost:8080"
-		api1=API.apiCalls.ApiCalls(
+		base_URL1 = "http://localhost:8080"
+		api1 = API.apiCalls.ApiCalls(
 		  client_id="",
 		  client_secret="",
 		  base_URL=base_URL1,
@@ -139,8 +138,8 @@ class TestApiCalls(unittest.TestCase):
 								mock_get_oauth_service, mock_get_access_token,
 								mock_validate_url_existence):
 
-		oauth_service=Foo()
-		access_token=Foo()
+		oauth_service = Foo()
+		access_token = Foo()
 		setattr(oauth_service, "get_session", lambda x: "newSession2")
 
 		mock_validate_url_form.side_effect = [True]
@@ -148,8 +147,8 @@ class TestApiCalls(unittest.TestCase):
 		mock_get_access_token.side_effect = [access_token]
 		mock_validate_url_existence.side_effect=[True]
 
-		base_URL2="http://localhost:8080/"
-		api2=API.apiCalls.ApiCalls(
+		base_URL2 = "http://localhost:8080/"
+		api2 = API.apiCalls.ApiCalls(
 		  client_id="",
 		  client_secret="",
 		  base_URL=base_URL2,
@@ -218,7 +217,7 @@ class TestApiCalls(unittest.TestCase):
 		mock_validate_url_existence.side_effect = [True]
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -263,7 +262,7 @@ class TestApiCalls(unittest.TestCase):
 		mock_validate_url_existence.side_effect = [True]
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -313,7 +312,7 @@ class TestApiCalls(unittest.TestCase):
 		mock_validate_url_existence.side_effect = [False]
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -388,7 +387,7 @@ class TestApiCalls(unittest.TestCase):
 		mock_validate_url_existence.side_effect = [True]
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -438,7 +437,7 @@ class TestApiCalls(unittest.TestCase):
 		mock_validate_url_existence.side_effect = [True]
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -495,13 +494,13 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		p1_dict={
+		p1_dict = {
 			"identifier" : "1",
 			"name" : "project1",
 			"projectDescription" : ""
 		}
 
-		p2_dict={
+		p2_dict = {
 			"identifier" : "2",
 			"name" : "project2",
 			"projectDescription" : "p2"
@@ -595,7 +594,7 @@ class TestApiCalls(unittest.TestCase):
 
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -603,7 +602,7 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		s1_dict={
+		sample_dict = {
 			"sequencerSampleId" : "03-3333",
       		"description" : "The 53rd sample",
       		"sampleName" : "03-3333",
@@ -613,7 +612,7 @@ class TestApiCalls(unittest.TestCase):
 		json_obj = {
 			"resource" : {
 				"resources" : [
-					s1_dict
+					sample_dict
 				]
 			}
 		}
@@ -628,18 +627,38 @@ class TestApiCalls(unittest.TestCase):
 		api.session = session
 		api.get_link = lambda x, y, targ_dict="" :None
 
-		proj=Project("project1","projectDescription", "1")
-		sample_list=api.get_samples(proj)
+		proj=API.apiCalls.Project("project1","projectDescription", "1")
+		sample_list = api.get_samples(proj)
 
 		self.assertEqual(len(sample_list), 1)
-		self.assertEqual(set(s1_dict.keys()),
-							set(sample_list[0].getDict().keys()))
-		self.assertEqual(set(s1_dict.values()),
-							set(sample_list[0].getDict().values()))
+		self.assertEqual(sample_dict.items(),
+						sample_list[0].getDict().items())
 
 	@patch("API.apiCalls.ApiCalls.create_session")
 	def test_get_samples_invalid_proj_id(self, mock_cs):
 
+		mock_cs.side_effect = [None]
+
+		api = API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		api.get_link = MagicMock(side_effect=[StopIteration])
+
+		proj = API.apiCalls.Project("project1","projectDescription", "999")
+
+		with self.assertRaises(API.apiCalls.ProjectError) as err:
+			api.get_samples(proj)
+
+		self.assertTrue(proj.getID() + " doesn't exist"
+						in str(err.exception))
+
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_sequence_files_valid(self, mock_cs):
 		mock_cs.side_effect = [None]
 
 		api=API.apiCalls.ApiCalls(
@@ -650,16 +669,47 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		api.get_link=MagicMock(side_effect=[StopIteration])
+		seq_dict = {
+			"file" : "/tmp/sequence-files/12/2/03-3333_S1_L001_R2_001.fastq",
+      		"fileName" : "03-3333_S1_L001_R2_001.fastq",
+			"identifier" : "12",
+			"links" : [{
+				"rel" : "self",
+				"href" : "http://localhost:8080/api/projects/4/samples/53/sequenceFiles/12"
+			}]
+		}
 
-		proj=Project("project1","projectDescription", "999")
+		json_obj = {
+			"resource" : {
+				"resources" : [
+					seq_dict
+				]
+			}
+		}
 
-		with self.assertRaises(API.apiCalls.ProjectError) as err:
-			api.get_samples(proj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		self.assertTrue(proj.getID() + " doesn't exist"
-						in str(err.exception))
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"get", session_get)
 
+		api.session = session
+		api.get_link = lambda x, y, targ_dict="" :None
+
+		sample_dict = {
+			"sequencerSampleId" : "03-3333",
+      		"description" : "The 53rd sample",
+      		"sampleName" : "03-3333",
+			"identifier" : "1"#
+		}
+
+		proj = API.apiCalls.Project("project1","projectDescription", "1")
+		sample = API.apiCalls.Sample(sample_dict)
+		seqRes=api.get_sequence_files(proj, sample)
+
+		self.assertEqual(len(seqRes),1)
+		self.assertEqual(seq_dict.items(), seqRes[0].items())
 
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
@@ -771,6 +821,8 @@ api_TestSuite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
 
 api_TestSuite.addTest(TestApiCalls("test_get_samples_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
+
+api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_valid"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
