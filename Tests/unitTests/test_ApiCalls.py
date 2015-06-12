@@ -637,6 +637,30 @@ class TestApiCalls(unittest.TestCase):
 		self.assertEqual(set(s1_dict.values()),
 							set(sample_list[0].getDict().values()))
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_samples_invalid_proj_id(self, mock_cs):
+
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		api.get_link=MagicMock(side_effect=[StopIteration])
+
+		proj=Project("project1","projectDescription", "999")
+
+		with self.assertRaises(API.apiCalls.ProjectError) as err:
+			api.get_samples(proj)
+
+		self.assertTrue(proj.getID() + " doesn't exist"
+						in str(err.exception))
+
+
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
 		sendProjects=API.apiCalls.sendProjects
@@ -746,6 +770,7 @@ api_TestSuite.addTest(TestApiCalls("test_get_projects_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
 
 api_TestSuite.addTest(TestApiCalls("test_get_samples_valid"))
+api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
