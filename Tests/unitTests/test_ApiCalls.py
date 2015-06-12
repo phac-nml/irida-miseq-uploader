@@ -733,6 +733,34 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue(proj.getID() + " doesn't exist"
 						in str(err.exception))
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_sequence_files_invalid_sample(self, mock_cs):
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+		#proj_URL, sample_URL, url->sample/sequenceFiles
+		api.get_link = MagicMock(side_effect=[None,None,StopIteration])
+
+		sample_dict = {
+			"sequencerSampleId" : "03-3333",
+      		"description" : "The 53rd sample",
+      		"sampleName" : "03-3333",
+			"identifier" : "1"
+		}
+		proj = API.apiCalls.Project("project1","projectDescription", "999")
+		sample = API.apiCalls.Sample(sample_dict)
+
+		with self.assertRaises(API.apiCalls.SampleError) as err:
+			api.get_sequence_files(proj, sample)
+
+		self.assertTrue(sample.getID() + " doesn't exist"
+						in str(err.exception))
 
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
@@ -847,6 +875,7 @@ api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
 
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
+api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
