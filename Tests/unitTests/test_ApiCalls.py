@@ -660,7 +660,7 @@ class TestApiCalls(unittest.TestCase):
 	def test_get_sequence_files_valid(self, mock_cs):
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -714,7 +714,7 @@ class TestApiCalls(unittest.TestCase):
 	def test_get_sequence_files_invalid_proj(self, mock_cs):
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -737,7 +737,7 @@ class TestApiCalls(unittest.TestCase):
 	def test_get_sequence_files_invalid_sample(self, mock_cs):
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -767,7 +767,7 @@ class TestApiCalls(unittest.TestCase):
 
 		mock_cs.side_effect = [None]
 
-		api=API.apiCalls.ApiCalls(
+		api = API.apiCalls.ApiCalls(
 			client_id="",
 			client_secret="",
 			base_URL="",
@@ -797,50 +797,31 @@ class TestApiCalls(unittest.TestCase):
 		api.get_link = lambda x, y, targ_dict="" :None
 		proj = API.apiCalls.Project("project1","projectDescription", "1")
 
-		jsonRes=api.send_project(proj)
-		self.assertEqual(json_dict, jsonRes)
+		json_res = api.send_project(proj)
+		self.assertEqual(json_dict, json_res)
 
-	def test_sendProjects_invalid(self):
-		createSession=API.apiCalls.createSession
-		sendProjects=API.apiCalls.sendProjects
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_send_project_invalid_name(self, mock_cs):
 
-		baseURL="http://localhost:8080/api/"
-		username="admin"
-		password="password1"
-		headers = {'headers': {'Content-Type':'application/json'}}
+		mock_cs.side_effect = [None]
 
-		mockResponse=OAuth2Session('123','456', access_token='321')
-		jsonResponse=json.dumps(
-		{
-			"resource":
-			{
-				"projectDescription" : "This is a test project",
-				"name" : "testProject",
-				"identifier" : "123",
-				"createdDate" : 1433173545000
-			}
-		})
-		setattr(mockResponse,"text", jsonResponse)
-		setattr(mockResponse,"status_code", httplib.CREATED)
+		api = API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
 
-		API.apiCalls.urlopen=self.setUpMock(urlopen)
+		proj = API.apiCalls.Project("p","projectDescription", "1")
 
-		funcHolder=API.apiCalls.OAuth2Session.post
-		API.apiCalls.OAuth2Session.post=self.setUpMock(API.apiCalls.OAuth2Session.post, [mockResponse] )
+		with self.assertRaises(API.apiCalls.ProjectError) as err:
+			api.send_project(proj)
 
-		session=createSession(baseURL, username, password)
-
-		projToSend= {"projectDescription": "This project has no name"}
-
-		with self.assertRaises(API.apiCalls.ProjectError) as context:
-			res=sendProjects(session , baseURL, projToSend)
-
-		self.assertTrue("Missing project name" in str(context.exception))
-
-		if self.mocking==True:
-			assert not API.apiCalls.OAuth2Session.post.called
-
-		API.apiCalls.OAuth2Session.post=funcHolder
+		self.assertTrue("Invalid project name: " + proj.getName() in
+							str(err.exception))
+		self.assertTrue("A project requires a name that must be 5 or more characters" in
+						str(err.exception))
 
 
 api_TestSuite= unittest.TestSuite()
@@ -872,9 +853,8 @@ api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
 api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
 
 api_TestSuite.addTest(TestApiCalls("test_send_project_valid"))
+api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_name"))
 
-#api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
-#api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
 if __name__=="__main__":
 	suiteList=[]
