@@ -228,7 +228,6 @@ class TestApiCalls(unittest.TestCase):
 		targ_key = "project"
 		targ_link = "http://localhost:8080/api/project"
 
-		session = Foo()
 		json_obj = {
 			"resource" : {
 				"links" : [
@@ -240,12 +239,11 @@ class TestApiCalls(unittest.TestCase):
 			}
 		}
 
-		#session.get will return json_response
-		#json_response has a callable json attribute that returns json_obj
-		json_response = Foo()
-		setattr(json_response,"json", lambda: json_obj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		session_get = MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
 		setattr(session,"get", session_get)
 
 		api.session = session
@@ -275,7 +273,6 @@ class TestApiCalls(unittest.TestCase):
 		targ_key = "project"
 		targ_link = "http://localhost:8080/api/project"
 
-		session = Foo()
 		json_obj = {
 			"resource" : {
 				"resources" : [{
@@ -291,12 +288,11 @@ class TestApiCalls(unittest.TestCase):
 			}
 		}
 
-		#session.get will return json_response
-		#json_response has a callable json attribute that returns json_obj
-		json_response = Foo()
-		setattr(json_response,"json", lambda: json_obj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		session_get = MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
 		setattr(session,"get", session_get)
 
 		api.session = session
@@ -355,7 +351,6 @@ class TestApiCalls(unittest.TestCase):
 		targ_link = "http://localhost:8080/api/project"
 		invalid_key = "notProject"
 
-		session = Foo()
 		json_obj = {
 			"resource" : {
 				"links" : [
@@ -367,12 +362,11 @@ class TestApiCalls(unittest.TestCase):
 			}
 		}
 
-		#session.get will return json_response
-		#json_response has a callable json attribute that returns json_obj
-		json_response = Foo()
-		setattr(json_response,"json", lambda: json_obj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		session_get = MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
 		setattr(session,"get", session_get)
 
 		api.session = session
@@ -404,7 +398,6 @@ class TestApiCalls(unittest.TestCase):
 		targ_key = "project"
 		targ_link = "http://localhost:8080/api/project"
 
-		session = Foo()
 		json_obj = {
 			"resource" : {
 				"resources" : [{
@@ -420,12 +413,11 @@ class TestApiCalls(unittest.TestCase):
 			}
 		}
 
-		#session.get will return json_response
-		#json_response has a callable json attribute that returns json_obj
-		json_response = Foo()
-		setattr(json_response,"json", lambda: json_obj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		session_get = MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
 		setattr(session,"get", session_get)
 
 		api.session = session
@@ -456,7 +448,6 @@ class TestApiCalls(unittest.TestCase):
 		targ_key = "project"
 		targ_link = "http://localhost:8080/api/project"
 
-		session = Foo()
 		json_obj = {
 			"resource" : {
 				"resources" : [
@@ -473,12 +464,11 @@ class TestApiCalls(unittest.TestCase):
 			}
 		}
 
-		#session.get will return json_response
-		#json_response has a callable json attribute that returns json_obj
-		json_response = Foo()
-		setattr(json_response,"json", lambda: json_obj)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		session_get = MagicMock(side_effect=[json_response])
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
 		setattr(session,"get", session_get)
 
 		api.session = session
