@@ -11,6 +11,8 @@ from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
 
+from Model.Project import Project
+
 import API.apiCalls
 
 class Foo(object):
@@ -480,50 +482,66 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue("Available keys: identifier" in str(err.exception))
 		api.session.get.assert_called_with(targ_URL)
 
-	###Below still needs to be updated
-	def test_getProjects(self):
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_projects_valid(self, mock_cs):
 
-		createSession=API.apiCalls.createSession
-		getProjects=API.apiCalls.getProjects
+		mock_cs.side_effect = [None]
 
-		baseURL="http://localhost:8080/api/"
-		username="admin"
-		password="password1"
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
 
-		API.apiCalls.urlopen=self.setUpMock(urlopen)
+		targ_URL = "http://localhost:8080/api/"
+		targ_key = "project"
+		targ_link = "http://localhost:8080/api/project"
 
-		session=createSession(baseURL, username, password)
+		p1_dict={
+			"identifier" : "1",
+			"name" : "project1",
+			"projectDescription" : ""
+		}
 
-		projectLinkResponse=OAuth2Session('123','456', access_token='321')
-		projectsListResponse=OAuth2Session('123','456', access_token='321')
+		p2_dict={
+			"identifier" : "2",
+			"name" : "project2",
+			"projectDescription" : "p2"
+		}
 
-		projectLinkJson={u'resource':{u'links':[{'rel':u'projects',u'href':u'http://localhost:8080/api/projects'}]}}
-		projectsListJson={u'resource':{u'resources': [{u'projectDescription': None, u'identifier': u'1', u'name': u'Project1',u'createdDate':1432050859000},{u'projectDescription': None, u'identifier': u'2', u'name':u'Project 3', u'createdDate':1432050853000}]}, u'links':[		{'rel':u'projects',u'href':u'http://localhost:8080/api/projects'}]}
+		json_obj = {
+			"resource" : {
+				"resources" : [
+					p1_dict,
+					p2_dict
+				]
+			}
+		}
 
-		setattr(projectLinkResponse,"json", lambda : projectLinkJson)#lambda returns function - since json attribute will be a callable function (i.e mockResponse.json() instead of mockResponse.json)
-		setattr(projectLinkResponse,"status_code", httplib.OK)
-		setattr(projectsListResponse,"json", lambda : projectsListJson)
-		setattr(projectsListResponse,"status_code", httplib.OK)
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
 
-		funcHolder=API.apiCalls.OAuth2Session.get
-		API.apiCalls.OAuth2Session.get=self.setUpMock(OAuth2Session.get, [projectLinkResponse, projectsListResponse] )
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"get", session_get)
 
-		projList=getProjects(session, baseURL)
+		api.session = session
+		api.get_link = lambda x, y :None
 
-		if self.mocking==True:#only test if mocking enabled since irida server actually returns number of projects (>100)
-			API.apiCalls.OAuth2Session.get.assert_called_with(projectLinkJson["resource"]["links"][0]["href"])
-			self.assertEqual(len(projList), 2)
-			projNames= [ proj["name"] for proj in projList ]
-			expectedRes= [ proj["name"] for proj in projectsListJson["resource"]["resources"] ]
-			self.assertEqual(projNames, expectedRes)
+		proj_list=api.get_projects()
+		self.assertEqual(len(proj_list), 2)
 
+		self.assertEqual(proj_list[0].getID(), p1_dict["identifier"])
+		self.assertEqual(proj_list[0].getName(), p1_dict["name"])
+		self.assertEqual(proj_list[0].getDescription(),
+							p1_dict["projectDescription"])
 
-		expectedKeys=set( ("name","projectDescription") )
-		for proj in projList:
-			self.assertTrue( all([key in proj.keys() for key in expectedKeys]))
-
-		API.apiCalls.OAuth2Session.get=funcHolder
-
+		self.assertEqual(proj_list[1].getID(), p2_dict["identifier"])
+		self.assertEqual(proj_list[1].getName(), p2_dict["name"])
+		self.assertEqual(proj_list[1].getDescription(),
+							p2_dict["projectDescription"])
 
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
@@ -627,7 +645,8 @@ api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_url_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
-#api_TestSuite.addTest( TestApiCalls("test_getProjects") )
+api_TestSuite.addTest(TestApiCalls("test_get_projects_valid"))
+#api_TestSuite.addTest(TestApiCalls("test_getProjects_invalid_missing_key"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
