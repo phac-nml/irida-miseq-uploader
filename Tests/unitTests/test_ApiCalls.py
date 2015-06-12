@@ -495,10 +495,6 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		targ_URL = "http://localhost:8080/api/"
-		targ_key = "project"
-		targ_link = "http://localhost:8080/api/project"
-
 		p1_dict={
 			"identifier" : "1",
 			"name" : "project1",
@@ -556,10 +552,6 @@ class TestApiCalls(unittest.TestCase):
 			password=""
 		)
 
-		targ_URL = "http://localhost:8080/api/"
-		targ_key = "project"
-		targ_link = "http://localhost:8080/api/project"
-
 		p1_dict={
 			"identifier" : "1",
 
@@ -597,6 +589,53 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue("name not found" in str(err.exception))
 		self.assertTrue("Available keys: projectDescription, identifier"
 						in str(err.exception))
+
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_get_samples_valid(self, mock_cs):
+
+		mock_cs.side_effect = [None]
+
+		api=API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		s1_dict={
+			"sequencerSampleId" : "03-3333",
+      		"description" : "The 53rd sample",
+      		"sampleName" : "03-3333",
+			"identifier" : "1"#
+		}
+
+		json_obj = {
+			"resource" : {
+				"resources" : [
+					s1_dict
+				]
+			}
+		}
+
+		session_response = Foo()
+		setattr(session_response,"json", lambda: json_obj)
+
+		session_get = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"get", session_get)
+
+		api.session = session
+		api.get_link = lambda x, y, targ_dict="" :None
+
+		proj=Project("project1","projectDescription", "1")
+		sample_list=api.get_samples(proj)
+
+		self.assertEqual(len(sample_list), 1)
+		self.assertEqual(set(s1_dict.keys()),
+							set(sample_list[0].getDict().keys()))
+		self.assertEqual(set(s1_dict.values()),
+							set(sample_list[0].getDict().values()))
 
 	def test_sendProjects_valid(self):
 		createSession=API.apiCalls.createSession
@@ -690,18 +729,23 @@ api_TestSuite= unittest.TestSuite()
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_raise_err"))
 api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_not_found"))
+
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_no_slash"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_form"))
 api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_session"))
+
 api_TestSuite.addTest(TestApiCalls("test_get_link_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_valid_targ_dict"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_url_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
 api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
+
 api_TestSuite.addTest(TestApiCalls("test_get_projects_valid"))
 api_TestSuite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
+
+api_TestSuite.addTest(TestApiCalls("test_get_samples_valid"))
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_valid") )
 #api_TestSuite.addTest( TestApiCalls("test_sendProjects_invalid") )
 
