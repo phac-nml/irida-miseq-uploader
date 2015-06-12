@@ -823,6 +823,38 @@ class TestApiCalls(unittest.TestCase):
 		self.assertTrue("A project requires a name that must be 5 or more characters" in
 						str(err.exception))
 
+	@patch("API.apiCalls.ApiCalls.create_session")
+	def test_send_project_invalid_server_res(self, mock_cs):
+
+		mock_cs.side_effect = [None]
+
+		api = API.apiCalls.ApiCalls(
+			client_id="",
+			client_secret="",
+			base_URL="",
+			username="",
+			password=""
+		)
+
+		session_response = Foo()
+		setattr(session_response,"status_code", httplib.INTERNAL_SERVER_ERROR)
+		setattr(session_response,"text", "Server unavailable")
+
+		session_post = MagicMock(side_effect=[session_response])
+		session = Foo()
+		setattr(session,"post", session_post)
+
+		api.session = session
+		api.get_link = lambda x, y, targ_dict="" :None
+
+		proj = API.apiCalls.Project("project1","projectDescription", "1")
+
+		with self.assertRaises(API.apiCalls.ProjectError) as err:
+			api.send_project(proj)
+
+		self.assertTrue(str(session_response.status_code) + " " +
+						session_response.text in str(err.exception))
+
 
 api_TestSuite= unittest.TestSuite()
 
@@ -854,6 +886,7 @@ api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
 
 api_TestSuite.addTest(TestApiCalls("test_send_project_valid"))
 api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_name"))
+api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_server_res"))
 
 
 if __name__=="__main__":
