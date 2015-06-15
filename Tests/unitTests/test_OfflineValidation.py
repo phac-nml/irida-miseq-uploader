@@ -14,7 +14,7 @@ if len(pathToModule)==0:
 class TestOfflineValidation(unittest.TestCase):
 
 	def setUp(self):
-		print "\nStarting ", self._testMethodName
+		print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
 	def test_validateSampleSheet_validSheet(self):
 		csvFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")

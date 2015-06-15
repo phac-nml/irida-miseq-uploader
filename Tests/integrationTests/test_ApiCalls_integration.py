@@ -23,12 +23,11 @@ password="password1"
 class TestApiIntegration(unittest.TestCase):
 
 	def setUp(self):
-
-		print "\nStarting ", self._testMethodName
+		print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
 	def test_connect_and_authenticate(self):
 
-		apiCalls=ApiCalls(
+		api=ApiCalls(
 			client_id=client_id,
 			client_secret=client_secret,
 			base_URL=base_URL,
@@ -36,10 +35,23 @@ class TestApiIntegration(unittest.TestCase):
 			password=password
 		)
 
+	def test_get_projects(self):
+
+		api=ApiCalls(
+			client_id=client_id,
+			client_secret=client_secret,
+			base_URL=base_URL,
+			username=username,
+			password=password
+		)
+
+		proj_list=api.get_projects()
+		self.assertTrue (len(proj_list) > 0)
+
 
 api_integration_TestSuite = unittest.TestSuite()
 api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authenticate"))
-
+api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
 if __name__=="__main__":
 	suiteList=[]
 
