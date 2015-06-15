@@ -116,6 +116,40 @@ class TestApiIntegration(unittest.TestCase):
 		self.assertEqual(proj_name, added_proj.getName())
 		self.assertEqual(proj_description, added_proj.getDescription())
 
+	def test_send_samples(self):
+
+		api=ApiCalls(
+			client_id=client_id,
+			client_secret=client_secret,
+			base_URL=base_URL,
+			username=username,
+			password=password
+		)
+
+		proj_list = api.get_projects()
+		proj = proj_list[0]
+
+		starting_list_len = len(api.get_samples(proj))
+
+		sample_dict = {
+			"sampleName" : "sample1",
+			"description" : "sample1 description",
+			"sequencerSampleId" : str(starting_list_len)*3
+			#sequencer sample ID must have at least 3 characters
+		}
+
+		sample = Sample(sample_dict)
+		api.send_samples(proj, [sample])
+
+		sample_list = api.get_samples(proj)
+		new_list_len = len(sample_list)
+
+		self.assertEqual(starting_list_len + 1, new_list_len)
+
+		added_sample = sample_list[len(sample_list)-1]
+		for key in sample_dict.keys():
+			self.assertEqual(sample[key], added_sample.get(key))
+
 
 api_integration_TestSuite = unittest.TestSuite()
 
@@ -124,6 +158,7 @@ api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_send_samples"))
 
 if __name__=="__main__":
 	suiteList=[]
