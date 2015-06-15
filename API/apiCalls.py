@@ -79,8 +79,8 @@ class ApiCalls:
 
         access_token_url = urljoin(self.base_URL, "oauth/token")
         oauth_serv = OAuth2Service(
-            client_id=client_id,
-            client_secret=client_secret,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
             name="irida",
             access_token_url=access_token_url,
             base_url=self.base_URL
@@ -102,8 +102,8 @@ class ApiCalls:
         params = {
             "data" : {
                 "grant_type":"password",
-                "client_id":client_id,
-                "client_secret":client_secret,
+                "client_id":self.client_id,
+                "client_secret":self.client_secret,
                 "username":self.username,
                 "password":self.password
             }
