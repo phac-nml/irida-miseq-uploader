@@ -71,12 +71,33 @@ class TestApiIntegration(unittest.TestCase):
 		for key in required_keys:
 			self.assertTrue(key in sample_dict)
 
+	def test_get_sequence_files(self):
+
+		api=ApiCalls(
+			client_id=client_id,
+			client_secret=client_secret,
+			base_URL=base_URL,
+			username=username,
+			password=password
+		)
+
+		proj_list = api.get_projects()
+		proj = proj_list[3]
+		sample_list = api.get_samples(proj)
+		sample = sample_list[50]
+
+		seqFiles = api.get_sequence_files(proj, sample)
+
+		self.assertTrue(len(seqFiles) > 0)
+		self.assertTrue("file" in seqFiles[0])
+
 
 api_integration_TestSuite = unittest.TestSuite()
 
 api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authenticate"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
 
 if __name__=="__main__":
 	suiteList=[]
