@@ -6,7 +6,7 @@ from os import path
 
 from API.apiCalls import ApiCalls
 from Model.Project import Project
-
+from Model.Sample import Sample
 
 path_to_module=path.dirname(__file__)
 if len(path_to_module)==0:
@@ -91,6 +91,31 @@ class TestApiIntegration(unittest.TestCase):
 		self.assertTrue(len(seqFiles) > 0)
 		self.assertTrue("file" in seqFiles[0])
 
+	def test_send_project(self):
+
+		api=ApiCalls(
+			client_id=client_id,
+			client_secret=client_secret,
+			base_URL=base_URL,
+			username=username,
+			password=password
+		)
+
+		proj_name = "new project1"
+		proj_description = "new project1 description"
+		proj = Project(proj_name, proj_description)
+
+		starting_proj_len = len(api.get_projects())
+		api.send_project(proj)
+
+		proj_list = api.get_projects()
+		new_proj_len = len(proj_list)
+		self.assertEqual(starting_proj_len + 1, new_proj_len)
+
+		added_proj = proj_list[len(proj_list)-1]
+		self.assertEqual(proj_name, added_proj.getName())
+		self.assertEqual(proj_description, added_proj.getDescription())
+
 
 api_integration_TestSuite = unittest.TestSuite()
 
@@ -98,6 +123,7 @@ api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authentic
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
 
 if __name__=="__main__":
 	suiteList=[]
