@@ -5,6 +5,7 @@ from ConfigParser import RawConfigParser
 from os import path
 
 from API.apiCalls import ApiCalls
+from Model.Project import Project
 
 
 path_to_module=path.dirname(__file__)
@@ -45,13 +46,38 @@ class TestApiIntegration(unittest.TestCase):
 			password=password
 		)
 
-		proj_list=api.get_projects()
+		proj_list = api.get_projects()
 		self.assertTrue (len(proj_list) > 0)
+
+	def test_get_samples(self):
+
+		api=ApiCalls(
+			client_id=client_id,
+			client_secret=client_secret,
+			base_URL=base_URL,
+			username=username,
+			password=password
+		)
+
+		proj_list = api.get_projects()
+		proj = proj_list[3]# first project to have samples in newly setup irida
+		sample_list = api.get_samples(proj)
+		self.assertTrue(len(sample_list) > 0)
+
+		required_keys = ["sampleName","description","sequencerSampleId"]
+		sample = sample_list[0]
+		sample_dict = sample.getDict()
+
+		for key in required_keys:
+			self.assertTrue(key in sample_dict)
 
 
 api_integration_TestSuite = unittest.TestSuite()
+
 api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authenticate"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
+
 if __name__=="__main__":
 	suiteList=[]
 
