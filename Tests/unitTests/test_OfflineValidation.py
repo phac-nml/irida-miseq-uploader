@@ -17,12 +17,12 @@ class TestOfflineValidation(unittest.TestCase):
 		print "\nStarting ", self._testMethodName
 
 	def test_validateSampleSheet_validSheet(self):
-		csvFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
+		csvFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
 		vRes=validateSampleSheet(csvFile)
 		self.assertTrue( vRes.isValid() )
 
 	def test_validateSampleSheet_emptySheet(self):
-		csvFile=pathToModule+"/testSampleSheets/emptySampleSheet.csv"
+		csvFile=path.join(pathToModule,"testSampleSheets","emptySampleSheet.csv")
 		vRes=validateSampleSheet(csvFile)
 		self.assertFalse( vRes.isValid() )
 		self.assertEqual( vRes.errorCount(), 3)
@@ -32,7 +32,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue( "[Data] section not found in SampleSheet" in vRes.getErrors())
 
 	def test_validateSampleSheet_missing_DataHeader(self):
-		csvFile=pathToModule+"/testSampleSheets/missingDataHeader.csv"#has [Header]+[Data] but missing required data header (Sample_Project)
+		csvFile=path.join(pathToModule,"testSampleSheets","missingDataHeader.csv")#has [Header]+[Data] but missing required data header (Sample_Project)
 		vRes=validateSampleSheet(csvFile)
 		self.assertFalse( vRes.isValid() )
 		self.assertEqual( vRes.errorCount(), 1)
@@ -40,7 +40,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue( "Missing required data header(s): Sample_Project" in vRes.getErrors())
 
 	def test_validateSampleSheet_missing_HeaderSection(self):
-		csvFile=pathToModule+"/testSampleSheets/missingHeaderSection.csv"#has [Data] and required data headers but missing [Header]
+		csvFile=path.join(pathToModule,"testSampleSheets","missingHeaderSection.csv")#has [Data] and required data headers but missing [Header]
 		vRes=validateSampleSheet(csvFile)
 		self.assertFalse( vRes.isValid() )
 		self.assertEqual( vRes.errorCount(), 1)
@@ -48,7 +48,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
 
 	def test_validatePairFiles_valid(self):
-		dataDir=pathToModule+"/fake_ngs_data"
+		dataDir=path.join(pathToModule,"fake_ngs_data")
 
 		sampleID="01-1111"
 		pfList1=getPairFiles(dataDir,sampleID)
@@ -80,7 +80,7 @@ class TestOfflineValidation(unittest.TestCase):
 
 
 	def test_validatePairFiles_invalid_oddLength(self):
-		dataDir=pathToModule+"/testSeqPairFiles/oddLength"
+		dataDir=path.join(pathToModule,"testSeqPairFiles","oddLength")
 
 		sampleID="01-1111"
 		pfList=getPairFiles(dataDir,sampleID)
@@ -93,7 +93,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue("The given file list has an odd number of files" in vRes.getErrors())
 
 	def test_validatePairFiles_invalid_noPair(self):
-		dataDir=pathToModule+"/testSeqPairFiles/noPair"
+		dataDir=path.join(pathToModule,"testSeqPairFiles","noPair")
 
 		sampleID="01-1111"
 		pfList1=getPairFiles(dataDir,sampleID)
@@ -129,7 +129,7 @@ class TestOfflineValidation(unittest.TestCase):
 
 
 	def test_validatePairFiles_invalid_seqFiles(self):
-		dataDir=pathToModule+"/testSeqPairFiles/invalidSeqFiles"
+		dataDir=path.join(pathToModule,"testSeqPairFiles","invalidSeqFiles")
 
 		sampleID="01-1111"
 		pfList1=getPairFiles(dataDir,sampleID)
@@ -163,7 +163,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue("doesn't contain either 'R1' or 'R2' in filename" in vRes3.getErrors())
 
 	def test_validateSampleList_valid(self):
-		csvFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
+		csvFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
 
 		samplesList=parseSamples(csvFile)
 		self.assertEqual( len(samplesList), 3)
@@ -174,7 +174,7 @@ class TestOfflineValidation(unittest.TestCase):
 		self.assertTrue( "No error messages" in vRes.getErrors() )
 
 	def test_validateSampleList_invalid_noSampleProj(self):
-		csvFile=pathToModule+"/testSeqPairFiles/noSampleProj/SampleSheet.csv"#missing Sample_Project
+		csvFile=path.join(pathToModule,"testSeqPairFiles","noSampleProj","SampleSheet.csv")#missing Sample_Project
 
 		samplesList=parseSamples(csvFile)
 
@@ -198,29 +198,24 @@ class TestOfflineValidation(unittest.TestCase):
 	def test_validateURLForm(self):
 		urlList=[
 			{"url":"http://google.com/",
-			"valid":True, "msgs":["No error messages"]},
+			"valid":True},
 
 			{"url":"http://localhost:8080/",
-			"valid":True, "msgs":["No error messages"]},
+			"valid":True},
 
 			{"url":"www.google.com/",
-			"valid":False, "msgs":["must include scheme"]},
-
-			{"url":"http://google.com",
-			"valid":False, "msgs":["must end with '/'"]},
+			"valid":False},
 
 			{"url":"www.google.com",
-			"valid":False, "msgs":["must include scheme","must end with '/'"]},
+			"valid":False},
 
 			{"url":"google.com",
-			"valid":False, "msgs":["must include scheme","must end with '/'"]}
+			"valid":False}
 		]
 
 		for item in urlList:
-			vRes= validateURLForm( item["url"] )
-
-			self.assertEqual( vRes.isValid(), item["valid"] )
-			self.assertTrue( all( [msg in vRes.getErrors() for msg in item["msgs"] ] ) )
+			isValid= validateURLForm( item["url"] )
+			self.assertEqual( isValid, item["valid"] )
 
 
 offValidationTestSuite= unittest.TestSuite()

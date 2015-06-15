@@ -45,7 +45,7 @@ class ApiCalls:
         self.password = password
         self.max_wait_time = max_wait_time
 
-        self.session = self.create_session()
+        self.create_session()
 
     def create_session(self):
 
@@ -61,11 +61,13 @@ class ApiCalls:
         if validate_URL_Form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            session = oauth_service.get_session(access_token)
+            self.session = oauth_service.get_session(access_token)
+
+            if self.validate_URL_existence(self.base_URL, use_session=True)==False:
+                raise Exception("Cannot create session. Verify your credentials are correct.")
+
         else:
             raise URLError(self.base_URL + " is not a valid URL")
-
-        return session
 
     def get_oauth_service(self):
 
@@ -148,7 +150,7 @@ class ApiCalls:
             elif response.status_code == httplib.NOT_FOUND:
                 return False
             else:
-                raise Exception(str(response.status_code) + response.reason)
+                raise Exception(str(response.status_code) + " " + response.reason)
 
         else:
             response = urlopen(url, timeout=self.max_wait_time)
@@ -158,19 +160,20 @@ class ApiCalls:
             elif response.code == httplib.NOT_FOUND:
                 return False
             else:
-                raise Exception(str(response.code) + response.msg)
+                raise Exception(str(response.code) + " " + response.msg)
 
-    def get_link(self, targURL, targetKey, targ_Dict=""):
+
+    def get_link(self, targ_url, target_key, targ_dict=""):
 
         """
-        makes a call to targURL(api) expecting a json response
-        tries to retrieve targetKey from response to find link to that resource
-        raises exceptions if targetKey not found or targURL is invalid
+        makes a call to targ_url(api) expecting a json response
+        tries to retrieve target_key from response to find link to that resource
+        raises exceptions if target_key not found or targ_url is invalid
 
         arguments:
-            targURL -- URL to retrieve link from
-            targetKey -- name of link (e.g projects or project/samples)
-            targ_Dict -- optional dict containing key and value to search for in targets.
+            targ_url -- URL to retrieve link from
+            target_key -- name of link (e.g projects or project/samples)
+            targ_dict -- optional dict containing key and value to search for in targets.
             (e.g {key="identifier",value="100"} to retrieve where identifier=100 )
 
         returns link if it exists
@@ -178,28 +181,36 @@ class ApiCalls:
 
         retVal=None
 
-        if self.validate_URL_existence(targURL, use_session=True):
-            response = self.session.get(targURL)
+        if self.validate_URL_existence(targ_url, use_session=True):
+            response = self.session.get(targ_url)
 
-            if len(targ_Dict)>0:
+            if len(targ_dict)>0:
                 resources_List = response.json()["resource"]["resources"]
-                links_list = next(resource["links"] for resource in resources_List
-                                if resource[targ_Dict["key"]] == targ_Dict["value"])
+                try:
+                    links_list = next(resource["links"] for resource in resources_List
+                                if resource[targ_dict["key"]] == targ_dict["value"])
+
+                except KeyError:
+                    raise KeyError(targ_dict["key"] + " not found." +
+                                    " Available keys: " + ", ".join(resources_List[0].keys()))
+
+                except StopIteration:
+                    raise KeyError(targ_dict["value"] + " not found.")
 
             else:
                 links_list = response.json()["resource"]["links"]
+            try:
+                retVal = next(link["href"] for link in links_list
+                        if link["rel"] == target_key)
 
-            retVal = next(link["href"] for link in links_list
-                        if link["rel"] == targetKey)
-
-            if retVal == None:
-                raise KeyError(targetKey+" not found in links. " +
+            except StopIteration:
+                raise KeyError(target_key + " not found in links. " +
                 "Available links: " +
-                ",".join([ str(link["rel"]) for link in links_list])[:-1])
+                ", ".join([ str(link["rel"]) for link in links_list]))
 
         else:
             raise request_HTTPError("Error: " +
-                                    targURL + " is not a valid URL")
+                                    targ_url + " is not a valid URL")
 
         return retVal
 
@@ -215,14 +226,21 @@ class ApiCalls:
         response = self.session.get(url)
 
         result = response.json()["resource"]["resources"]
-        project_list = [
-            Project(
-                projDict["name"],
-                projDict["projectDescription"],
-                projDict["identifier"]
-            )
-            for projDict in result
-        ]
+        try:
+            project_list = [
+                Project(
+                    projDict["name"],
+                    projDict["projectDescription"],
+                    projDict["identifier"]
+                )
+                for projDict in result
+            ]
+
+        except KeyError, e:
+            e.args = map(str,e.args)
+            msgArg = " ".join(e.args)
+            raise KeyError(msgArg + " not found." + " Available keys: " +
+            ", ".join(result[0].keys()))
 
         return project_list
 
@@ -242,7 +260,7 @@ class ApiCalls:
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"identifier",
                                     "value":project_id
                                 })
@@ -277,7 +295,7 @@ class ApiCalls:
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
             sample_URL = self.get_link(proj_URL, "project/samples",
-                                        targ_Dict={
+                                        targ_dict={
                                             "key":"identifier",
                                             "value":project_id
                                         })
@@ -288,7 +306,7 @@ class ApiCalls:
 
         try:
             url = self.get_link(sample_URL, "sample/sequenceFiles",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"sequencerSampleId",
                                     "value":sample_id
                                 })
@@ -303,7 +321,7 @@ class ApiCalls:
 
         return result
 
-    def sendProjects(self, project):
+    def send_project(self, project):
 
         """
         post request to send a project to IRIDA via API
@@ -316,7 +334,7 @@ class ApiCalls:
         when post fails then an error will be raised so return statement is not even reached.
         """
 
-        jsonRes = None
+        json_res = None
         if len(project.getName()) >= 5:
             url = self.get_link(self.base_URL, "projects")
             json_obj = json.dumps(project.getDict())
@@ -329,7 +347,7 @@ class ApiCalls:
             response = self.session.post(url,json_obj, **headers)
 
             if response.status_code == httplib.CREATED:#201
-                jsonRes = json.loads(response.text)
+                json_res = json.loads(response.text)
             else:
                 raise ProjectError("Error: " +
                                 str(response.status_code) + " " + response.text)
@@ -339,7 +357,7 @@ class ApiCalls:
                                 project.getName() +
                                 ". A project requires a name that must be 5 or more characters.")
 
-        return jsonRes
+        return json_res
 
     def send_samples(self, project, samples_list):
 
@@ -353,17 +371,15 @@ class ApiCalls:
         returns a dictionary containing the result of post request.
         """
 
-        jsonRes = None
+        json_res = None
         project_id = project.getID()
         try:
-            proj_URL = self.get_link(base_URL, "projects")
+            proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
-                                targ_Dict={
+                                targ_dict={
                                     "key":"identifier",
                                     "value":project_id
                                 })
-
-            response = self.session.get(url)
 
         except StopIteration:
             raise ProjectError("The given project ID: " +
@@ -380,12 +396,12 @@ class ApiCalls:
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:#201
-                jsonRes = json.loads(response.text)
+                json_res = json.loads(response.text)
             else:
                 raise SampleError("Error: " +
                                 str(response.status_code) + " " + response.text)
 
-        return jsonRes
+        return json_res
 
 
 if __name__=="__main__":
@@ -408,7 +424,7 @@ if __name__=="__main__":
     print "#Project count:", len(proj_list)
 
     p=Project("projectX",projectDescription="orange")
-    print api.sendProjects(p)
+    print api.send_project(p)
 
     proj_list=api.get_projects()
     print "#Project count:", len(proj_list)
