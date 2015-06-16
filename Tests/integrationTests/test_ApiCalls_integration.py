@@ -7,19 +7,20 @@ from os import path
 from API.apiCalls import ApiCalls
 from Model.Project import Project
 from Model.Sample import Sample
+from apiCalls_integration_data_setup import data_setup
 
 path_to_module=path.dirname(__file__)
-if len(path_to_module)==0:
-	path_to_module="."
+if len(path_to_module) == 0:
+	path_to_module = "."
 
-conf_Parser=RawConfigParser()
+conf_Parser = RawConfigParser()
 conf_Parser.read(path.join(path_to_module,"..","..","config.conf"))
 
-client_id=conf_Parser.get("apiCalls","client_id")
-client_secret=conf_Parser.get("apiCalls","client_secret")
-base_URL="http://localhost:8080/api"
-username="admin"
-password="password1"
+client_id = conf_Parser.get("apiCalls","client_id")
+client_secret = conf_Parser.get("apiCalls","client_secret")
+base_URL = "http://localhost:8080/api"
+username = "admin"
+password = "password1"
 
 class TestApiIntegration(unittest.TestCase):
 
@@ -49,6 +50,10 @@ class TestApiIntegration(unittest.TestCase):
 		proj_list = api.get_projects()
 		self.assertTrue (len(proj_list) > 0)
 
+		proj = proj_list[len(proj_list)-1]#last project - added by setup data
+		self.assertEqual(proj.getName(), "integration testProject")
+		self.assertEqual(proj.getDescription(), "integration testProject description")
+
 	def test_get_samples(self):
 
 		api=ApiCalls(
@@ -60,14 +65,15 @@ class TestApiIntegration(unittest.TestCase):
 		)
 
 		proj_list = api.get_projects()
-		proj = proj_list[3]# first project to have samples in newly setup irida
+		proj = proj_list[len(proj_list)-1]
 		sample_list = api.get_samples(proj)
 		self.assertTrue(len(sample_list) > 0)
 
-		required_keys = ["sampleName","description","sequencerSampleId"]
-		sample = sample_list[0]
-		sample_dict = sample.getDict()
+		sample = sample_list[len(sample_list)-1]
+		self.assertEqual(sample.get("sampleName"), "integration_testSample")
 
+		required_keys = ["sampleName","description","sequencerSampleId"]
+		sample_dict = sample.getDict()
 		for key in required_keys:
 			self.assertTrue(key in sample_dict)
 
@@ -82,14 +88,21 @@ class TestApiIntegration(unittest.TestCase):
 		)
 
 		proj_list = api.get_projects()
-		proj = proj_list[3]
+		proj = proj_list[len(proj_list)-1]
 		sample_list = api.get_samples(proj)
-		sample = sample_list[50]
+		sample = sample_list[len(sample_list)-1]
 
-		seqFiles = api.get_sequence_files(proj, sample)
+		seqFileList = api.get_sequence_files(proj, sample)
+		self.assertEqual(len(seqFileList), 2)
 
-		self.assertTrue(len(seqFiles) > 0)
-		self.assertTrue("file" in seqFiles[0])
+		seqFile1 = seqFileList[0]
+		seqFile2 = seqFileList[1]
+		self.assertTrue("file" in seqFile1)
+		self.assertTrue("file" in seqFile2)
+		self.assertEqual(str(seqFile1["fileName"]),
+						"01-1111_S1_L001_R1_001.fastq")
+		self.assertEqual(str(seqFile2["fileName"]),
+						"01-1111_S1_L001_R2_001.fastq")
 
 	def test_send_project(self):
 
@@ -161,6 +174,8 @@ api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_send_samples"))
 
 if __name__=="__main__":
+	data_setup(base_URL[:base_URL.index("/api")+1], username, password)
+
 	suiteList=[]
 
 	suiteList.append(api_integration_TestSuite)
