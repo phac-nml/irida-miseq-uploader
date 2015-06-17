@@ -6,89 +6,130 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.support import expected_conditions as EC
-from urlparse import urljoin
+from urllib2 import urlopen, URLError
 from os import path
+from time import time, sleep
+import subprocess
+import httplib
+
 
 class SetupIridaData:
 
-	def __init__(self, base_url, user, password):
+	def __init__(self, base_URL, user, password):
 
-		self.base_URL = base_url
-		self.driver = webdriver.Chrome()
-		self.driver.implicitly_wait(30)
+		self.base_URL = base_URL
 		self.user = user
 		self.password = password
+		self.driver = None
+
+		self.IRIDA_PASSWORD_ID = 'password_client'
+		self.IRIDA_AUTH_CODE_ID = 'auth_code_client'
+		self.IRIDA_USER = "admin"
+		self.IRIDA_PASSWORD = "Password1" #new password
+
+		self.TIMEOUT = 600 # seconds
+
+		self.IRIDA_DB_RESET = 'echo '\
+			'"drop database if exists irida_test;'\
+			'create database irida_test;'\
+			'"| mysql -u test -ptest'
+
+		self.IRIDA_CMD = ['mvn', 'clean', 'jetty:run',
+					 '-Djdbc.url=jdbc:mysql://localhost:3306/irida_test',
+					 '-Djdbc.username=test', '-Djdbc.password=test',
+					 '-Dliquibase.update.database.schema=true',
+					 '-Dhibernate.hbm2ddl.auto=',
+					 '-Dhibernate.hbm2ddl.import_files=']
+
+		self.IRIDA_STOP = 'mvn jetty:stop'
+
+		self.PATH_TO_MODULE = path.dirname(__file__)
+		if len(self.PATH_TO_MODULE) == 0:
+			self.PATH_TO_MODULE = "."
+
+		self.SCRIPT_FOLDER = path.join(self.PATH_TO_MODULE,"bash_scripts")
+		self.INSTALL_IRIDA_EXEC = path.join(self.SCRIPT_FOLDER,"install_irida.sh")
+
+		self.REPO_PATH = path.join(self.PATH_TO_MODULE, "repos")
+		self.IRIDA_PATH = path.join(self.REPO_PATH, "irida")
+
+	def install_irida(self):
+		install_proc = subprocess.Popen(
+			[self.INSTALL_IRIDA_EXEC], cwd=self.PATH_TO_MODULE)
+		install_proc.wait()
+
+	def reset_irida_db(self):
+		db_reset_proc = subprocess.Popen(self.IRIDA_DB_RESET, shell=True)
+		db_reset_proc.wait()
+
+	def run_irida(self):
+		irida_server_proc = subprocess.Popen(self.IRIDA_CMD, cwd=self.IRIDA_PATH)
+		self.wait_until_up()
+
+	def wait_until_up(self):
+
+		start_time=time()
+		elapsed=0
+		status_code=-1
+		print "Waiting for " + self.base_URL
+
+		while(status_code != httplib.OK and elapsed < self.TIMEOUT):
+
+			try:
+				status_code=urlopen(self.base_URL).getcode()
+				elapsed=time()-start_time
+
+			except URLError,e:
+				sleep(10)
+
+	def start_driver(self):
+		self.driver = webdriver.Chrome()
+		self.driver.implicitly_wait(30)
 
 	def login(self):
 
-		self.driver.get(urljoin(self.base_URL, "login"))
+		self.driver.get(self.base_URL + "/login")
 		self.driver.find_element_by_id("emailTF").clear()
 		self.driver.find_element_by_id("emailTF").send_keys(self.user)
 		self.driver.find_element_by_id("passwordTF").clear()
 		self.driver.find_element_by_id("passwordTF").send_keys(self.password)
 		self.driver.find_element_by_id("submitBtn").click()
 
-	def create_project(self):
+	def set_new_admin_pw(self):
 
-		print "Creating project"
-		self.driver.get(urljoin(self.base_URL, "projects/all"))
-		self.driver.find_element_by_xpath("//a[@id='newProjectBtn']/span[2]").click()
-		self.driver.find_element_by_id("name").clear()
-		self.driver.find_element_by_id("name").send_keys("integration testProject")
-		self.driver.find_element_by_id("projectDescription").click()
-		self.driver.find_element_by_id("projectDescription").clear()
-		self.driver.find_element_by_id("projectDescription").send_keys("integration testProject description")
-		WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID,'submitBtn')))
-		self.driver.find_element_by_id("submitBtn").click()
+		self.driver.find_element_by_id("password").clear()
+		self.driver.find_element_by_id("password").send_keys(self.IRIDA_PASSWORD)
+		self.driver.find_element_by_id("confirmPassword").clear()
+		self.driver.find_element_by_id("confirmPassword").send_keys(self.IRIDA_PASSWORD)
+		self.driver.find_element_by_xpath("//button[@type='submit']").click()
 
-	def create_sample(self):
+	def create_client(self):
 
-		print "Creating sample"
-		self.driver.get(self.driver.current_url.replace("metadata","/samples/new"))
-		self.driver.find_element_by_id("sampleName").clear()
-		self.driver.find_element_by_id("sampleName").send_keys("integration_testSample")
-		WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID,"createBtn")))
-		self.driver.find_element_by_id("createBtn").click()
+		self.driver.get(self.base_URL + "/clients/create")
+		self.driver.find_element_by_id("clientId").send_keys(self.IRIDA_AUTH_CODE_ID)
 
-	def upload_fake_sequence_files(self):
+		auth_select=self.driver.find_element_by_id('s2id_authorizedGrantTypes')
+		auth_select.click()
+		webdriver.ActionChains(self.driver).move_to_element_with_offset(
+			self.driver.find_element_by_xpath("//*[contains(text(), 'password')]"), 5, 0).click().perform()
 
-		print "Uploading sequence files"
+		self.driver.find_element_by_id("scope_auto_read").click()
+		self.driver.find_element_by_id("scope_write").click()#for sending
+		self.driver.find_element_by_id("create-client-submit").click()
 
-		path_to_module = path.dirname(__file__)
-		if len(path_to_module) == 0:
-			path_to_module = "."
+	def get_irida_secret(self):
 
-		upload_button_element=self.driver.find_element_by_xpath("//h1[@id='page-title']/file-upload/button")
-		WebDriverWait(self.driver, 10).until(EC.visibility_of(upload_button_element))
-		upload_button_element.click()
+		self.driver.get(self.base_URL + "/clients")
+		self.driver.find_element_by_xpath(
+			"//*[contains(text(), '"+self.IRIDA_AUTH_CODE_ID+"')]").click()
+		secret = self.driver.find_element_by_id(
+			"client-secret").get_attribute("textContent")
 
-		self.driver.find_element_by_xpath("//div[2]/button").click()
-		inp1 = self.driver.find_element_by_css_selector("input[type=\"file\"]")
-		filePath1 = path_to_module.replace("integrationTests", path.join("unitTests", "fake_ngs_data",
-		"Data","Intensities","BaseCalls","01-1111_S1_L001_R1_001.fastq.gz"))
+		return secret
 
-		print "  Uploading: " + filePath1
-		inp1.send_keys(filePath1)
+	def stop_irida(self):
+		stopper = subprocess.Popen(self.IRIDA_STOP, cwd=self.IRIDA_PATH, shell=True)
+		stopper.wait()
 
-		self.driver.find_element_by_xpath("//div[2]/button").click()
-		inp2 = self.driver.find_element_by_css_selector("input[type=\"file\"]")
-		filePath2 = path_to_module.replace("integrationTests", path.join("unitTests", "fake_ngs_data",
-		"Data","Intensities","BaseCalls","01-1111_S1_L001_R2_001.fastq.gz"))
-
-		print "  Uploading: " + filePath2
-		inp2.send_keys(filePath2)
-
-		self.driver.find_element_by_css_selector("button.btn.btn-primary").click()
-
-	def close(self):
+	def close_driver(self):
 		self.driver.quit()
-
-
-def data_setup(new_base_url, user, password):
-	setup = SetupIridaData(new_base_url, user, password)
-	setup.login()
-	setup.create_project()
-	setup.create_sample()
-	setup.upload_fake_sequence_files()
-
-	setup.close()
