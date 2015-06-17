@@ -28,29 +28,6 @@ class TestApiIntegration(unittest.TestCase):
 			password=password
 		)
 
-	def test_get_samples(self):
-
-		api=ApiCalls(
-			client_id=client_id,
-			client_secret=client_secret,
-			base_URL=base_URL,
-			username=username,
-			password=password
-		)
-
-		proj_list = api.get_projects()
-		proj = proj_list[len(proj_list)-1]
-		sample_list = api.get_samples(proj)
-		self.assertTrue(len(sample_list) > 0)
-
-		sample = sample_list[len(sample_list)-1]
-		self.assertEqual(sample.get("sampleName"), "integration_testSample")
-
-		required_keys = ["sampleName","description","sequencerSampleId"]
-		sample_dict = sample.getDict()
-		for key in required_keys:
-			self.assertTrue(key in sample_dict)
-
 	def test_get_sequence_files(self):
 
 		api=ApiCalls(
@@ -106,12 +83,12 @@ class TestApiIntegration(unittest.TestCase):
 		proj_list = api.get_projects()
 		self.assertTrue(len(proj_list) == 1)
 
-		added_proj = proj_list[len(proj_list)-1]
+		added_proj = proj_list[0]
 		self.assertEqual(added_proj.getName(), "integration testProject")
 		self.assertEqual(added_proj.getDescription(), "integration testProject description")
 
 
-	def test_send_samples(self):
+	def test_get_and_send_samples(self):
 
 		api=ApiCalls(
 			client_id=client_id,
@@ -123,37 +100,43 @@ class TestApiIntegration(unittest.TestCase):
 
 		proj_list = api.get_projects()
 		proj = proj_list[0]
-
-		starting_list_len = len(api.get_samples(proj))
+		sample_list = api.get_samples(proj)
+		self.assertTrue(len(sample_list) == 0)
 
 		sample_dict = {
-			"sampleName" : "sample1",
-			"description" : "sample1 description",
-			"sequencerSampleId" : str(starting_list_len)*3
+			"sampleName" : "integration_testSample",
+			"description" : "integration_testSample description",
+			"sequencerSampleId" : "99-9999"
 			#sequencer sample ID must have at least 3 characters
 		}
 
 		sample = Sample(sample_dict)
-		api.send_samples(proj, [sample])
+		server_response = api.send_samples(proj, [sample])
+		self.assertEqual(sample_dict["sampleName"],
+						server_response["resource"]["sampleName"])
+		self.assertEqual(sample_dict["description"],
+						server_response["resource"]["description"])
+		self.assertEqual(sample_dict["sequencerSampleId"],
+						server_response["resource"]["sequencerSampleId"])
+		self.assertEqual("1",
+						server_response["resource"]["identifier"])
 
 		sample_list = api.get_samples(proj)
-		new_list_len = len(sample_list)
+		self.assertTrue(len(sample_list) == 1)
 
-		self.assertEqual(starting_list_len + 1, new_list_len)
-
-		added_sample = sample_list[len(sample_list)-1]
+		added_sample = sample_list[0]
 		for key in sample_dict.keys():
 			self.assertEqual(sample[key], added_sample.get(key))
+
 
 
 api_integration_TestSuite = unittest.TestSuite()
 
 api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authenticate"))
 api_integration_TestSuite.addTest(TestApiIntegration("test_get_and_send_project"))
-#api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_get_and_send_samples"))
 #api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
-#api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
-#api_integration_TestSuite.addTest(TestApiIntegration("test_send_samples"))
+
 
 def irida_setup(setup):
 	setup.install_irida()
@@ -162,7 +145,7 @@ def irida_setup(setup):
 
 def data_setup(setup):
 
-	irida_setup()#
+	irida_setup(setup)#
 
 	setup.start_driver()
 	setup.login()
