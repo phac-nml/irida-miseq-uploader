@@ -1,23 +1,14 @@
 import unittest
 import sys
 sys.path.append("../../")
-from ConfigParser import RawConfigParser
 from os import path
 
 from API.apiCalls import ApiCalls
 from Model.Project import Project
 from Model.Sample import Sample
-from apiCalls_integration_data_setup import data_setup
+from apiCalls_integration_data_setup import SetupIridaData
 
-path_to_module=path.dirname(__file__)
-if len(path_to_module) == 0:
-	path_to_module = "."
 
-conf_Parser = RawConfigParser()
-conf_Parser.read(path.join(path_to_module,"..","..","config.conf"))
-
-client_id = conf_Parser.get("apiCalls","client_id")
-client_secret = conf_Parser.get("apiCalls","client_secret")
 base_URL = "http://localhost:8080/api"
 username = "admin"
 password = "password1"
@@ -36,23 +27,6 @@ class TestApiIntegration(unittest.TestCase):
 			username=username,
 			password=password
 		)
-
-	def test_get_projects(self):
-
-		api=ApiCalls(
-			client_id=client_id,
-			client_secret=client_secret,
-			base_URL=base_URL,
-			username=username,
-			password=password
-		)
-
-		proj_list = api.get_projects()
-		self.assertTrue (len(proj_list) > 0)
-
-		proj = proj_list[len(proj_list)-1]#last project - added by setup data
-		self.assertEqual(proj.getName(), "integration testProject")
-		self.assertEqual(proj.getDescription(), "integration testProject description")
 
 	def test_get_samples(self):
 
@@ -104,7 +78,7 @@ class TestApiIntegration(unittest.TestCase):
 		self.assertEqual(str(seqFile2["fileName"]),
 						"01-1111_S1_L001_R2_001.fastq")
 
-	def test_send_project(self):
+	def test_get_and_send_project(self):
 
 		api=ApiCalls(
 			client_id=client_id,
@@ -114,20 +88,28 @@ class TestApiIntegration(unittest.TestCase):
 			password=password
 		)
 
-		proj_name = "new project1"
-		proj_description = "new project1 description"
-		proj = Project(proj_name, proj_description)
+		proj_list = api.get_projects()
+		self.assertTrue(len(proj_list) == 0)
 
-		starting_proj_len = len(api.get_projects())
-		api.send_project(proj)
+		proj_name = "integration testProject"
+		proj_description = "integration testProject description"
+		proj = Project(proj_name, proj_description)
+		server_response = api.send_project(proj)
+
+		self.assertEqual(proj_name,
+						server_response["resource"]["name"])
+		self.assertEqual(proj_description,
+						server_response["resource"]["projectDescription"])
+		self.assertEqual("1",
+						server_response["resource"]["identifier"])
 
 		proj_list = api.get_projects()
-		new_proj_len = len(proj_list)
-		self.assertEqual(starting_proj_len + 1, new_proj_len)
+		self.assertTrue(len(proj_list) == 1)
 
 		added_proj = proj_list[len(proj_list)-1]
-		self.assertEqual(proj_name, added_proj.getName())
-		self.assertEqual(proj_description, added_proj.getDescription())
+		self.assertEqual(added_proj.getName(), "integration testProject")
+		self.assertEqual(added_proj.getDescription(), "integration testProject description")
+
 
 	def test_send_samples(self):
 
@@ -167,14 +149,36 @@ class TestApiIntegration(unittest.TestCase):
 api_integration_TestSuite = unittest.TestSuite()
 
 api_integration_TestSuite.addTest(TestApiIntegration("test_connect_and_authenticate"))
-api_integration_TestSuite.addTest(TestApiIntegration("test_get_projects"))
-api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
-api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
-api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
-api_integration_TestSuite.addTest(TestApiIntegration("test_send_samples"))
+api_integration_TestSuite.addTest(TestApiIntegration("test_get_and_send_project"))
+#api_integration_TestSuite.addTest(TestApiIntegration("test_get_samples"))
+#api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
+#api_integration_TestSuite.addTest(TestApiIntegration("test_send_project"))
+#api_integration_TestSuite.addTest(TestApiIntegration("test_send_samples"))
+
+def irida_setup(setup):
+	setup.install_irida()
+	setup.reset_irida_db()
+	setup.run_irida()
+
+def data_setup(setup):
+
+	irida_setup()#
+
+	setup.start_driver()
+	setup.login()
+	setup.set_new_admin_pw()
+	setup.create_client()
+
+	irida_secret = setup.get_irida_secret()
+	setup.close_driver()
+
+	return(setup.IRIDA_AUTH_CODE_ID, irida_secret, setup.IRIDA_PASSWORD)
+
 
 if __name__=="__main__":
-	data_setup(base_URL[:base_URL.index("/api")+1], username, password)
+
+	setup = SetupIridaData(base_URL[:base_URL.index("/api")], username, password)
+	client_id, client_secret, password = data_setup(setup)
 
 	suiteList=[]
 
@@ -183,3 +187,5 @@ if __name__=="__main__":
 
 	runner = unittest.TextTestRunner()
 	runner.run(fullSuite)
+
+	setup.stop_irida()
