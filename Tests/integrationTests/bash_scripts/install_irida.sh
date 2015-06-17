@@ -19,10 +19,7 @@ else
   echo "Preparing IRIDA for first excecution..."
 
   pushd lib
-  dos2unix ./install-libs.sh
   ./install-libs.sh
-  dos2unix ./galaxy-dependencies/install.sh
-  ./galaxy-dependencies/install.sh
   popd
   popd
   echo "IRIDA has been installed"
