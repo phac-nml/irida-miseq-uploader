@@ -1,2 +1,2 @@
 class ProjectError(Exception):
-  pass
+    pass

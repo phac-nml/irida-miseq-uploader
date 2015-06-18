@@ -1,3 +1,2 @@
 class SampleError(Exception):
-  pass
-
+    pass
