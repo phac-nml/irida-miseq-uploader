@@ -1,236 +1,237 @@
 import unittest
 import sys
-#temp until setup.py is created for defining/referencing paths
-sys.path.append("../../")
-
-from Model.Sample import Sample
 from os import path
 from csv import reader
-from Parsers.miseqParser import parseMetadata, parseSamples, getCsvReader, getPairFiles, parseOutSequenceFile, completeParseSamples
+
+sys.path.append("../../")
+from Model.Sample import Sample
+from Parsers.miseqParser import (parseMetadata, parseSamples, getCsvReader,
+                                 getPairFiles, parseOutSequenceFile,
+                                 completeParseSamples)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
-pathToModule=path.dirname(__file__)
-if len(pathToModule)==0:
-	pathToModule='.'
+pathToModule = path.dirname(__file__)
+if len(pathToModule) == 0:
+    pathToModule = '.'
+
 
 class TestMiSeqParser(unittest.TestCase):
 
-	def setUp(self):
-		print "\nStarting " + self.__module__ + ": " + self._testMethodName
+    def setUp(self):
+        print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
-	def test_getCsvReader_noSampleSheet(self):
-		dataDir=path.join(pathToModule,"fake_ngs_data","Data")
+    def test_getCsvReader_noSampleSheet(self):
+        dataDir = path.join(pathToModule, "fake_ngs_data", "Data")
 
-		with self.assertRaises(SampleSheetError) as context:
-			csvReader=getCsvReader(dataDir)
+        with self.assertRaises(SampleSheetError) as context:
+            csvReader = getCsvReader(dataDir)
 
-		self.assertTrue("not a valid SampleSheet file" in str(context.exception))
+        self.assertTrue(
+            "not a valid SampleSheet file" in str(context.exception))
 
+    def test_getCsvReader_validSheet(self):
+        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
+        csvReader = getCsvReader(sheetFile)
 
-	def test_getCsvReader_validSheet(self):
-		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
-		csvReader=getCsvReader(sheetFile)
+    def test_parseMetadata(self):
+        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
+        metaData = parseMetadata(sheetFile)
 
+        correctMetadata = {'readLengths': ['251', '250'],
+                           'assay': 'Nextera XT',
+                           'description': 'Superbug',
+                           'application': 'FASTQ Only',
+                           'investigatorName': 'Some Guy',
+                           'adapter': 'AAAAGGGGAAAAGGGGAAA',
+                           'workflow': 'GenerateFASTQ',
+                           'reversecomplement': '0',
+                           'iemfileversion': '4',
+                           'date': '10/15/2013',
+                           'experimentName': '1',
+                           'chemistry': 'Amplicon'}
 
-	def test_parseMetadata(self):
-		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
-		metaData=parseMetadata(sheetFile)
+        self.assertEqual(correctMetadata, metaData)
 
-		correctMetadata={'readLengths': ['251', '250'],
-		'assay': 'Nextera XT',
-		'description': 'Superbug',
-		'application': 'FASTQ Only',
-		'investigatorName': 'Some Guy',
-		'adapter': 'AAAAGGGGAAAAGGGGAAA',
-		'workflow': 'GenerateFASTQ',
-		'reversecomplement': '0',
-		'iemfileversion': '4',
-		'date': '10/15/2013',
-		'experimentName': '1',
-		'chemistry': 'Amplicon'}
+    def test_completeParseSamples(self):
+        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
+        dataDir = path.join(pathToModule, "fake_ngs_data")
 
-		self.assertEqual(correctMetadata, metaData)
+        samplesList = completeParseSamples(sheetFile)
+        self.assertEqual(len(samplesList), 3)
 
-	def test_completeParseSamples(self):
-		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
-		dataDir=path.join(pathToModule,"fake_ngs_data")
+        requiredDataHeaders = [
+            "sampleName",
+            "description",
+            "sequencerSampleId",
+            "sampleProject"]
 
-		samplesList=completeParseSamples(sheetFile)
-		self.assertEqual( len(samplesList), 3)
+        seqFileHeaders = [
+            "index",
+            "I7_Index_ID",
+            "Sample_Well",
+            "Sample_Plate",
+            "index2",
+            "I5_Index_ID"]
 
-		requiredDataHeaders=[
-		"sampleName",
-		"description",
-		"sequencerSampleId",
-		"sampleProject"]
+        for sample in samplesList:
 
-		seqFileHeaders=[
-		"index",
-		"I7_Index_ID",
-		"Sample_Well",
-		"Sample_Plate",
-		"index2",
-		"I5_Index_ID"]
+            # sample only has the 4 required data headers as keys
+            self.assertEqual(
+                len(sample.getDict().keys()), len(requiredDataHeaders))
 
-		for sample in samplesList:
+            # check if all values in requiredDataHeaders are found in the
+            # sample's dictionary keys
+            self.assertTrue(
+                all([dataHeader in sample.getDict().keys() for dataHeader in
+                    requiredDataHeaders]))
 
-			#sample only has the 4 required data headers as keys
-			self.assertEqual( len(sample.getDict().keys()), len(requiredDataHeaders))
+            # check if all values in seqFileHeaders are found in the Sequence
+            # File properties dict /Sample metadata
+            self.assertTrue(
+                all([dataHeader in sample.getSampleMetadata().keys()
+                    for dataHeader in seqFileHeaders]))
 
-			#check if all values in requiredDataHeaders are found in the sample's dictionary keys
-			self.assertTrue(
-			all( [dataHeader in sample.getDict().keys() for dataHeader in requiredDataHeaders]) )
-			#print [sample.getDict().keys() ]
+            self.assertEqual(len(sample.getPairFiles()), 2)
+            pfList = getPairFiles(dataDir, sample.getID())
+            self.assertEqual(pfList, sample.getPairFiles())
 
+    def test_parseSamples(self):
+        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
+        samplesList = parseSamples(sheetFile)
 
-			#check if all values in seqFileHeaders are found in the Sequence File properties dict /Sample metadata
-			self.assertTrue(
-			all( [dataHeader in sample.getSampleMetadata().keys() for dataHeader in seqFileHeaders]) )
-			#print [sample.getSampleMetadata().keys()]
+        correctSamples = [
+            {'Sample_Well': '01',
+             'index': 'AAAAAAAA',
+             'Sample_Plate': '1',
+             'I7_Index_ID': 'N01',
+             'sampleName': '01-1111',
+             'sampleProject': '6',
+             'sequencerSampleId': '01-1111',
+             'I5_Index_ID': 'S01',
+             'index2': 'TTTTTTTT',
+             'description': 'Super bug '},
 
+            {'Sample_Well': '02',
+             'index': 'GGGGGGGG',
+             'Sample_Plate': '2',
+             'I7_Index_ID': 'N02',
+             'sampleName': '02-2222',
+             'sampleProject': '6',
+             'sequencerSampleId': '02-2222',
+             'I5_Index_ID': 'S02',
+             'index2': 'CCCCCCCC',
+             'description': 'Scary bug '},
 
-			self.assertEqual( len(sample.getPairFiles()), 2)
-			pfList=getPairFiles(dataDir, sample.getID())
-			self.assertEqual(pfList, sample.getPairFiles())
+            {'Sample_Well': '03',
+             'index': 'CCCCCCCC',
+             'Sample_Plate': '3',
+             'I7_Index_ID': 'N03',
+             'sampleName': '03-3333',
+             'sampleProject': '6',
+             'sequencerSampleId': '03-3333',
+             'I5_Index_ID': 'S03',
+             'index2': 'GGGGGGGG',
+             'description': 'Deadly bug '}]
 
-	def test_parseSamples(self):
-		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
-		samplesList=parseSamples(sheetFile)
+        sampleListValues = [sample.getDict() for sample in samplesList]
+        self.assertEqual(correctSamples, sampleListValues)
 
-		correctSamples=[
-		{'Sample_Well': '01',
-		'index': 'AAAAAAAA',
-		'Sample_Plate': '1',
-		'I7_Index_ID': 'N01',
-		'sampleName': '01-1111',
-		'sampleProject': '6',
-		'sequencerSampleId': '01-1111',
-		'I5_Index_ID': 'S01',
-		'index2': 'TTTTTTTT',
-		'description': 'Super bug '},
+    def test_parseOutSequenceFile(self):
 
-		{'Sample_Well': '02',
-		'index': 'GGGGGGGG',
-		'Sample_Plate': '2',
-		'I7_Index_ID': 'N02',
-		'sampleName': '02-2222',
-		'sampleProject': '6',
-		'sequencerSampleId': '02-2222',
-		'I5_Index_ID': 'S02',
-		'index2': 'CCCCCCCC',
-		'description': 'Scary bug '},
+        sample = Sample({'Sample_Well': '03',
+                         'index': 'CCCCCCCC',
+                         'Sample_Plate': '3',
+                         'I7_Index_ID': 'N03',
+                         'sampleName': '03-3333',
+                         'sampleProject': '6',
+                         'sequencerSampleId': '03-3333',
+                         'I5_Index_ID': 'S03',
+                         'index2': 'GGGGGGGG',
+                         'description': 'Deadly bug '})
 
-		{'Sample_Well': '03',
-		'index': 'CCCCCCCC',
-		'Sample_Plate': '3',
-		'I7_Index_ID': 'N03',
-		'sampleName': '03-3333',
-		'sampleProject': '6',
-		'sequencerSampleId': '03-3333',
-		'I5_Index_ID': 'S03',
-		'index2': 'GGGGGGGG',
-		'description': 'Deadly bug '}]
+        correctSample = {'description': 'Deadly bug ',
+                         'sampleName': '03-3333',
+                         'sequencerSampleId': '03-3333',
+                         'sampleProject': '6'}
 
-		sampleListValues=[sample.getDict() for sample in samplesList]
-		self.assertEqual( correctSamples, sampleListValues)
+        correctSeqFile = {'index': 'CCCCCCCC',
+                          'I7_Index_ID': 'N03',
+                          'Sample_Well': '03',
+                          'Sample_Plate': '3',
+                          'index2': 'GGGGGGGG',
+                          'I5_Index_ID': 'S03'}
 
+        seqFile = parseOutSequenceFile(sample)
 
-	def test_parseOutSequenceFile(self):
+        self.assertEqual(sample.getDict(), correctSample)
+        self.assertEqual(seqFile, correctSeqFile)
 
-		sample=Sample({'Sample_Well': '03',
-		'index': 'CCCCCCCC',
-		'Sample_Plate': '3',
-		'I7_Index_ID': 'N03',
-		'sampleName': '03-3333',
-		'sampleProject': '6',
-		'sequencerSampleId': '03-3333',
-		'I5_Index_ID': 'S03',
-		'index2': 'GGGGGGGG',
-		'description': 'Deadly bug '})
+    def test_getPairFiles_invalidDir_invalidID(self):
 
-		correctSample={'description': 'Deadly bug ',
-		'sampleName': '03-3333',
-		'sequencerSampleId': '03-3333',
-		'sampleProject': '6'}
+        invalidDir = "+/not a directory/+"
+        invalidSampleID = "-1"
 
-		correctSeqFile={'index': 'CCCCCCCC',
-		'I7_Index_ID': 'N03',
-		'Sample_Well': '03',
-		'Sample_Plate': '3',
-		'index2': 'GGGGGGGG',
-		'I5_Index_ID': 'S03'}
+        with self.assertRaises(IOError) as context:
+            pairFileList = getPairFiles(invalidDir, invalidSampleID)
 
-		seqFile=parseOutSequenceFile(sample)
+        self.assertTrue("Invalid directory" in str(context.exception))
 
-		self.assertEqual(sample.getDict(), correctSample)
-		self.assertEqual(seqFile, correctSeqFile)
+    def test_getPairFiles_invalidDir_validID(self):
+        invalidDir = "+/not a directory/+"
+        validSampleID = "01-1111"
 
+        with self.assertRaises(IOError) as context:
+            pairFileList = getPairFiles(invalidDir, validSampleID)
 
-	def test_getPairFiles_invalidDir_invalidID(self):
+        self.assertTrue("Invalid directory" in str(context.exception))
 
-		invalidDir="+/not a directory/+"
-		invalidSampleID= "-1"
+    def test_getPairFiles_validDir_invalidID(self):
+        validDir = path.join(pathToModule, "fake_ngs_data")
+        invalidSampleID = "-1"
 
-		with self.assertRaises(IOError) as context:
-			pairFileList=getPairFiles(invalidDir,invalidSampleID)
+        pairFileList = getPairFiles(validDir, invalidSampleID)
 
-		self.assertTrue("Invalid directory" in str(context.exception))
+        self.assertEqual(len(pairFileList), 0)
 
+    def test_getPairFiles_validDir_validID(self):
+        global pathToModule
+        validDir = path.join(pathToModule, "fake_ngs_data")
+        validSampleID = "01-1111"
 
-	def test_getPairFiles_invalidDir_validID(self):
-		invalidDir="+/not a directory/+"
-		validSampleID="01-1111"
-
-		with self.assertRaises(IOError) as context:
-			pairFileList=getPairFiles(invalidDir,validSampleID)
-
-		self.assertTrue("Invalid directory" in str(context.exception))
-
-
-	def test_getPairFiles_validDir_invalidID(self):
-		validDir=path.join(pathToModule,"fake_ngs_data")
-		invalidSampleID= "-1"
-
-
-		pairFileList=getPairFiles(validDir,invalidSampleID)
-
-		self.assertEqual(len(pairFileList),0)
-
-
-	def test_getPairFiles_validDir_validID(self):
-		global pathToModule
-		validDir=path.join(pathToModule,"fake_ngs_data")
-		validSampleID="01-1111"
-
-		pairFileList=getPairFiles(validDir,validSampleID)
-		correctPairList=[
-		path.join(pathToModule,"fake_ngs_data","Data","Intensities","BaseCalls","01-1111_S1_L001_R1_001.fastq.gz"),
-		path.join(pathToModule,"fake_ngs_data","Data","Intensities","BaseCalls","01-1111_S1_L001_R2_001.fastq.gz")]
-		self.assertEqual(correctPairList,pairFileList)
+        pairFileList = getPairFiles(validDir, validSampleID)
+        correctPairList = [
+            path.join(pathToModule, "fake_ngs_data", "Data", "Intensities",
+                      "BaseCalls", "01-1111_S1_L001_R1_001.fastq.gz"),
+            path.join(pathToModule, "fake_ngs_data", "Data", "Intensities",
+                      "BaseCalls", "01-1111_S1_L001_R2_001.fastq.gz")]
+        self.assertEqual(correctPairList, pairFileList)
 
 
-parserTestSuite= unittest.TestSuite()
+parserTestSuite = unittest.TestSuite()
 
-parserTestSuite.addTest( TestMiSeqParser("test_getCsvReader_noSampleSheet") )
-parserTestSuite.addTest( TestMiSeqParser("test_getCsvReader_validSheet") )
+parserTestSuite.addTest(TestMiSeqParser("test_getCsvReader_noSampleSheet"))
+parserTestSuite.addTest(TestMiSeqParser("test_getCsvReader_validSheet"))
 
-parserTestSuite.addTest( TestMiSeqParser("test_parseMetadata") )
-parserTestSuite.addTest( TestMiSeqParser("test_completeParseSamples") )
-parserTestSuite.addTest( TestMiSeqParser("test_parseSamples") )
-parserTestSuite.addTest( TestMiSeqParser("test_parseOutSequenceFile") )
+parserTestSuite.addTest(TestMiSeqParser("test_parseMetadata"))
+parserTestSuite.addTest(TestMiSeqParser("test_completeParseSamples"))
+parserTestSuite.addTest(TestMiSeqParser("test_parseSamples"))
+parserTestSuite.addTest(TestMiSeqParser("test_parseOutSequenceFile"))
 
-parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_invalidDir_invalidID") )
-parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_invalidDir_validID") )
-parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_invalidID") )
-parserTestSuite.addTest( TestMiSeqParser("test_getPairFiles_validDir_validID") )
+parserTestSuite.addTest(
+    TestMiSeqParser("test_getPairFiles_invalidDir_invalidID"))
+parserTestSuite.addTest(
+    TestMiSeqParser("test_getPairFiles_invalidDir_validID"))
+parserTestSuite.addTest(
+    TestMiSeqParser("test_getPairFiles_validDir_invalidID"))
+parserTestSuite.addTest(TestMiSeqParser("test_getPairFiles_validDir_validID"))
 
 
-if __name__=="__main__":
-	suiteList=[]
+if __name__ == "__main__":
+    suiteList = []
 
-	suiteList.append(parserTestSuite)
-	fullSuite = unittest.TestSuite(suiteList)
+    suiteList.append(parserTestSuite)
+    fullSuite = unittest.TestSuite(suiteList)
 
-	runner = unittest.TextTestRunner()
-	runner.run(fullSuite)
+    runner = unittest.TextTestRunner()
+    runner.run(fullSuite)
