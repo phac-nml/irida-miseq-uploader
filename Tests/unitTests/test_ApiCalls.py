@@ -24,7 +24,7 @@ class TestApiCalls(unittest.TestCase):
 
 	def setUp(self):
 
-		print "\nStarting ", self._testMethodName
+		print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
 	@patch("API.apiCalls.urlopen")
 	@patch("API.apiCalls.ApiCalls.create_session")

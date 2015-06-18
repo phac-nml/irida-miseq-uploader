@@ -17,7 +17,7 @@ if len(pathToModule)==0:
 class TestMiSeqParser(unittest.TestCase):
 
 	def setUp(self):
-		print "\nStarting ", self._testMethodName
+		print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
 	def test_getCsvReader_noSampleSheet(self):
 		dataDir=path.join(pathToModule,"fake_ngs_data","Data")
