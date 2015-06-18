@@ -11,7 +11,7 @@ https://pypi.python.org/pypi/rauth/0.7.1
 https://pypi.python.org/pypi/selenium   
   
   
-**virutalenv usage**  
+**virtualenv usage**  
 install:  
 `pip install virtualenv`    
 
