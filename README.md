@@ -1,39 +1,12 @@
 iridaUploader
 
 
-Need to install wx for GUI libray
+Install pip and wxpython: `sudo apt-get install python-pip python-wxgtk2.8`  
 
-sudo apt-get install python-wxgtk2.8
 
-###################
-
-Need to install mock for the tests:
-
-https://pypi.python.org/pypi/mock#downloads
-
-Download mock-1.0.1.tar.gz
-
-extract and cd mock-1.0.1
-
-sudo python setup.py build
-
-sudo python setup.py install
-
-####################
-
-Need to install rauth for the OAUTH
-
-pip install rauth
-
-or if you don't have pip then
-
+Install mock, rauth and selenium: `sudo pip install mock rauth selenium`    
+Alternatively, download them manually:  
+https://pypi.python.org/pypi/mock#downloads  
 https://pypi.python.org/pypi/rauth/0.7.1
+https://pypi.python.org/pypi/selenium
 
-Download rauth-0.7.1.tar.gz
-
-extract and cd rauth-0.7.1
-
-sudo python setup.py build
-
-sudo python setup.py install
-_

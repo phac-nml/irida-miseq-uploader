@@ -1,360 +1,451 @@
 import ast
 import json
 import httplib
-
 import sys
 sys.path.append("../")
-
 from os import path
-from requests import Request
-from requests.exceptions import HTTPError as request_HTTPError
 from urllib2 import Request, urlopen, URLError, HTTPError
-
-from rauth import OAuth2Service, OAuth2Session
-
-from Model.ValidationResult import ValidationResult
-from Exceptions.ProjectError import ProjectError
-from Validation.offlineValidation import validateURLForm
+from urlparse import urljoin
 from ConfigParser import RawConfigParser
 
+from rauth import OAuth2Service, OAuth2Session
+from requests import Request
+from requests.exceptions import HTTPError as request_HTTPError
 
-pathToModule=path.dirname(__file__)
-if len(pathToModule)==0:
-	pathToModule='.'
-
-confParser=RawConfigParser()
-confParser.read(pathToModule+"/../config.conf")
-
-clientId=confParser.get("apiCalls","clientId")
-clientSecret=confParser.get("apiCalls","clientSecret")
-
-MAX_TIMEOUT_WAIT=int(confParser.get("apiCalls","maxWaitTime"))
-
-
-def createSession(baseURL, username, password):
-    """
-    create session to be re-used for get and post calls
-    arguments:
-        baseURL -- url of the IRIDA server
-        username -- username for server
-        password -- password for given username
-
-    returns session (OAuth2Session object)
-    """
-    vRes=validateURLForm(baseURL)
-    if vRes.isValid():
-        oauth_service=get_oauth_service(baseURL)
-        access_token=get_access_token(oauth_service, username, password)
-        session=oauth_service.get_session(access_token)
-    else:
-        raise URLError(vRes.getErrors())
-
-    return session
-
-def validateURLexistance(url):
-    """
-    tries to validate existance of given url by trying to open it.
-    the passed url are assumed to have passed validation via validateURLForm
-    expecting to receive status_code 401/UNAUTHORIZED when trying to validate baseURL/api
-
-    arguments:
-        url -- the url link to open and validate
-
-    returns ValidationResult object - stores bool valid and list of string error messages
-    """
-
-    #move later to Validation/onlineValidation.py ?
+from Model.SequenceFile import SequenceFile
+from Model.Project import Project
+from Model.Sample import Sample
+from Model.ValidationResult import ValidationResult
+from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
+from Validation.offlineValidation import validateURLForm as validate_URL_Form
 
 
-    vRes=ValidationResult()
-    valid=True
+class ApiCalls:
 
-    try:
-        response = urlopen(url, timeout=MAX_TIMEOUT_WAIT)
+    def __init__(self, client_id, client_secret,
+                base_URL, username, password, max_wait_time=20):
+        """
+        Create OAuth2Session and store it
 
-    except HTTPError, e:
+        arguments:
+            client_id -- client_id for creating access token. Found in iridaUploader/config.conf
+            client_secret -- client_secret for creating access token. Found in iridaUploader/config.conf
+            base_URL -- url of the IRIDA server
+            username -- username for server
+            password -- password for given username
 
-        if hasattr(e,'code'):
-            if e.code!=httplib.OK and e.code!=httplib.UNAUTHORIZED :
-                msg="Failed to reach " + url +"\n"
-                msg=msg + 'Error code: ' + str(e.code)
-                valid=False
+        return ApiCalls object
+        """
 
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.base_URL = base_URL
+        self.username = username
+        self.password = password
+        self.max_wait_time = max_wait_time
 
-                if hasattr(e, 'reason'):
-                    if len(str(e.reason))>0:
-                        msg= msg + ". " + str(e.reason)
+        self.create_session()
 
-                vRes.addErrorMsg( msg )
+    def create_session(self):
+
+        """
+        create session to be re-used until expiry for get and post calls
+
+        returns session (OAuth2Session object)
+        """
+
+        if self.base_URL[-1:] != "/":
+            self.base_URL = self.base_URL + "/"
+
+        if validate_URL_Form(self.base_URL):
+            oauth_service = self.get_oauth_service()
+            access_token = self.get_access_token(oauth_service)
+            self.session = oauth_service.get_session(access_token)
+
+            if self.validate_URL_existence(self.base_URL, use_session=True)==False:
+                raise Exception("Cannot create session. Verify your credentials are correct.")
 
         else:
-            msg="Failed to reach " + url +"\n"
-            vRes.addErrorMsg( msg )
-            valid=False
+            raise URLError(self.base_URL + " is not a valid URL")
 
-    vRes.setValid(valid)
+    def get_oauth_service(self):
 
-    return vRes
+        """
+        get oauth service to be used to get access token
 
-def get_oauth_service(baseURL):
-    """
-    get oauth service to be used to get access token
-    checks if baseURL is valid and checks if baseURL/oauth/token is also valid.
-    accessTokenUrl = baseURL + "oauth/token"
-    Raises request_HTTPError if accessTokenUrl is invalid.
+        returns oauthService
+        """
 
-    argument:
-        baseURL -- URL of IRIDA server API
-
-    returns oauthService
-    """
-
-    accessTokenUrl = baseURL + "oauth/token"
-
-    vRes=validateURLexistance(accessTokenUrl)
-    if vRes.isValid():
+        access_token_url = urljoin(self.base_URL, "oauth/token")
         oauth_serv = OAuth2Service(
-        client_id=clientId,
-        client_secret=clientSecret,
-        name="irida",
-        access_token_url = accessTokenUrl,
-        base_url=baseURL)
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            name="irida",
+            access_token_url=access_token_url,
+            base_url=self.base_URL
+        )
 
-    else:
-        raise request_HTTPError(vRes.getErrors())
+        return oauth_serv
 
-    return oauth_serv
+    def get_access_token(self, oauth_service):
 
-def get_access_token(oauth_service, username, password):
-    """
-    get access token to be used to get session from oauth_service
+        """
+        get access token to be used to get session from oauth_service
 
-    arguments:
-        oauth_service -- O2AuthService from get_oauth_service
-        username -- username for IRIDA
-        password -- password for given IRIDA username
+        arguments:
+            oauth_service -- O2AuthService from get_oauth_service
 
-    returns access token
-    """
+        returns access token
+        """
 
-    params = {'data' : {'grant_type' : 'password',
-        'client_id' : clientId,
-        'client_secret' : clientSecret,
-        'username' : username,
-        'password' : password}}
+        params = {
+            "data" : {
+                "grant_type":"password",
+                "client_id":self.client_id,
+                "client_secret":self.client_secret,
+                "username":self.username,
+                "password":self.password
+            }
+        }
 
-    access_token =    oauth_service.get_access_token(decoder=decoder,**params)
+        access_token = oauth_service.get_access_token(decoder=self.decoder,**params)
 
-    return access_token
+        return access_token
 
-def decoder(return_dict):
-    """
+    def decoder(self, return_dict):
+
+        """
         safely parse given dictionary
 
         arguments:
             return_dict -- access token dictionary
 
         returns evaluated dictionary
-    """
+        """
 
-    irida_dict = ast.literal_eval(return_dict)
-    return irida_dict
+        irida_dict = ast.literal_eval(return_dict)
+        return irida_dict
 
+    def validate_URL_existence(self, url, use_session=False):
 
-def getLink(session, baseURL, targetKey):
-    """
-    makes a call to baseURL(api) expecting a json response
-    tries to retrieve targetKey from response to find link to that resource
+        """
+        tries to validate existence of given url by trying to open it.
+        true if HTTP OK, false if HTTP NOT FOUND otherwise raises error containing error code and message
 
-    arguments:
-        session -- opened OAuth2Session
-        baseURL -- URL to retrieve link from
-        targetKey -- name of link (e.g projects or project/samples)
+        arguments:
+            url -- the url link to open and validate
+            use_session -- if True then this uses self.session.get(url) instead of urlopen(url) to get response
 
-    returns link if it exists
+        returns
+            true if http response OK 200
+            false if http response NOT FOUND 404
+        """
 
-    """
-    retVal=None
-    response=session.get(baseURL)
-    if response.status_code==httplib.OK:
-        try:
-            linksList=response.json()["resource"]["links"]
-            for link in linksList:
+        if use_session == True:
+            response = self.session.get(url)
 
-                if link["rel"]==(targetKey):
-                    retVal=link["href"]
-                    break
+            if response.status_code == httplib.OK:
+                return True
+            elif response.status_code == httplib.NOT_FOUND:
+                return False
             else:
-                raise KeyError(targetKey+" not found in links. "+ "Available links: " + ",".join([ str(link["rel"]) for link in linksList])[:-1] )
+                raise Exception(str(response.status_code) + " " + response.reason)
 
-        except KeyError, e:
-            raise KeyError( str(e.message) +" key not found. Available keys:" + ",".join([ key for key in response.json().keys()]) )
-    else:
-        raise request_HTTPError("Error: "+ str(response.status_code)+ " " + response.reason)
+        else:
+            response = urlopen(url, timeout=self.max_wait_time)
 
-    return retVal
+            if response.code == httplib.OK:
+                return True
+            elif response.code == httplib.NOT_FOUND:
+                return False
+            else:
+                raise Exception(str(response.code) + " " + response.msg)
 
-def getProjects(session, baseURL):
-    """
-    API call to api/projects to get list of projects
 
-    arguments:
-        session -- opened OAuth2Session
-        baseURL -- URL of IRIDA server API
+    def get_link(self, targ_url, target_key, targ_dict=""):
 
-    returns list containing projects. each project is a dictionary.
-    """
+        """
+        makes a call to targ_url(api) expecting a json response
+        tries to retrieve target_key from response to find link to that resource
+        raises exceptions if target_key not found or targ_url is invalid
 
-    result=None
+        arguments:
+            targ_url -- URL to retrieve link from
+            target_key -- name of link (e.g projects or project/samples)
+            targ_dict -- optional dict containing key and value to search for in targets.
+            (e.g {key="identifier",value="100"} to retrieve where identifier=100 )
 
-    url=getLink(session, baseURL, "projects")
+        returns link if it exists
+        """
 
-    response = session.get(url)
-    if response.status_code==httplib.OK:
+        retVal=None
+
+        if self.validate_URL_existence(targ_url, use_session=True):
+            response = self.session.get(targ_url)
+
+            if len(targ_dict)>0:
+                resources_List = response.json()["resource"]["resources"]
+                try:
+                    links_list = next(resource["links"] for resource in resources_List
+                                if resource[targ_dict["key"]] == targ_dict["value"])
+
+                except KeyError:
+                    raise KeyError(targ_dict["key"] + " not found." +
+                                    " Available keys: " + ", ".join(resources_List[0].keys()))
+
+                except StopIteration:
+                    raise KeyError(targ_dict["value"] + " not found.")
+
+            else:
+                links_list = response.json()["resource"]["links"]
+            try:
+                retVal = next(link["href"] for link in links_list
+                        if link["rel"] == target_key)
+
+            except StopIteration:
+                raise KeyError(target_key + " not found in links. " +
+                "Available links: " +
+                ", ".join([ str(link["rel"]) for link in links_list]))
+
+        else:
+            raise request_HTTPError("Error: " +
+                                    targ_url + " is not a valid URL")
+
+        return retVal
+
+    def get_projects(self):
+
+        """
+        API call to api/projects to get list of projects
+
+        returns list containing projects. each project is Project object.
+        """
+
+        url = self.get_link(self.base_URL, "projects")
+        response = self.session.get(url)
+
+        result = response.json()["resource"]["resources"]
         try:
-            result = response.json()["resource"]["resources"]
+            project_list = [
+                Project(
+                    projDict["name"],
+                    projDict["projectDescription"],
+                    projDict["identifier"]
+                )
+                for projDict in result
+            ]
+
         except KeyError, e:
-            raise KeyError("Error:" + str(response.status_code) + " " + response.reason)
-    else:
-        raise request_HTTPError("Error: "+ str(response.status_code)+ " " + response.reason)
+            e.args = map(str,e.args)
+            msgArg = " ".join(e.args)
+            raise KeyError(msgArg + " not found." + " Available keys: " +
+            ", ".join(result[0].keys()))
 
-    return result
+        return project_list
+
+    def get_samples(self, project):
+
+        """
+        API call to api/projects/project_id/samples
+
+        arguments:
+            project -- a Project object used to get project_id
+
+        returns list of samples for the given project. each sample is a Sample object.
+        """
+
+        project_id = project.getID()
+
+        try:
+            proj_URL = self.get_link(self.base_URL, "projects")
+            url = self.get_link(proj_URL, "project/samples",
+                                targ_dict={
+                                    "key":"identifier",
+                                    "value":project_id
+                                })
+
+        except StopIteration:
+            raise ProjectError("The given project ID: " +
+                                project_id +" doesn't exist")
+
+        response = self.session.get(url)
+        result = response.json()["resource"]["resources"]
+        sample_list = [Sample(sample_dict) for sample_dict in result]
+
+        return sample_list
 
 
-def getSamples(session, baseURL, projectID):
-    """
-    API call to api/projects/projectID/samples
+    def get_sequence_files(self, project, sample):
 
-    arguments:
-        session -- opened OAuth2Session
-        projectID -- project ID/ 'identifier' which is just a number string
-        baseURL -- URL of IRIDA server API
+        """
+        API call to api/projects/project_id/sample_id/sequenceFiles
 
-    returns list of samples for the given projectID. each sample is a dictionary
-    """
+        arguments:
+            project -- a Project object used to get project_id
+            sample -- a Sample object used to get sample_id
 
-    projUrl=getLink(session, baseURL, "projects")+"/"+projectID
-    url=getLink(session, projUrl, "project/samples")
-    
-    response = session.get(url)
-    if response.status_code==httplib.OK:
+
+        returns list of sequencefile dictionary for given sample_id
+        """
+
+        project_id = project.getID()
+        sample_id = sample.getID()
+
+        try:
+            proj_URL = self.get_link(self.base_URL, "projects")
+            sample_URL = self.get_link(proj_URL, "project/samples",
+                                        targ_dict={
+                                            "key":"identifier",
+                                            "value":project_id
+                                        })
+
+        except StopIteration:
+            raise ProjectError("The given project ID: " +
+                                project_id + " doesn't exist")
+
+        try:
+            url = self.get_link(sample_URL, "sample/sequenceFiles",
+                                targ_dict={
+                                    "key":"sequencerSampleId",
+                                    "value":sample_id
+                                })
+
+            response = self.session.get(url)
+
+        except StopIteration:
+            raise SampleError("The given sample ID: " +
+                                sample_id + " doesn't exist")
+
         result = response.json()["resource"]["resources"]
 
-    elif response.status_code==httplib.NOT_FOUND:
-        raise request_HTTPError("The given project ID doesn't exist")
+        return result
 
-    else:
-        raise request_HTTPError("Error: "+ str(response.status_code)+ " " + response.reason)
+    def send_project(self, project):
 
-    return result
+        """
+        post request to send a project to IRIDA via API
+        the project being sent requires a name that is at least 5 characters long
 
+        arguments:
+            project -- a Project object to be sent.
 
-def does_projectID_exist(session,projectID):
-    retVal=False
-    projectsList=getProjects(session)
+        returns a dictionary containing the result of post request. when post is successful the dictionary it returns will contain the same name and projectDescription that was originally sent as well as additional keys like createdDate and identifier.
+        when post fails then an error will be raised so return statement is not even reached.
+        """
 
-    for project in projectsList:
-        if project['identifier']==projectID:
-            retVal=True
-            break
+        json_res = None
+        if len(project.getName()) >= 5:
+            url = self.get_link(self.base_URL, "projects")
+            json_obj = json.dumps(project.getDict())
+            headers = {
+                "headers": {
+                    "Content-Type":"application/json"
+                }
+            }
 
-    return retVal
+            response = self.session.post(url,json_obj, **headers)
 
-def does_sampleID_exist(session,projectID,sampleID):
-    retVal=False
-    samplesList=getSamples(session,projectID)
+            if response.status_code == httplib.CREATED:#201
+                json_res = json.loads(response.text)
+            else:
+                raise ProjectError("Error: " +
+                                str(response.status_code) + " " + response.text)
 
-    for sample in samplesList:
-        if sample['identifier']==sampleID:
-            retVal=True
-            break
-
-    return retVal
-
-def getSequenceFiles(session, baseURL, projectID, sampleID):
-    """
-    API call to api/projects/projectID/sampleID/sequenceFiles
-
-    arguments:
-        session -- opened OAuth2Session
-        projectID -- project ID/ 'identifier' which is just a number
-        sampleID -- sample ID for given project ID- number string
-        baseURL -- URL of IRIDA server API
-
-    returns list of sequenceFiles for given sampleID
-    """
-
-    url=baseURL+"projects/"+projectID+"/samples/"+sampleID+"/sequenceFiles"
-
-    response = session.get(url)
-
-    if response.status_code==httplib.OK:
-        result = response.json()["resource"]["resources"]
-
-    elif response.status_code==httplib.NOT_FOUND:
-        if does_projectID_exist(session, projectID)==False:
-            raise request_HTTPError("The given project ID doesn't exist")
         else:
-            raise request_HTTPError("The given sample ID doesn't exist")
+            raise ProjectError("Invalid project name: " +
+                                project.getName() +
+                                ". A project requires a name that must be 5 or more characters.")
 
-    else:
-        raise request_HTTPError("Error: "+response.status_code+ " " + response.reason)
+        return json_res
 
-    return result
+    def send_samples(self, project, samples_list):
+
+        """
+        post request to send sample(s) to the given project
+
+        arguments:
+            project -- a Project object used to get project ID
+            samples_list -- list containing Sample object(s) to send
+
+        returns a dictionary containing the result of post request.
+        """
+
+        json_res = None
+        project_id = project.getID()
+        try:
+            proj_URL = self.get_link(self.base_URL, "projects")
+            url = self.get_link(proj_URL, "project/samples",
+                                targ_dict={
+                                    "key":"identifier",
+                                    "value":project_id
+                                })
+
+        except StopIteration:
+            raise ProjectError("The given project ID: " +
+                                project_id + " doesn't exist")
+
+        headers = {
+            "headers": {
+                "Content-Type":"application/json"
+            }
+        }
+
+        for sample in samples_list:
+            json_obj = json.dumps(sample.getDict())
+            response = self.session.post(url, json_obj, **headers)
+
+            if response.status_code == httplib.CREATED:#201
+                json_res = json.loads(response.text)
+            else:
+                raise SampleError("Error: " +
+                                str(response.status_code) + " " + response.text)
+
+        return json_res
 
 
-def sendProjects(session, baseURL, projectDict):
-    """
-    post request to send a project to irida via API
-    the project being sent requires a name
-
-    arguments:
-        session -- opened OAuth2Session
-        projectDict -- a dictionary of the project to be sent. requires a name key. projectDescription key is optional.
-        baseURL -- URL of IRIDA server API
-
-    returns a dictionary containing the result of post request. when post is successful the dictionary it returns will contain the same name and projectDescription that was originally sent as well as additional keys like createdDate and identifier.
-    when post fails then an error will be raised so return statement is not even reached.
-    """
-    #validate projectDict?
-
-    jsonRes=None
-    if projectDict.has_key("name"):#add 'and' condition for "name must be 5 char long" here?
-        url=baseURL+"projects"
-        jsonObj=json.dumps(projectDict)
-        headers = {'headers': {'Content-Type':'application/json'}}
-
-        response =session.post(url,jsonObj, **headers)
-
-        if response.status_code==httplib.CREATED:#201
-            jsonRes= json.loads(response.text)
-        else:
-            raise ProjectError("Error: " + str(response.status_code) + " "+ response.text)
-
-    else:
-        raise ProjectError("Missing project name. A project requires 'name' as one of its keys")
-
-    return jsonRes
-
-
-
-#just for your testing - will be removed before merge to develop
 if __name__=="__main__":
-    #temp- will become data taken from user input
-    baseURL="http://localhost:8080/api/"
+    base_URL="http://localhost:8080/api"
     username="admin"
     password="password1"
 
-    session=createSession(baseURL, username, password)
+    path_to_module=path.dirname(__file__)
+    if len(path_to_module)==0:
+        path_to_module="."
 
-    projectsList=getProjects(session,baseURL)
-    print "\n# of projects:", len(projectsList)
+    conf_Parser=RawConfigParser()
+    conf_Parser.read(path_to_module+"/../config.conf")
+    client_id=conf_Parser.get("apiCalls","client_id")
+    client_secret=conf_Parser.get("apiCalls","client_secret")
 
-    print sendProjects(session , baseURL, {"name":"projectX"})
+    api=ApiCalls(client_id, client_secret, base_URL, username, password )
 
-    projectsList=getProjects(session,baseURL)
-    print "\n# of projects:", len(projectsList)
-    print "Added project:", projectsList[len(projectsList)-1]
+    proj_list=api.get_projects()
+    print "#Project count:", len(proj_list)
 
-    sList=getSamples(session, baseURL, "4")
-    print len(sList)
+    p=Project("projectX",projectDescription="orange")
+    print api.send_project(p)
+
+    proj_list=api.get_projects()
+    print "#Project count:", len(proj_list)
+
+    print "#"*20
+
+
+    proj_targ=proj_list[0]
+    sList=api.get_samples(proj_targ)
+    print "#Sample count:", len(sList)
+
+    s=Sample({"sequencerSampleId":"09-9999","sampleName":"09-9999"})
+    print api.send_samples(proj_targ, [s])#raises error on second run because ID won't be unique anymore for same proj_targ
+
+    sList=api.get_samples(proj_targ)
+    print "#Sample count:", len(sList)
+
+
+    print "#"*20
+
+    proj_targ=proj_list[3]
+    sList=api.get_samples(proj_targ)
+    seqFiles=api.get_sequence_files(proj_targ, sList[len(sList)-1])
+    print seqFiles

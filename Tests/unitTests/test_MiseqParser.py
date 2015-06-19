@@ -17,10 +17,10 @@ if len(pathToModule)==0:
 class TestMiSeqParser(unittest.TestCase):
 
 	def setUp(self):
-		print "\nStarting ", self._testMethodName
+		print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
 	def test_getCsvReader_noSampleSheet(self):
-		dataDir=pathToModule+"/fake_ngs_data/Data"
+		dataDir=path.join(pathToModule,"fake_ngs_data","Data")
 
 		with self.assertRaises(SampleSheetError) as context:
 			csvReader=getCsvReader(dataDir)
@@ -29,12 +29,12 @@ class TestMiSeqParser(unittest.TestCase):
 
 
 	def test_getCsvReader_validSheet(self):
-		sheetFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
+		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
 		csvReader=getCsvReader(sheetFile)
 
 
 	def test_parseMetadata(self):
-		sheetFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
+		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
 		metaData=parseMetadata(sheetFile)
 
 		correctMetadata={'readLengths': ['251', '250'],
@@ -53,8 +53,8 @@ class TestMiSeqParser(unittest.TestCase):
 		self.assertEqual(correctMetadata, metaData)
 
 	def test_completeParseSamples(self):
-		sheetFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
-		dataDir=pathToModule+"/fake_ngs_data"
+		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
+		dataDir=path.join(pathToModule,"fake_ngs_data")
 
 		samplesList=completeParseSamples(sheetFile)
 		self.assertEqual( len(samplesList), 3)
@@ -95,7 +95,7 @@ class TestMiSeqParser(unittest.TestCase):
 			self.assertEqual(pfList, sample.getPairFiles())
 
 	def test_parseSamples(self):
-		sheetFile=pathToModule+"/fake_ngs_data/SampleSheet.csv"
+		sheetFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
 		samplesList=parseSamples(sheetFile)
 
 		correctSamples=[
@@ -189,7 +189,7 @@ class TestMiSeqParser(unittest.TestCase):
 
 
 	def test_getPairFiles_validDir_invalidID(self):
-		validDir=pathToModule+"/fake_ngs_data"
+		validDir=path.join(pathToModule,"fake_ngs_data")
 		invalidSampleID= "-1"
 
 
@@ -200,12 +200,13 @@ class TestMiSeqParser(unittest.TestCase):
 
 	def test_getPairFiles_validDir_validID(self):
 		global pathToModule
-		validDir=pathToModule+"/fake_ngs_data"
+		validDir=path.join(pathToModule,"fake_ngs_data")
 		validSampleID="01-1111"
 
-		pathToModule=pathToModule.replace('/','\\')
 		pairFileList=getPairFiles(validDir,validSampleID)
-		correctPairList=[pathToModule+"\\fake_ngs_data\\Data\\Intensities\\BaseCalls\\01-1111_S1_L001_R1_001.fastq.gz",pathToModule+"\\fake_ngs_data\\Data\\Intensities\\BaseCalls\\01-1111_S1_L001_R2_001.fastq.gz"]
+		correctPairList=[
+		path.join(pathToModule,"fake_ngs_data","Data","Intensities","BaseCalls","01-1111_S1_L001_R1_001.fastq.gz"),
+		path.join(pathToModule,"fake_ngs_data","Data","Intensities","BaseCalls","01-1111_S1_L001_R2_001.fastq.gz")]
 		self.assertEqual(correctPairList,pairFileList)
 
 
