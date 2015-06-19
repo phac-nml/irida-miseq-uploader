@@ -17,7 +17,7 @@ Build a virtualenv and install the dependencies:
     $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
     $ cd iridauploader
     $ pip install -r requirements.txt
-    $ run scripts/virtualenv_wx.sh to use the already installed wxPython in virtualenv
+    $ scripts/virtualenv_wx.sh
 
 Remember that wxPython must be already installed using:
 
