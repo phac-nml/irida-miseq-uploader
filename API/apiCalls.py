@@ -18,7 +18,7 @@ from Model.Sample import Sample
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
-from Validation.offlineValidation import validateURLForm as validate_URL_Form
+from Validation.offlineValidation import validate_URL_form
 
 
 class ApiCalls:
@@ -59,7 +59,7 @@ class ApiCalls:
         if self.base_URL[-1:] != "/":
             self.base_URL = self.base_URL + "/"
 
-        if validate_URL_Form(self.base_URL):
+        if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
             self.session = oauth_service.get_session(access_token)
@@ -260,7 +260,7 @@ class ApiCalls:
             each sample is a Sample object.
         """
 
-        project_id = project.getID()
+        project_id = project.get_id()
 
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
@@ -292,8 +292,8 @@ class ApiCalls:
         returns list of sequencefile dictionary for given sample_id
         """
 
-        project_id = project.getID()
-        sample_id = sample.getID()
+        project_id = project.get_id()
+        sample_id = sample.get_id()
 
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
@@ -342,9 +342,9 @@ class ApiCalls:
         """
 
         json_res = None
-        if len(project.getName()) >= 5:
+        if len(project.get_name()) >= 5:
             url = self.get_link(self.base_URL, "projects")
-            json_obj = json.dumps(project.getDict())
+            json_obj = json.dumps(project.get_dict())
             headers = {
                 "headers": {
                     "Content-Type": "application/json"
@@ -362,7 +362,7 @@ class ApiCalls:
 
         else:
             raise ProjectError("Invalid project name: " +
-                               project.getName() +
+                               project.get_name() +
                                ". A project requires a name that must be " +
                                "5 or more characters.")
 
@@ -380,7 +380,7 @@ class ApiCalls:
         """
 
         json_res = None
-        project_id = project.getID()
+        project_id = project.get_id()
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
@@ -400,7 +400,7 @@ class ApiCalls:
         }
 
         for sample in samples_list:
-            json_obj = json.dumps(sample.getDict())
+            json_obj = json.dumps(sample.get_dict())
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
