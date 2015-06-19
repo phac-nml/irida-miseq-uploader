@@ -1,35 +1,26 @@
-iridaUploader  
-=============
+## Irida Uploader  
 
+
+### Installation  
 Install pip and wxpython:  
-`sudo apt-get install python-pip python-wxgtk2.8`  
+    $ sudo apt-get install python-pip python-wxgtk2.8    $ pip install virtualenv  
 
+### virtualenv usage  
 
-Install mock, rauth and selenium:  
-`sudo pip install mock rauth selenium`    
+Build a virtualenv and install the dependencies:
 
+    $ mkdir iu; cd iu
+    $ virtualenv .
+    $ source bin/activate
+    $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
+    $ cd iridauploader
+    $ pip install -r requirements.txt
+    $ run scripts/virtualenv_wx.sh to use the already installed wxPython in virtualenv
 
-Alternatively, download them manually:  
-https://pypi.python.org/pypi/mock#downloads  
-https://pypi.python.org/pypi/rauth/0.7.1  
-https://pypi.python.org/pypi/selenium   
-  
-  
-virtualenv usage  
-----------------
-install:  
-`pip install virtualenv`    
+Remeber that wxPython must be already installed using:
 
-create a new virtualenv:  
-`virtualenv env`  
+  $ sudo apt-get install python-pip python-wxgtk2.8
 
-activate:  
-`source env/bin/activate`  
+Deactivate when finished:  
 
-install requirements:  
-`pip install -r requirements.txt`  
-run `scripts/virtualenv_wx.sh` to use already installed wxPython in virtualenv  
-*wxPython must be already installed* using `sudo apt-get install python-wxgtk2.8`  
-
-deactivate when finished:  
-`deactivate`  
+  $ deactivate  
