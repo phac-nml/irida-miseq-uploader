@@ -220,30 +220,30 @@ class TestMiSeqParser(unittest.TestCase):
         self.assertEqual(correct_pair_list, pair_file_list)
 
 
-parserTestSuite = unittest.TestSuite()
+parser_test_suite = unittest.TestSuite()
 
-parserTestSuite.addTest(TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
-parserTestSuite.addTest(TestMiSeqParser("test_get_csv_reader_valid_sheet"))
+parser_test_suite.addTest(TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
+parser_test_suite.addTest(TestMiSeqParser("test_get_csv_reader_valid_sheet"))
 
-parserTestSuite.addTest(TestMiSeqParser("test_parse_metadata"))
-parserTestSuite.addTest(TestMiSeqParser("test_complete_parse_samples"))
-parserTestSuite.addTest(TestMiSeqParser("test_parse_samples"))
-parserTestSuite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
+parser_test_suite.addTest(TestMiSeqParser("test_parse_metadata"))
+parser_test_suite.addTest(TestMiSeqParser("test_complete_parse_samples"))
+parser_test_suite.addTest(TestMiSeqParser("test_parse_samples"))
+parser_test_suite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
 
-parserTestSuite.addTest(
+parser_test_suite.addTest(
     TestMiSeqParser("test_get_pair_files_invalid_dir_and_id"))
-parserTestSuite.addTest(
+parser_test_suite.addTest(
     TestMiSeqParser("test_get_pair_files_invalid_dir_valid_id"))
-parserTestSuite.addTest(
+parser_test_suite.addTest(
     TestMiSeqParser("test_get_pair_files_valid_dir_invalid_id"))
-parserTestSuite.addTest(
+parser_test_suite.addTest(
     TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
 
 
 if __name__ == "__main__":
     suiteList = []
 
-    suiteList.append(parserTestSuite)
+    suiteList.append(parser_test_suite)
     fullSuite = unittest.TestSuite(suiteList)
 
     runner = unittest.TextTestRunner()

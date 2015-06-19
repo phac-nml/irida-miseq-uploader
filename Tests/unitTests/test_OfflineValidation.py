@@ -236,6 +236,7 @@ class TestOfflineValidation(unittest.TestCase):
             "The given list of samples is empty" in v_res.get_errors())
 
     def test_validate_URL_form(self):
+
         url_list = [
             {"url": "http://google.com/",
              "valid": True},
@@ -258,40 +259,40 @@ class TestOfflineValidation(unittest.TestCase):
             self.assertEqual(is_valid, item["valid"])
 
 
-offValidationTestSuite = unittest.TestSuite()
+off_validation_test_suite = unittest.TestSuite()
 
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_sample_sheet_valid_sheet"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_sample_sheet_missing_data_header"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_sample_sheet_missing_header_sect"))
 
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_pair_files_valid"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_pair_files_invalid_odd_length"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
 
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validate_sample_list_valid"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validateSampleList_invalid_no_sample_proj"))
-offValidationTestSuite.addTest(
+off_validation_test_suite.addTest(
     TestOfflineValidation("test_validateSampleList_invalid_empty"))
 
-offValidationTestSuite.addTest(TestOfflineValidation("test_validate_URL_form"))
+off_validation_test_suite.addTest(TestOfflineValidation("test_validate_URL_form"))
 
 
 if __name__ == "__main__":
     suiteList = []
 
-    suiteList.append(offValidationTestSuite)
+    suiteList.append(off_validation_test_suite)
     fullSuite = unittest.TestSuite(suiteList)
 
     runner = unittest.TextTestRunner()

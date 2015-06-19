@@ -1,5 +1,5 @@
-from Tests.unitTests.test_OfflineValidation import offValidationTestSuite
-from Tests.unitTests.test_MiseqParser import parserTestSuite
+from Tests.unitTests.test_OfflineValidation import off_validation_test_suite
+from Tests.unitTests.test_MiseqParser import parser_test_suite
 from Tests.unitTests.test_ApiCalls import api_TestSuite
 from Tests.integrationTests.test_ApiCalls_integration import (
     api_integration_TestSuite)
@@ -14,8 +14,8 @@ selected tests.
 if __name__ == "__main__":
     suiteList = []
 
-    suiteList.append(offValidationTestSuite)
-    suiteList.append(parserTestSuite)
+    suiteList.append(off_validation_test_suite)
+    suiteList.append(parser_test_suite)
     suiteList.append(api_TestSuite)
     # suiteList.append(api_integration_TestSuite)
 
