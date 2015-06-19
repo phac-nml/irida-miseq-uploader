@@ -6,19 +6,19 @@ from os import path
 
 sys.path.append("../")
 
-from Parsers.miseqParser import (completeParseSamples, parseMetadata,
-                                 getPairFiles)
+from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
+                                 get_pair_files)
 from Model.SequencingRun import SequencingRun
-from Validation.offlineValidation import (validateSampleSheet,
-                                          validatePairFiles,
-                                          validateSampleList)
+from Validation.offlineValidation import (validate_sample_sheet,
+                                          validate_pair_files,
+                                          validate_sample_list)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
 
-pathToModule = path.dirname(__file__)
-if len(pathToModule) == 0:
-    pathToModule = '.'
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 
 class MainPanel(wx.Panel):
@@ -27,76 +27,78 @@ class MainPanel(wx.Panel):
         self.parent = parent
         wx.Panel.__init__(self, parent)
 
-        self.sampleSheetFile = ""
-        self.seqRun = None
-        self.browsePath = "../"  # os.getcwd()
-        self.fileDlg = None
-        self.confParser = RawConfigParser()
-        self.configFile = pathToModule + "/../config.conf"
-        self.confParser.read(self.configFile)
-        self.pBarPercent = 0
+        self.sample_sheet_file = ""
+        self.seq_run = None
+        self.browse_path = "../"  # os.getcwd()
+        self.file_dlg = None
+        self.conf_parser = RawConfigParser()
+        self.config_file = path_to_module + "/../config.conf"
+        self.conf_parser.read(self.config_file)
+        self.p_bar_percent = 0
 
         self.LONG_BOX_SIZE = (400, 32)  # url and directories
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
 
-        self.topSizer = wx.BoxSizer(wx.VERTICAL)
-        self.urlSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.directorySizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.userPassContainer = wx.BoxSizer(wx.VERTICAL)
-        self.usernameSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.passwordSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.userPassLogContainer = wx.BoxSizer(wx.HORIZONTAL)
-        self.logPanelSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.progressBarSizer = wx.BoxSizer(wx.VERTICAL)
-        self.uploadButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.top_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
+        self.username_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.user_pass_log_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.addSelectSampleSheetSection()
-        self.addURLsection()
-        self.addUsernameSection()
-        self.addPasswordSection()
-        self.addLogPanelSection()
-        self.addProgressBar()
-        self.addUploadButton()
+        self.add_select_sample_sheet_section()
+        self.add_URL_section()
+        self.add_username_section()
+        self.add_password_section()
+        self.add_log_panel_section()
+        self.add_progress_bar()
+        self.add_upload_button()
 
-        self.topSizer.AddSpacer(10)
+        self.top_sizer.AddSpacer(10)
 
-        self.topSizer.Add(
-            self.directorySizer, proportion=0, flag=wx.ALL, border=5)
-        self.topSizer.Add(self.urlSizer, proportion=0, flag=wx.ALL, border=5)
+        self.top_sizer.Add(
+            self.directory_sizer, proportion=0, flag=wx.ALL, border=5)
+        self.top_sizer.Add(self.url_sizer, proportion=0, flag=wx.ALL, border=5)
 
-        self.topSizer.AddSpacer(30)
+        self.top_sizer.AddSpacer(30)
 
-        self.userPassContainer.Add(
-            self.usernameSizer, proportion=0, flag=wx.ALL, border=5)
-        self.userPassContainer.Add(
-            self.passwordSizer, proportion=0, flag=wx.ALL, border=5)
+        self.user_pass_container.Add(
+            self.username_sizer, proportion=0, flag=wx.ALL, border=5)
+        self.user_pass_container.Add(
+            self.password_sizer, proportion=0, flag=wx.ALL, border=5)
 
-        self.userPassLogContainer.Add(
-            self.userPassContainer, proportion=0, flag=wx.ALL, border=5)
-        self.userPassLogContainer.Add(
-            self.logPanelSizer, proportion=0, flag=wx.ALL, border=5)
+        self.user_pass_log_container.Add(
+            self.user_pass_container, proportion=0, flag=wx.ALL, border=5)
+        self.user_pass_log_container.Add(
+            self.log_panel_sizer, proportion=0, flag=wx.ALL, border=5)
 
-        self.topSizer.Add(
-            self.userPassLogContainer, proportion=0, flag=wx.ALL, border=5)
-        self.topSizer.AddStretchSpacer()
+        self.top_sizer.Add(
+            self.user_pass_log_container, proportion=0, flag=wx.ALL, border=5)
 
-        self.topSizer.Add(
-            self.progressBarSizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER,
-            border=5)
-        self.topSizer.AddStretchSpacer()
+        self.top_sizer.AddStretchSpacer()
 
-        self.topSizer.Add(
-            self.uploadButtonSizer, proportion=0,
+        self.top_sizer.Add(
+            self.progress_bar_sizer, proportion=0,
+            flag=wx.ALL | wx.ALIGN_CENTER, border=5)
+
+        self.top_sizer.AddStretchSpacer()
+
+        self.top_sizer.Add(
+            self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=5)
 
-        self.SetSizer(self.topSizer)
+        self.SetSizer(self.top_sizer)
         self.Layout()
 
-        self.parent.Bind(wx.EVT_CLOSE, self.closeHandler)
+        self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
 
-    def addURLsection(self):
+    def add_URL_section(self):
         """
         Adds URL text label and text box in to panel
         Sets a tooltip when hovering over text label or text box describing
@@ -104,32 +106,32 @@ class MainPanel(wx.Panel):
 
         no return value
         """
-        self.baseUrlLabel = wx.StaticText(
+        self.base_URL_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Base URL")
-        self.baseUrlBox = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.prevUrl = self.confParser.get("iridaUploader", "baseURL")
-        self.baseUrlBox.SetValue(self.prevUrl)
+        self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.prev_URL = self.conf_parser.get("iridaUploader", "baseURL")
+        self.base_URL_box.SetValue(self.prev_URL)
 
-        self.saveUrlCheckbox = wx.CheckBox(
+        self.save_URL_checkbox = wx.CheckBox(
             parent=self, id=-1, label="Save URL for future use")
-        if len(self.prevUrl) > 0:
-            self.saveUrlCheckbox.SetValue(True)
+        if len(self.prev_URL) > 0:
+            self.save_URL_checkbox.SetValue(True)
         else:
-            self.saveUrlCheckbox.SetValue(False)
+            self.save_URL_checkbox.SetValue(False)
         self.Bind(
-            wx.EVT_CHECKBOX, self.urlCheckboxHandler, self.saveUrlCheckbox)
+            wx.EVT_CHECKBOX, self.url_checkbox_handler, self.save_URL_checkbox)
 
-        self.urlSizer.Add(self.baseUrlLabel, 0, wx.ALL, 5)
-        self.urlSizer.Add(self.baseUrlBox, 0, wx.ALL, 5)
-        self.urlSizer.Add(self.saveUrlCheckbox, 0, wx.ALL, 5)
+        self.url_sizer.Add(self.base_URL_label, 0, wx.ALL, 5)
+        self.url_sizer.Add(self.base_URL_box, 0, wx.ALL, 5)
+        self.url_sizer.Add(self.save_URL_checkbox, 0, wx.ALL, 5)
 
         tip = "Enter the URL for the IRIDA server"
-        self.baseUrlBox.SetToolTipString(tip)
-        self.baseUrlLabel.SetToolTipString(tip)
+        self.base_URL_box.SetToolTipString(tip)
+        self.base_URL_label.SetToolTipString(tip)
 
-    def addSelectSampleSheetSection(self):
+    def add_select_sample_sheet_section(self):
         """
         Adds data directory text label, text box and button in to panel
         Sets a tooltip when hovering over text label, text box or button
@@ -141,120 +143,120 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        self.directoryLabel = wx.StaticText(
+        self.dir_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File path")
-        self.directoryBox = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.browseButton = wx.Button(self, label="Choose samplesheet file")
-        self.browseButton.SetFocus()
+        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.browse_button = wx.Button(self, label="Choose samplesheet file")
+        self.browse_button.SetFocus()
 
-        self.directorySizer.Add(self.directoryLabel, 0, wx.ALL, 5)
-        self.directorySizer.Add(self.directoryBox, 0, wx.ALL, 5)
-        self.directorySizer.Add(self.browseButton, 0, wx.ALL, 5)
+        self.directory_sizer.Add(self.dir_label, 0, wx.ALL, 5)
+        self.directory_sizer.Add(self.dir_box, 0, wx.ALL, 5)
+        self.directory_sizer.Add(self.browse_button, 0, wx.ALL, 5)
 
         tip = "Select the SampleSheet.csv file for the sequence file(s) " + \
             "that you want to upload"
-        self.directoryBox.SetToolTipString(tip)
-        self.directoryLabel.SetToolTipString(tip)
-        self.browseButton.SetToolTipString(tip)
+        self.dir_box.SetToolTipString(tip)
+        self.dir_label.SetToolTipString(tip)
+        self.browse_button.SetToolTipString(tip)
 
-        self.Bind(wx.EVT_BUTTON, self.openDirDialog, self.browseButton)
+        self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
         # clicking directoryBox
-        self.directoryBox.Bind(wx.EVT_LEFT_DOWN, self.openDirDialog)
+        self.dir_box.Bind(wx.EVT_LEFT_DOWN, self.open_dir_dlg)
         # tabbing in to directorybox
-        self.directoryBox.Bind(wx.EVT_SET_FOCUS, self.openDirDialog)
+        self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
 
-    def addUsernameSection(self):
+    def add_username_section(self):
         """
         Adds username text label and text box in to panel
 
         no return value
         """
-        self.usernameLabel = wx.StaticText(
+        self.username_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Username")
-        self.usernameBox = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.usernameSizer.Add(self.usernameLabel)
-        self.usernameSizer.Add(self.usernameBox)
+        self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
+        self.username_sizer.Add(self.username_label)
+        self.username_sizer.Add(self.username_box)
 
-    def addPasswordSection(self):
+    def add_password_section(self):
         """
         Adds password text label and text box in to panel
 
         no return value
         """
-        self.passwordLabel = wx.StaticText(
+        self.password_label = wx.StaticText(
             self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Password")
-        self.passwordBox = wx.TextCtrl(
+        self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
-        self.passwordSizer.Add(self.passwordLabel)
-        self.passwordSizer.Add(self.passwordBox)
+        self.password_sizer.Add(self.password_label)
+        self.password_sizer.Add(self.password_box)
 
-    def addLogPanelSection(self):
+    def add_log_panel_section(self):
         """
         Adds log panel text control for displaying progress and errors
 
         no return value
         """
-        self.logPanel = wx.TextCtrl(
+        self.log_panel = wx.TextCtrl(
             self, id=-1,
             value="Waiting for user to select SampleSheet file.\n\n",
             size=(500, 200), style=wx.TE_MULTILINE | wx.TE_READONLY)
-        self.logPanelSizer.Add(self.logPanel)
+        self.log_panel_sizer.Add(self.log_panel)
 
-    def addProgressBar(self):
+    def add_progress_bar(self):
         """
         Adds progress bar. Will be used for displaying progress of
             sequence files upload.
 
         no return value
         """
-        self.progressLabel = wx.StaticText(
+        self.progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label=str(self.pBarPercent) + "%")
-        self.progressBar = wx.Gauge(self, range=100, size=(
-            self.parent.WindowSize[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progressBarSizer.Add(self.progressLabel)
-        self.progressBarSizer.Add(self.progressBar)
-        self.progressLabel.Hide()
-        self.progressBar.Hide()
+            label=str(self.p_bar_percent) + "%")
+        self.progress_bar = wx.Gauge(self, range=100, size=(
+            self.parent.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.progress_label)
+        self.progress_bar_sizer.Add(self.progress_bar)
+        self.progress_label.Hide()
+        self.progress_bar.Hide()
 
-    def addUploadButton(self):
+    def add_upload_button(self):
         """
         Adds upload button to panel
 
         no return value
         """
-        self.uploadButton = wx.Button(self, label="Upload")
-        self.uploadButton.Disable()
+        self.upload_button = wx.Button(self, label="Upload")
+        self.upload_button.Disable()
 
-        self.uploadButtonSizer.Add(self.uploadButton)
-        self.Bind(wx.EVT_BUTTON, self.uploadToServer, self.uploadButton)
+        self.upload_button_sizer.Add(self.upload_button)
+        self.Bind(wx.EVT_BUTTON, self.upload_to_server, self.upload_button)
 
         tip = "Upload sequence files to IRIDA server. " + \
             "Select a valid SampleSheet file to enable button."
-        self.uploadButton.SetToolTipString(tip)
+        self.upload_button.SetToolTipString(tip)
 
-    def displayWarning(self, warnMsg):
+    def display_warning(self, warn_msg):
         """Displays warning message
 
         arguments:
-                warnMsg -- message to display in warning dialog message box
+                warn_msg -- message to display in warning dialog message box
 
         no return value
         """
-        self.logPanel.AppendText(warnMsg + "\n")
+        self.log_panel.AppendText(warn_msg + "\n")
         warnDlg = wx.MessageDialog(
-            parent=self, message=warnMsg, caption="Warning!",
+            parent=self, message=warn_msg, caption="Warning!",
             style=wx.OK | wx.ICON_WARNING)
         warnDlg.ShowModal()
         warnDlg.Destroy()
 
-    def closeHandler(self, event):
+    def close_handler(self, event):
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
         Check status of saveUrlCheckbox and see if a new url to save has been
@@ -269,10 +271,10 @@ class MainPanel(wx.Panel):
 
         no return value
         """
-        self.urlCheckboxHandler()
+        self.url_checkbox_handler()
         self.parent.Destroy()
 
-    def urlCheckboxHandler(self, event=""):
+    def url_checkbox_handler(self, event=""):
         """
         Function bound to url checkbox being clicked.
         If the checkbox is checked then save the url currently in the
@@ -280,18 +282,18 @@ class MainPanel(wx.Panel):
         If the checkbox is unchecked then write back the original
             value of baseURL.
         """
-        if self.saveUrlCheckbox.IsChecked():
-            self.confParser.set(
-                "iridaUploader", "baseURL", self.baseUrlBox.GetValue())
-            with open(self.configFile, 'wb') as configfile:
-                self.confParser.write(configfile)
+        if self.save_URL_checkbox.IsChecked():
+            self.conf_parser.set(
+                "iridaUploader", "baseURL", self.base_URL_box.GetValue())
+            with open(self.config_file, 'wb') as configfile:
+                self.conf_parser.write(configfile)
 
         else:
-            self.confParser.set("iridaUploader", "baseURL", self.prevUrl)
-            with open(self.configFile, 'wb') as configfile:
-                self.confParser.write(configfile)
+            self.conf_parser.set("iridaUploader", "baseURL", self.prev_URL)
+            with open(self.config_file, 'wb') as configfile:
+                self.conf_parser.write(configfile)
 
-    def uploadToServer(self, event):
+    def upload_to_server(self, event):
         """
         Function bound to uploadButton being clicked
         Currently just prints values entered in text boxes
@@ -303,19 +305,19 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        print ("Server URL: " + self.baseUrlBox.GetValue() + "\n" + "User: " +
-               self.usernameBox.GetValue() + "\n" + "Password: " +
-               self.passwordBox.GetValue()).strip()
-        self.pBarPercent += 1
-        self.progressLabel.SetLabel(str(self.pBarPercent) + "%")
-        self.progressBar.SetValue(self.pBarPercent)
+        print("Server URL: " + self.base_URL_box.GetValue() + "\n" + "User: " +
+              self.username_box.GetValue() + "\n" + "Password: " +
+              self.password_box.GetValue()).strip()
+        self.p_bar_percent += 1
+        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
+        self.progress_bar.SetValue(self.p_bar_percent)
 
-        if self.seqRun is None:
-            print self.seqRun.getWorkflow()
-            pprint([self.seqRun.getPairFiles(sample.getID())
-                    for sample in self.seqRun.getSamplesList()])
+        if self.seq_run is not None:
+            print self.seq_run.get_workflow()
+            pprint([self.seq_run.get_pair_files(sample.get_id())
+                    for sample in self.seq_run.get_sample_list()])
 
-    def handleInvalidSheetOrSeqFile(self, msg):
+    def handle_invalid_sheet_or_seq_file(self, msg):
         """
         disable GUI elements and reset variables when an error happens
 
@@ -323,30 +325,30 @@ class MainPanel(wx.Panel):
         disables upload button - greyed out and unclickable
         progress bar and label are hidden
         progress bar percent counter is reset back to 0
-        self.seqRun set to None
+        self.seq_run set to None
 
         arguments:
                 msg -- message to display in warning dialog message box
 
         no return value
         """
-        self.displayWarning(msg)
-        self.uploadButton.Disable()
-        self.directoryBox.SetValue("")
-        self.progressLabel.Hide()
-        self.progressBar.Hide()
-        self.pBarPercent = 0
-        self.progressLabel.SetLabel(str(self.pBarPercent) + "%")
-        self.progressBar.SetValue(self.pBarPercent)
-        self.seqRun = None
+        self.display_warning(msg)
+        self.upload_button.Disable()
+        self.dir_box.SetValue("")
+        self.progress_label.Hide()
+        self.progress_bar.Hide()
+        self.p_bar_percent = 0
+        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
+        self.progress_bar.SetValue(self.p_bar_percent)
+        self.seq_run = None
 
-    def openDirDialog(self, event):
+    def open_dir_dlg(self, event):
         """
         Function bound to browseButton being clicked and directoryBox being
             clicked or tabbbed/focused
         Opens file dialog for user to select SampleSheet.csv
         Validates the selected SampleSheet
-        If it's valid then proceed to create the sequence run (createSeqRun)
+        If it's valid then proceed to create the sequence run (create_seq_run)
         else displays warning messagebox containing the error(s)
 
         arguments:
@@ -357,61 +359,61 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        self.browseButton.SetFocus()
+        self.browse_button.SetFocus()
 
-        self.fileDlg = wx.FileDialog(
-            self, "Select SampleSheet.csv file",  defaultDir=self.browsePath,
+        self.file_dlg = wx.FileDialog(
+            self, "Select SampleSheet.csv file",  defaultDir=self.browse_path,
             style=wx.DD_DEFAULT_STYLE)
 
-        if self.fileDlg.ShowModal() == wx.ID_OK:
+        if self.file_dlg.ShowModal() == wx.ID_OK:
 
-            self.browsePath = self.fileDlg.GetDirectory()
+            self.browse_path = self.file_dlg.GetDirectory()
 
             try:
-                vRes = validateSampleSheet(self.fileDlg.GetPath())
+                vRes = validate_sample_sheet(self.file_dlg.GetPath())
 
-                if vRes.isValid() == True:
-                    self.sampleSheetFile = self.fileDlg.GetPath()
+                if vRes.is_valid() == True:
+                    self.sample_sheet_file = self.file_dlg.GetPath()
 
                     try:
-                        self.createSeqRun()
-                        self.directoryBox.SetValue(self.sampleSheetFile)
-                        self.uploadButton.Enable()
-                        self.logPanel.AppendText(
+                        self.create_seq_run()
+                        self.dir_box.SetValue(self.sample_sheet_file)
+                        self.upload_button.Enable()
+                        self.log_panel.AppendText(
                             "Selected SampleSheet is valid\n")
-                        self.progressLabel.Show()
-                        self.progressBar.Show()
+                        self.progress_label.Show()
+                        self.progress_bar.Show()
                         self.Layout()
 
                     except (SampleSheetError, SequenceFileError), e:
-                        self.handleInvalidSheetOrSeqFile(str(e))
+                        self.handle_invalid_sheet_or_seq_file(str(e))
 
                 else:
-                    self.handleInvalidSheetOrSeqFile(vRes.getErrors())
+                    self.handle_invalid_sheet_or_seq_file(vRes.get_errors())
 
             except SampleSheetError, e:
-                self.handleInvalidSheetOrSeqFile(str(e))
+                self.handle_invalid_sheet_or_seq_file(str(e))
 
-        self.fileDlg.Destroy()
+        self.file_dlg.Destroy()
 
-    def createSeqRun(self):
+    def create_seq_run(self):
         """
-        Try to create a SequencingRun object and store in to self.seqRun
+        Try to create a SequencingRun object and store in to self.seq_run
         Parses out the metadata dictionary and sampleslist from selected
-            self.sampleSheetFile
+            self.sample_sheet_file
         raises errors:
                 if parsing raises/throws Exceptions
                 if the parsed out samplesList fails validation
                 if a pair file for a sample in samplesList fails validation
         these errors are expected to be caught by the calling function
-            openDirDialog and it will be the one sending them to displayWarning
+            open_dir_dlg and it will be the one sending them to display_warning
 
         no return value
         """
 
         try:
-            mDict = parseMetadata(self.sampleSheetFile)
-            sList = completeParseSamples(self.sampleSheetFile)
+            mDict = parse_metadata(self.sample_sheet_file)
+            sList = complete_parse_samples(self.sample_sheet_file)
 
         except SequenceFileError, e:
             raise SequenceFileError(str(e))
@@ -419,31 +421,31 @@ class MainPanel(wx.Panel):
         except SampleSheetError, e:
             raise SampleSheetError(str(e))
 
-        vRes = validateSampleList(sList)
-        if vRes.isValid() == True:
+        vRes = validate_sample_list(sList)
+        if vRes.is_valid() == True:
 
-            self.seqRun = SequencingRun()
-            self.seqRun.setMetadata(mDict)
-            self.seqRun.setSamplesList(sList)
+            self.seq_run = SequencingRun()
+            self.seq_run.set_metadata(mDict)
+            self.seq_run.set_sample_list(sList)
 
         else:
-            raise SequenceFileError(vRes.getErrors())
+            raise SequenceFileError(vRes.get_errors())
 
-        for sample in self.seqRun.getSamplesList():
-            pfList = self.seqRun.getPairFiles(sample.getID())
+        for sample in self.seq_run.get_sample_list():
+            pfList = self.seq_run.get_pair_files(sample.get_id())
 
-            vRes = validatePairFiles(pfList)
-            if vRes.isValid() == False:
-                raise SequenceFileError(vRes.getErrors())
+            vRes = validate_pair_files(pfList)
+            if vRes.is_valid() == False:
+                raise SequenceFileError(vRes.get_errors())
 
 
 class MainFrame(wx.Frame):
 
     def __init__(self):
-        self.WindowSize = (700, 500)
+        self.WINDOW_SIZE = (700, 500)
         wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
                           title="IRIDA Uploader",
-                          size=self.WindowSize,
+                          size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
         # use default frame style but disable border resize and maximize
