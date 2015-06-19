@@ -21,7 +21,7 @@ Build a virtualenv and install the dependencies:
 
 Remember that wxPython must be already installed using:
 
-    $ sudo apt-get install python-pip python-wxgtk2.8
+    $ sudo apt-get install python-wxgtk2.8
 
 Deactivate when finished:
 
