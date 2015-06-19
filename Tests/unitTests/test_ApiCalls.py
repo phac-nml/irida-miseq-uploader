@@ -105,7 +105,7 @@ class TestApiCalls(unittest.TestCase):
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_Form")
+    @patch("API.apiCalls.validate_URL_form")
     def test_create_session_valid_base_url_no_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
@@ -136,7 +136,7 @@ class TestApiCalls(unittest.TestCase):
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_Form")
+    @patch("API.apiCalls.validate_URL_form")
     def test_create_session_valid_base_url_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
@@ -164,7 +164,7 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
 
-    @patch("API.apiCalls.validate_URL_Form")
+    @patch("API.apiCalls.validate_URL_form")
     def test_create_session_invalid_form(self, mock_validate_url_form):
 
         mock_validate_url_form.side_effect = [False]
@@ -185,7 +185,7 @@ class TestApiCalls(unittest.TestCase):
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_Form")
+    @patch("API.apiCalls.validate_URL_form")
     def test_create_session_invalid_session(self, mock_validate_url_form,
                                             mock_get_oauth_service,
                                             mock_get_access_token,
@@ -536,14 +536,14 @@ class TestApiCalls(unittest.TestCase):
         proj_list = api.get_projects()
         self.assertEqual(len(proj_list), 2)
 
-        self.assertEqual(proj_list[0].getID(), p1_dict["identifier"])
-        self.assertEqual(proj_list[0].getName(), p1_dict["name"])
-        self.assertEqual(proj_list[0].getDescription(),
+        self.assertEqual(proj_list[0].get_id(), p1_dict["identifier"])
+        self.assertEqual(proj_list[0].get_name(), p1_dict["name"])
+        self.assertEqual(proj_list[0].get_description(),
                          p1_dict["projectDescription"])
 
-        self.assertEqual(proj_list[1].getID(), p2_dict["identifier"])
-        self.assertEqual(proj_list[1].getName(), p2_dict["name"])
-        self.assertEqual(proj_list[1].getDescription(),
+        self.assertEqual(proj_list[1].get_id(), p2_dict["identifier"])
+        self.assertEqual(proj_list[1].get_name(), p2_dict["name"])
+        self.assertEqual(proj_list[1].get_description(),
                          p2_dict["projectDescription"])
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -640,7 +640,7 @@ class TestApiCalls(unittest.TestCase):
 
         self.assertEqual(len(sample_list), 1)
         self.assertEqual(sample_dict.items(),
-                         sample_list[0].getDict().items())
+                         sample_list[0].get_dict().items())
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_get_samples_invalid_proj_id(self, mock_cs):
@@ -662,7 +662,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.get_samples(proj)
 
-        self.assertTrue(proj.getID() + " doesn't exist"
+        self.assertTrue(proj.get_id() + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -740,7 +740,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             seqRes = api.get_sequence_files(proj, sample)
 
-        self.assertTrue(proj.getID() + " doesn't exist"
+        self.assertTrue(proj.get_id() + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -769,7 +769,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.get_sequence_files(proj, sample)
 
-        self.assertTrue(sample.getID() + " doesn't exist"
+        self.assertTrue(sample.get_id() + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -828,7 +828,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_project(proj)
 
-        self.assertTrue("Invalid project name: " + proj.getName() in
+        self.assertTrue("Invalid project name: " + proj.get_name() in
                         str(err.exception))
         self.assertTrue("A project requires a name that must be" +
                         " 5 or more characters" in str(err.exception))
@@ -934,7 +934,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_samples(proj, [sample])
 
-        self.assertTrue(proj.getID() + " doesn't exist"
+        self.assertTrue(proj.get_id() + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")

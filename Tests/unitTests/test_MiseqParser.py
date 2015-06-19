@@ -5,15 +5,15 @@ from csv import reader
 
 sys.path.append("../../")
 from Model.Sample import Sample
-from Parsers.miseqParser import (parseMetadata, parseSamples, getCsvReader,
-                                 getPairFiles, parseOutSequenceFile,
-                                 completeParseSamples)
+from Parsers.miseqParser import (parse_metadata, parse_samples, get_csv_reader,
+                                 get_pair_files, parse_out_sequence_file,
+                                 complete_parse_samples)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
-pathToModule = path.dirname(__file__)
-if len(pathToModule) == 0:
-    pathToModule = '.'
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 
 class TestMiSeqParser(unittest.TestCase):
@@ -22,21 +22,23 @@ class TestMiSeqParser(unittest.TestCase):
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
     def test_getCsvReader_noSampleSheet(self):
-        dataDir = path.join(pathToModule, "fake_ngs_data", "Data")
+        dataDir = path.join(path_to_module, "fake_ngs_data", "Data")
 
         with self.assertRaises(SampleSheetError) as context:
-            csvReader = getCsvReader(dataDir)
+            csvReader = get_csv_reader(dataDir)
 
         self.assertTrue(
             "not a valid SampleSheet file" in str(context.exception))
 
     def test_getCsvReader_validSheet(self):
-        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
-        csvReader = getCsvReader(sheetFile)
+        sheetFile = path.join(path_to_module, "fake_ngs_data",
+                              "SampleSheet.csv")
+        csvReader = get_csv_reader(sheetFile)
 
     def test_parseMetadata(self):
-        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
-        metaData = parseMetadata(sheetFile)
+        sheetFile = path.join(path_to_module, "fake_ngs_data",
+                              "SampleSheet.csv")
+        metaData = parse_metadata(sheetFile)
 
         correctMetadata = {'readLengths': ['251', '250'],
                            'assay': 'Nextera XT',
@@ -54,10 +56,11 @@ class TestMiSeqParser(unittest.TestCase):
         self.assertEqual(correctMetadata, metaData)
 
     def test_completeParseSamples(self):
-        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
-        dataDir = path.join(pathToModule, "fake_ngs_data")
+        sheetFile = path.join(path_to_module, "fake_ngs_data",
+                              "SampleSheet.csv")
+        dataDir = path.join(path_to_module, "fake_ngs_data")
 
-        samplesList = completeParseSamples(sheetFile)
+        samplesList = complete_parse_samples(sheetFile)
         self.assertEqual(len(samplesList), 3)
 
         requiredDataHeaders = [
@@ -78,27 +81,28 @@ class TestMiSeqParser(unittest.TestCase):
 
             # sample only has the 4 required data headers as keys
             self.assertEqual(
-                len(sample.getDict().keys()), len(requiredDataHeaders))
+                len(sample.get_dict().keys()), len(requiredDataHeaders))
 
             # check if all values in requiredDataHeaders are found in the
             # sample's dictionary keys
             self.assertTrue(
-                all([dataHeader in sample.getDict().keys() for dataHeader in
+                all([dataHeader in sample.get_dict().keys() for dataHeader in
                     requiredDataHeaders]))
 
             # check if all values in seqFileHeaders are found in the Sequence
             # File properties dict /Sample metadata
             self.assertTrue(
-                all([dataHeader in sample.getSampleMetadata().keys()
+                all([dataHeader in sample.get_sample_metadata().keys()
                     for dataHeader in seqFileHeaders]))
 
-            self.assertEqual(len(sample.getPairFiles()), 2)
-            pfList = getPairFiles(dataDir, sample.getID())
-            self.assertEqual(pfList, sample.getPairFiles())
+            self.assertEqual(len(sample.get_pair_files()), 2)
+            pfList = get_pair_files(dataDir, sample.get_id())
+            self.assertEqual(pfList, sample.get_pair_files())
 
     def test_parseSamples(self):
-        sheetFile = path.join(pathToModule, "fake_ngs_data", "SampleSheet.csv")
-        samplesList = parseSamples(sheetFile)
+        sheetFile = path.join(path_to_module, "fake_ngs_data",
+                              "SampleSheet.csv")
+        samplesList = parse_samples(sheetFile)
 
         correctSamples = [
             {'Sample_Well': '01',
@@ -134,7 +138,7 @@ class TestMiSeqParser(unittest.TestCase):
              'index2': 'GGGGGGGG',
              'description': 'Deadly bug '}]
 
-        sampleListValues = [sample.getDict() for sample in samplesList]
+        sampleListValues = [sample.get_dict() for sample in samplesList]
         self.assertEqual(correctSamples, sampleListValues)
 
     def test_parseOutSequenceFile(self):
@@ -162,9 +166,9 @@ class TestMiSeqParser(unittest.TestCase):
                           'index2': 'GGGGGGGG',
                           'I5_Index_ID': 'S03'}
 
-        seqFile = parseOutSequenceFile(sample)
+        seqFile = parse_out_sequence_file(sample)
 
-        self.assertEqual(sample.getDict(), correctSample)
+        self.assertEqual(sample.get_dict(), correctSample)
         self.assertEqual(seqFile, correctSeqFile)
 
     def test_getPairFiles_invalidDir_invalidID(self):
@@ -173,7 +177,7 @@ class TestMiSeqParser(unittest.TestCase):
         invalidSampleID = "-1"
 
         with self.assertRaises(IOError) as context:
-            pairFileList = getPairFiles(invalidDir, invalidSampleID)
+            pairFileList = get_pair_files(invalidDir, invalidSampleID)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
@@ -182,28 +186,28 @@ class TestMiSeqParser(unittest.TestCase):
         validSampleID = "01-1111"
 
         with self.assertRaises(IOError) as context:
-            pairFileList = getPairFiles(invalidDir, validSampleID)
+            pairFileList = get_pair_files(invalidDir, validSampleID)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
     def test_getPairFiles_validDir_invalidID(self):
-        validDir = path.join(pathToModule, "fake_ngs_data")
+        validDir = path.join(path_to_module, "fake_ngs_data")
         invalidSampleID = "-1"
 
-        pairFileList = getPairFiles(validDir, invalidSampleID)
+        pairFileList = get_pair_files(validDir, invalidSampleID)
 
         self.assertEqual(len(pairFileList), 0)
 
     def test_getPairFiles_validDir_validID(self):
-        global pathToModule
-        validDir = path.join(pathToModule, "fake_ngs_data")
+        global path_to_module
+        validDir = path.join(path_to_module, "fake_ngs_data")
         validSampleID = "01-1111"
 
-        pairFileList = getPairFiles(validDir, validSampleID)
+        pairFileList = get_pair_files(validDir, validSampleID)
         correctPairList = [
-            path.join(pathToModule, "fake_ngs_data", "Data", "Intensities",
+            path.join(path_to_module, "fake_ngs_data", "Data", "Intensities",
                       "BaseCalls", "01-1111_S1_L001_R1_001.fastq.gz"),
-            path.join(pathToModule, "fake_ngs_data", "Data", "Intensities",
+            path.join(path_to_module, "fake_ngs_data", "Data", "Intensities",
                       "BaseCalls", "01-1111_S1_L001_R2_001.fastq.gz")]
         self.assertEqual(correctPairList, pairFileList)
 
