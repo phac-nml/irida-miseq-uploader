@@ -13,6 +13,7 @@ from Exceptions.SequenceFileError import SequenceFileError
 
 
 def parse_metadata(sample_sheet_file):
+
     """
     Parse all lines under [Header], [Reads] and [Settings] in .csv file
     Lines under [Reads] are stored in a list with key name "readLengths"
@@ -70,6 +71,7 @@ def parse_metadata(sample_sheet_file):
 
 
 def complete_parse_samples(sample_sheet_file):
+
     """
     Creates a complete Sample object:
     Sample dict will only have the required (and already translated) keys:
@@ -99,6 +101,7 @@ def complete_parse_samples(sample_sheet_file):
 
 
 def parse_samples(sample_sheet_file):
+
     """
     Parse all the lines under "[Data]" in .csv file
     Keys in sample_key_translation_dict have their values changed for
@@ -160,6 +163,7 @@ def parse_samples(sample_sheet_file):
 
 
 def parse_out_sequence_file(sample):
+
     """
     Removes keys in argument sample that are not in sample_keys and
         stores them in sequence_file_dict
@@ -185,6 +189,7 @@ def parse_out_sequence_file(sample):
 
 
 def get_csv_reader(sample_sheet_file):
+
     """
     tries to create a csv.reader object which will be used to
         parse through the lines in SampleSheet.csv
@@ -212,6 +217,7 @@ def get_csv_reader(sample_sheet_file):
 
 
 def get_pair_files(data_dir, sample_id):
+
     """
     find the pair sequence files for the given sample_id
     raises an error if no sequence pair files found
@@ -232,6 +238,7 @@ def get_pair_files(data_dir, sample_id):
 
 
 def recursive_find(top_dir, pattern):
+
     """
     Traverse through a directory and its subdirectories looking for files that
         match given pattern
@@ -242,6 +249,7 @@ def recursive_find(top_dir, pattern):
 
     returns list containing files that match pattern
     """
+
     result_list = []
 
     if path.isdir(top_dir):
