@@ -1,9 +1,11 @@
 ## Irida Uploader  
 
 
-### Installation  
-Install pip and wxpython:  
-    $ sudo apt-get install python-pip python-wxgtk2.8    $ pip install virtualenv  
+### Installation
+Install pip and wxpython:
+
+    $ sudo apt-get install python-pip python-wxgtk2.8
+    $ pip install virtualenv
 
 ### virtualenv usage  
 
@@ -17,10 +19,10 @@ Build a virtualenv and install the dependencies:
     $ pip install -r requirements.txt
     $ run scripts/virtualenv_wx.sh to use the already installed wxPython in virtualenv
 
-Remeber that wxPython must be already installed using:
+Remember that wxPython must be already installed using:
 
-  $ sudo apt-get install python-pip python-wxgtk2.8
+    $ sudo apt-get install python-pip python-wxgtk2.8
 
-Deactivate when finished:  
+Deactivate when finished:
 
-  $ deactivate  
+    $ deactivate
