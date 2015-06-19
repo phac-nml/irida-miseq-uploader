@@ -7,33 +7,33 @@ Keys: 'sampleName','description','sequencerSampleId','sampleProject'
 
 class Sample:
 
-    def __init__(self, newSampleDict):
-        self.sampleDict = dict(newSampleDict)
-        self.seqFile = None
+    def __init__(self, new_samp_dict):
+        self.sample_dict = dict(new_samp_dict)
+        self.seq_file = None
 
-    def getID(self):
+    def get_id(self):
         return self.get("sequencerSampleId")
 
-    def getDict(self):
-        return self.sampleDict
+    def get_dict(self):
+        return self.sample_dict
 
     def __getitem__(self, key):
-        retVal = None
-        if key in self.sampleDict:
-            retVal = self.sampleDict[key]
-        return retVal
+        ret_val = None
+        if key in self.sample_dict:
+            ret_val = self.sample_dict[key]
+        return ret_val
 
     def get(self, key):
         return self.__getitem__(key)
 
-    def getSampleMetadata(self):
-        return self.seqFile.getProperties()
+    def get_sample_metadata(self):
+        return self.seq_file.get_properties()
 
-    def getPairFiles(self):
-        return self.seqFile.getPairFiles()
+    def get_pair_files(self):
+        return self.seq_file.get_pair_files()
 
-    def setSeqFile(self, newSeqFile):
-        self.seqFile = newSeqFile
+    def set_seq_file(self, seq_file):
+        self.seq_file = seq_file
 
     def __str__(self):
-        return str(self.sampleDict) + str(self.seqFile)
+        return str(self.sample_dict) + str(self.seq_file)
