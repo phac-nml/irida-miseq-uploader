@@ -16,7 +16,7 @@ if __name__=="__main__":
 	suiteList.append(offValidationTestSuite)
 	suiteList.append(parserTestSuite)
 	suiteList.append(api_TestSuite)
-	suiteList.append(api_integration_TestSuite)
+	# suiteList.append(api_integration_TestSuite)
 
 
 	fullSuite = unittest.TestSuite(suiteList)
