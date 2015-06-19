@@ -12,26 +12,26 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
 
-def parseMetadata(sampleSheetFile):
+def parse_metadata(sample_sheet_file):
     """
     Parse all lines under [Header], [Reads] and [Settings] in .csv file
     Lines under [Reads] are stored in a list with key name "readLengths"
     All other key names are translated according to the
-        metadataKeyTranslationDictionary
+        metadata_key_translation_dict
 
     arguments:
-            sampleSheetFile -- path to SampleSheet.csv
+            sample_sheet_file -- path to SampleSheet.csv
 
     returns a dictionary containing the parsed key:pair values from .csv file
     """
 
-    metadataDict = {}
-    metadataDict["readLengths"] = []
+    metadata_dict = {}
+    metadata_dict["readLengths"] = []
 
-    csvReader = getCsvReader(sampleSheetFile)
-    addNextLineToDict = False
+    csv_reader = get_csv_reader(sample_sheet_file)
+    add_next_line_to_dict = False
 
-    metadataKeyTranslationDictionary = {
+    metadata_key_translation_dict = {
         'Assay': 'assay',
         'Description': 'description',
         'Application': 'application',
@@ -45,31 +45,31 @@ def parseMetadata(sampleSheetFile):
         'Chemistry': 'chemistry'
     }
 
-    for line in csvReader:
+    for line in csv_reader:
 
         if any(["[Header]" in line, "[Reads]" in line, "[Settings]" in line]):
-            addNextLineToDict = True
+            add_next_line_to_dict = True
 
-        elif addNextLineToDict:
+        elif add_next_line_to_dict:
 
             if len(line) == 2:
-                keyName = metadataKeyTranslationDictionary[line[0]]
-                metadataDict[keyName] = line[1]
+                key_name = metadata_key_translation_dict[line[0]]
+                metadata_dict[key_name] = line[1]
 
             elif len(line) == 1:  # case for "[Reads]"
 
-                metadataDict["readLengths"].append(line[0])
+                metadata_dict["readLengths"].append(line[0])
 
             elif len(line) == 0:  # current line is blank; end of section
-                addNextLineToDict = False
+                add_next_line_to_dict = False
 
         elif "[Data]" in line:
             break
 
-    return metadataDict
+    return metadata_dict
 
 
-def completeParseSamples(sampleSheetFile):
+def complete_parse_samples(sample_sheet_file):
     """
     Creates a complete Sample object:
     Sample dict will only have the required (and already translated) keys:
@@ -80,45 +80,45 @@ def completeParseSamples(sampleSheetFile):
     These Sample objects will be stored in a list.
 
     arguments:
-            sampleSheetFile -- path to SampleSheet.csv
+            sample_sheet_file -- path to SampleSheet.csv
 
     returns list containing complete Sample objects
     """
 
-    samplesList = parseSamples(sampleSheetFile)
-    dataDir = path.dirname(sampleSheetFile)
-    for sample in samplesList:
+    sample_list = parse_samples(sample_sheet_file)
+    data_dir = path.dirname(sample_sheet_file)
+    for sample in sample_list:
 
-        propertiesDict = parseOutSequenceFile(sample)
-        pfList = getPairFiles(dataDir, sample.getID())
-        sq = SequenceFile(propertiesDict, pfList)
+        properties_dict = parse_out_sequence_file(sample)
+        pf_list = get_pair_files(data_dir, sample.get_id())
+        sq = SequenceFile(properties_dict, pf_list)
 
-        sample.setSeqFile(deepcopy(sq))
+        sample.set_seq_file(deepcopy(sq))
 
-    return samplesList
+    return sample_list
 
 
-def parseSamples(sampleSheetFile):
+def parse_samples(sample_sheet_file):
     """
     Parse all the lines under "[Data]" in .csv file
-    Keys in sampleKeyTranslationDictionary have their values changed for
+    Keys in sample_key_translation_dict have their values changed for
         uploading to REST API
     All other keys keep the same name that they have in .csv file
 
     arguments:
-            sampleSheetFile -- path to SampleSheet.csv
+            sample_sheet_file -- path to SampleSheet.csv
 
     returns	a list containing Sample objects that have been created by a
         dictionary from the parsed out key:pair values from .csv file
     """
 
-    csvReader = getCsvReader(sampleSheetFile)
+    csv_reader = get_csv_reader(sample_sheet_file)
     # start with an ordered dictionary so that keys are ordered in the same
     # way that they are inserted.
-    sampleDict = OrderedDict()
-    samplesList = []
+    sample_dict = OrderedDict()
+    sample_list = []
 
-    sampleKeyTranslationDictionary = {
+    sample_key_translation_dict = {
         'Sample_Name': 'sampleName',
         'Description': 'description',
         'Sample_ID': 'sequencerSampleId',
@@ -126,131 +126,131 @@ def parseSamples(sampleSheetFile):
     }
 
     # initilize dictionary keys from first line (data headers/attributes)
-    setAttributes = False
-    for line in csvReader:
+    set_attributes = False
+    for line in csv_reader:
 
-        if setAttributes:
+        if set_attributes:
             for item in line:
 
-                if item in sampleKeyTranslationDictionary:
-                    keyName = sampleKeyTranslationDictionary[item]
+                if item in sample_key_translation_dict:
+                    key_name = sample_key_translation_dict[item]
                 else:
-                    keyName = item
+                    key_name = item
 
-                sampleDict[keyName] = ""
+                sample_dict[key_name] = ""
 
             break
 
         if "[Data]" in line:
-            setAttributes = True
+            set_attributes = True
 
     # fill in values for keys
-    for line in csvReader:
+    for line in csv_reader:
 
         i = 0
 
-        for key in sampleDict.keys():
-            sampleDict[key] = line[i]  # assumes values are never empty
+        for key in sample_dict.keys():
+            sample_dict[key] = line[i]  # assumes values are never empty
             i = i + 1
 
-        sample = Sample(deepcopy(sampleDict))
-        samplesList.append(sample)
+        sample = Sample(deepcopy(sample_dict))
+        sample_list.append(sample)
 
-    return samplesList
+    return sample_list
 
 
-def parseOutSequenceFile(sample):
+def parse_out_sequence_file(sample):
     """
-    Removes keys in argument sample that are not in sampleKeys and
-        stores them in sequenceFileDict
+    Removes keys in argument sample that are not in sample_keys and
+        stores them in sequence_file_dict
 
     arguments:
             sample -- Sample object
             the dictionary inside the Sample object is changed
 
-    returns a dictionary containing keys not in sampleKeys to be used to
+    returns a dictionary containing keys not in sample_keys to be used to
         create a SequenceFile object
     """
 
-    sampleKeys = ["sampleName", "description",
-                  "sequencerSampleId", "sampleProject"]
-    sequenceFileDict = {}
-    sampleDict = sample.getDict()
-    for key in sampleDict.keys()[:]:  # iterate through a copy
-        if key not in sampleKeys:
-            sequenceFileDict[key] = sampleDict[key]
-            del sampleDict[key]
+    sample_keys = ["sampleName", "description",
+                   "sequencerSampleId", "sampleProject"]
+    sequence_file_dict = {}
+    sample_dict = sample.get_dict()
+    for key in sample_dict.keys()[:]:  # iterate through a copy
+        if key not in sample_keys:
+            sequence_file_dict[key] = sample_dict[key]
+            del sample_dict[key]
 
-    return sequenceFileDict
+    return sequence_file_dict
 
 
-def getCsvReader(sampleSheetFile):
+def get_csv_reader(sample_sheet_file):
     """
     tries to create a csv.reader object which will be used to
         parse through the lines in SampleSheet.csv
     raises an error if:
-            sampleSheetFile is not an existing file
-            sampleSheetFile contains null byte(s)
+            sample_sheet_file is not an existing file
+            sample_sheet_file contains null byte(s)
 
     arguments:
-            dataDir -- the directory that has SampleSheet.csv in it
+            data_dir -- the directory that has SampleSheet.csv in it
 
     returns a csv.reader object
     """
 
-    csvFile = sampleSheetFile
+    csvFile = sample_sheet_file
     if path.isfile(csvFile) and '\0' not in open(csvFile).read():
 
         # open and read file in binary then send it to be parsed by csv's
         # reader
-        csvReader = reader(open(csvFile, "rb"))
+        csv_reader = reader(open(csvFile, "rb"))
     else:
-        msg = sampleSheetFile + " is not a valid SampleSheet file"
+        msg = sample_sheet_file + " is not a valid SampleSheet file"
         raise SampleSheetError(msg)
 
-    return csvReader
+    return csv_reader
 
 
-def getPairFiles(dataDir, sampleID):
+def get_pair_files(data_dir, sample_id):
     """
-    find the pair sequence files for the given sampleID
+    find the pair sequence files for the given sample_id
     raises an error if no sequence pair files found
 
     arguments:
-            dataDir -- the directory that has SampleSheet.csv in it
-            sampleID -- ID of the sample for the pair files
+            data_dir -- the directory that has SampleSheet.csv in it
+            sample_id -- ID of the sample for the pair files
 
 
-    returns a list containing the path of the pair files starting from dataDir
+    returns a list containing the path of the pair files starting from data_dir
     """
 
-    pattern = sampleID + "*.fastq.gz"
-    pairFileList = recursiveFind(dataDir, pattern)
-    pairFileList.sort()
+    pattern = sample_id + "*.fastq.gz"
+    pair_file_list = recursive_find(data_dir, pattern)
+    pair_file_list.sort()
 
-    return pairFileList
+    return pair_file_list
 
 
-def recursiveFind(topDir, pattern):
+def recursive_find(top_dir, pattern):
     """
     Traverse through a directory and its subdirectories looking for files that
         match given pattern
 
     arguments:
-            topDir -- top level directory to start searching from
+            top_dir -- top level directory to start searching from
             pattern -- pattern to try and match using fnfilter/ fnmatch.filter
 
     returns list containing files that match pattern
     """
-    resultList = []
+    result_list = []
 
-    if path.isdir(topDir):
-        for root, dirs, files in walk(topDir):
+    if path.isdir(top_dir):
+        for root, dirs, files in walk(top_dir):
             for filename in fnfilter(files, pattern):
                 res = path.join(root, filename)
-                resultList.append(res)
+                result_list.append(res)
     else:
-        msg = "Invalid directory " + topDir
+        msg = "Invalid directory " + top_dir
         raise IOError(msg)
 
-    return resultList
+    return result_list
