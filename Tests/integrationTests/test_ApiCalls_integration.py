@@ -45,16 +45,16 @@ class TestApiIntegration(unittest.TestCase):
         sample_list = api.get_samples(proj)
         sample = sample_list[len(sample_list) - 1]
 
-        seqFileList = api.get_sequence_files(proj, sample)
-        self.assertEqual(len(seqFileList), 2)
+        seq_file_list = api.get_sequence_files(proj, sample)
+        self.assertEqual(len(seq_file_list), 2)
 
-        seqFile1 = seqFileList[0]
-        seqFile2 = seqFileList[1]
-        self.assertTrue("file" in seqFile1)
-        self.assertTrue("file" in seqFile2)
-        self.assertEqual(str(seqFile1["fileName"]),
+        seq_file1 = seq_file_list[0]
+        seq_file2 = seq_file_list[1]
+        self.assertTrue("file" in seq_file1)
+        self.assertTrue("file" in seq_file2)
+        self.assertEqual(str(seq_file1["fileName"]),
                          "01-1111_S1_L001_R1_001.fastq")
-        self.assertEqual(str(seqFile2["fileName"]),
+        self.assertEqual(str(seq_file2["fileName"]),
                          "01-1111_S1_L001_R2_001.fastq")
 
     def test_get_and_send_project(self):
@@ -86,9 +86,10 @@ class TestApiIntegration(unittest.TestCase):
         self.assertTrue(len(proj_list) == 1)
 
         added_proj = proj_list[0]
-        self.assertEqual(added_proj.getName(), "integration testProject")
+        self.assertEqual(added_proj.get_name(), "integration testProject")
         self.assertEqual(
-            added_proj.getDescription(), "integration testProject description")
+            added_proj.get_description(),
+            "integration testProject description")
 
     def test_get_and_send_samples(self):
 
@@ -172,9 +173,9 @@ if __name__ == "__main__":
     suiteList = []
 
     suiteList.append(api_integration_TestSuite)
-    fullSuite = unittest.TestSuite(suiteList)
+    full_suite = unittest.TestSuite(suiteList)
 
     runner = unittest.TextTestRunner()
-    runner.run(fullSuite)
+    runner.run(full_suite)
 
     setup.stop_irida()
