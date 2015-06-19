@@ -24,6 +24,7 @@ if len(path_to_module) == 0:
 class MainPanel(wx.Panel):
 
     def __init__(self, parent):
+
         self.parent = parent
         wx.Panel.__init__(self, parent)
 
@@ -99,6 +100,7 @@ class MainPanel(wx.Panel):
         self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def add_URL_section(self):
+
         """
         Adds URL text label and text box in to panel
         Sets a tooltip when hovering over text label or text box describing
@@ -106,6 +108,7 @@ class MainPanel(wx.Panel):
 
         no return value
         """
+
         self.base_URL_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
@@ -132,6 +135,7 @@ class MainPanel(wx.Panel):
         self.base_URL_label.SetToolTipString(tip)
 
     def add_select_sample_sheet_section(self):
+
         """
         Adds data directory text label, text box and button in to panel
         Sets a tooltip when hovering over text label, text box or button
@@ -168,11 +172,13 @@ class MainPanel(wx.Panel):
         self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
 
     def add_username_section(self):
+
         """
         Adds username text label and text box in to panel
 
         no return value
         """
+
         self.username_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
@@ -182,11 +188,13 @@ class MainPanel(wx.Panel):
         self.username_sizer.Add(self.username_box)
 
     def add_password_section(self):
+
         """
         Adds password text label and text box in to panel
 
         no return value
         """
+
         self.password_label = wx.StaticText(
             self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
@@ -197,11 +205,13 @@ class MainPanel(wx.Panel):
         self.password_sizer.Add(self.password_box)
 
     def add_log_panel_section(self):
+
         """
         Adds log panel text control for displaying progress and errors
 
         no return value
         """
+
         self.log_panel = wx.TextCtrl(
             self, id=-1,
             value="Waiting for user to select SampleSheet file.\n\n",
@@ -209,12 +219,14 @@ class MainPanel(wx.Panel):
         self.log_panel_sizer.Add(self.log_panel)
 
     def add_progress_bar(self):
+
         """
         Adds progress bar. Will be used for displaying progress of
             sequence files upload.
 
         no return value
         """
+
         self.progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label=str(self.p_bar_percent) + "%")
@@ -226,11 +238,13 @@ class MainPanel(wx.Panel):
         self.progress_bar.Hide()
 
     def add_upload_button(self):
+
         """
         Adds upload button to panel
 
         no return value
         """
+
         self.upload_button = wx.Button(self, label="Upload")
         self.upload_button.Disable()
 
@@ -242,6 +256,7 @@ class MainPanel(wx.Panel):
         self.upload_button.SetToolTipString(tip)
 
     def display_warning(self, warn_msg):
+
         """Displays warning message
 
         arguments:
@@ -249,14 +264,16 @@ class MainPanel(wx.Panel):
 
         no return value
         """
+
         self.log_panel.AppendText(warn_msg + "\n")
-        warnDlg = wx.MessageDialog(
+        warn_dlg = wx.MessageDialog(
             parent=self, message=warn_msg, caption="Warning!",
             style=wx.OK | wx.ICON_WARNING)
-        warnDlg.ShowModal()
-        warnDlg.Destroy()
+        warn_dlg.ShowModal()
+        warn_dlg.Destroy()
 
     def close_handler(self, event):
+
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
         Check status of saveUrlCheckbox and see if a new url to save has been
@@ -271,10 +288,12 @@ class MainPanel(wx.Panel):
 
         no return value
         """
+
         self.url_checkbox_handler()
         self.parent.Destroy()
 
     def url_checkbox_handler(self, event=""):
+
         """
         Function bound to url checkbox being clicked.
         If the checkbox is checked then save the url currently in the
@@ -282,6 +301,7 @@ class MainPanel(wx.Panel):
         If the checkbox is unchecked then write back the original
             value of baseURL.
         """
+
         if self.save_URL_checkbox.IsChecked():
             self.conf_parser.set(
                 "iridaUploader", "baseURL", self.base_URL_box.GetValue())
@@ -294,8 +314,9 @@ class MainPanel(wx.Panel):
                 self.conf_parser.write(configfile)
 
     def upload_to_server(self, event):
+
         """
-        Function bound to uploadButton being clicked
+        Function bound to upload_button being clicked
         Currently just prints values entered in text boxes
             and pairFiles in seqRun
 
@@ -318,6 +339,7 @@ class MainPanel(wx.Panel):
                     for sample in self.seq_run.get_sample_list()])
 
     def handle_invalid_sheet_or_seq_file(self, msg):
+
         """
         disable GUI elements and reset variables when an error happens
 
@@ -332,6 +354,7 @@ class MainPanel(wx.Panel):
 
         no return value
         """
+
         self.display_warning(msg)
         self.upload_button.Disable()
         self.dir_box.SetValue("")
@@ -343,6 +366,7 @@ class MainPanel(wx.Panel):
         self.seq_run = None
 
     def open_dir_dlg(self, event):
+
         """
         Function bound to browseButton being clicked and directoryBox being
             clicked or tabbbed/focused
@@ -370,9 +394,9 @@ class MainPanel(wx.Panel):
             self.browse_path = self.file_dlg.GetDirectory()
 
             try:
-                vRes = validate_sample_sheet(self.file_dlg.GetPath())
+                v_res = validate_sample_sheet(self.file_dlg.GetPath())
 
-                if vRes.is_valid() == True:
+                if v_res.is_valid():
                     self.sample_sheet_file = self.file_dlg.GetPath()
 
                     try:
@@ -389,7 +413,7 @@ class MainPanel(wx.Panel):
                         self.handle_invalid_sheet_or_seq_file(str(e))
 
                 else:
-                    self.handle_invalid_sheet_or_seq_file(vRes.get_errors())
+                    self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
 
             except SampleSheetError, e:
                 self.handle_invalid_sheet_or_seq_file(str(e))
@@ -412,8 +436,8 @@ class MainPanel(wx.Panel):
         """
 
         try:
-            mDict = parse_metadata(self.sample_sheet_file)
-            sList = complete_parse_samples(self.sample_sheet_file)
+            m_dict = parse_metadata(self.sample_sheet_file)
+            s_list = complete_parse_samples(self.sample_sheet_file)
 
         except SequenceFileError, e:
             raise SequenceFileError(str(e))
@@ -421,22 +445,22 @@ class MainPanel(wx.Panel):
         except SampleSheetError, e:
             raise SampleSheetError(str(e))
 
-        vRes = validate_sample_list(sList)
-        if vRes.is_valid() == True:
+        v_res = validate_sample_list(s_list)
+        if v_res.is_valid():
 
             self.seq_run = SequencingRun()
-            self.seq_run.set_metadata(mDict)
-            self.seq_run.set_sample_list(sList)
+            self.seq_run.set_metadata(m_dict)
+            self.seq_run.set_sample_list(s_list)
 
         else:
-            raise SequenceFileError(vRes.get_errors())
+            raise SequenceFileError(v_res.get_errors())
 
         for sample in self.seq_run.get_sample_list():
-            pfList = self.seq_run.get_pair_files(sample.get_id())
+            pf_list = self.seq_run.get_pair_files(sample.get_id())
 
-            vRes = validate_pair_files(pfList)
-            if vRes.is_valid() == False:
-                raise SequenceFileError(vRes.get_errors())
+            v_res = validate_pair_files(pf_list)
+            if v_res.is_valid() is False:
+                raise SequenceFileError(v_res.get_errors())
 
 
 class MainFrame(wx.Frame):
