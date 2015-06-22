@@ -305,13 +305,12 @@ class MainPanel(wx.Panel):
         if self.save_URL_checkbox.IsChecked():
             self.conf_parser.set(
                 "iridaUploader", "baseURL", self.base_URL_box.GetValue())
-            with open(self.config_file, 'wb') as configfile:
-                self.conf_parser.write(configfile)
 
         else:
             self.conf_parser.set("iridaUploader", "baseURL", self.prev_URL)
-            with open(self.config_file, 'wb') as configfile:
-                self.conf_parser.write(configfile)
+
+        with open(self.config_file, 'wb') as configfile:
+            self.conf_parser.write(configfile)
 
     def upload_to_server(self, event):
 
