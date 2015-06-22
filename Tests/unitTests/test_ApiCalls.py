@@ -1013,10 +1013,10 @@ api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_proj_id"))
 api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_server_res"))
 
 if __name__ == "__main__":
-    suiteList = []
+    suite_list = []
 
-    suiteList.append(api_test_suite)
-    fullSuite = unittest.TestSuite(suiteList)
+    suite_list.append(api_test_suite)
+    full_suite = unittest.TestSuite(suite_list)
 
     runner = unittest.TextTestRunner()
-    runner.run(fullSuite)
+    runner.run(full_suite)

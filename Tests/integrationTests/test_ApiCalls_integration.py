@@ -132,15 +132,16 @@ class TestApiIntegration(unittest.TestCase):
             self.assertEqual(sample[key], added_sample.get(key))
 
 
-api_integration_TestSuite = unittest.TestSuite()
+api_integration_test_suite = unittest.TestSuite()
 
-api_integration_TestSuite.addTest(
+api_integration_test_suite.addTest(
     TestApiIntegration("test_connect_and_authenticate"))
-api_integration_TestSuite.addTest(
+api_integration_test_suite.addTest(
     TestApiIntegration("test_get_and_send_project"))
-api_integration_TestSuite.addTest(
+api_integration_test_suite.addTest(
     TestApiIntegration("test_get_and_send_samples"))
-# api_integration_TestSuite.addTest(TestApiIntegration("test_get_sequence_files"))
+# api_integration_test_suite.addTest(
+#    TestApiIntegration("test_get_sequence_files"))
 
 
 def irida_setup(setup):
@@ -170,10 +171,10 @@ if __name__ == "__main__":
         base_URL[:base_URL.index("/api")], username, password)
     client_id, client_secret, password = data_setup(setup)
 
-    suiteList = []
+    suite_list = []
 
-    suiteList.append(api_integration_TestSuite)
-    full_suite = unittest.TestSuite(suiteList)
+    suite_list.append(api_integration_test_suite)
+    full_suite = unittest.TestSuite(suite_list)
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
