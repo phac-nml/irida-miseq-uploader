@@ -6,6 +6,7 @@ Install pip and wxpython:
 
     $ sudo apt-get install python-pip python-wxgtk2.8
     $ pip install virtualenv
+    $ sudo python setup.py install
 
 ### virtualenv usage  
 
@@ -26,3 +27,4 @@ Remember that wxPython must be already installed using:
 Deactivate when finished:
 
     $ deactivate
+
