@@ -972,49 +972,50 @@ class TestApiCalls(unittest.TestCase):
                         session_response.text in str(err.exception))
 
 
-api_TestSuite = unittest.TestSuite()
+api_test_suite = unittest.TestSuite()
 
-api_TestSuite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
-api_TestSuite.addTest(
+api_test_suite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
+api_test_suite.addTest(
     TestApiCalls("test_validate_URL_existence_url_raise_err"))
-api_TestSuite.addTest(
+api_test_suite.addTest(
     TestApiCalls("test_validate_URL_existence_url_not_found"))
 
-api_TestSuite.addTest(
+api_test_suite.addTest(
     TestApiCalls("test_create_session_valid_base_url_no_slash"))
-api_TestSuite.addTest(TestApiCalls("test_create_session_valid_base_url_slash"))
-api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_form"))
-api_TestSuite.addTest(TestApiCalls("test_create_session_invalid_session"))
+api_test_suite.addTest(
+    TestApiCalls("test_create_session_valid_base_url_slash"))
+api_test_suite.addTest(TestApiCalls("test_create_session_invalid_form"))
+api_test_suite.addTest(TestApiCalls("test_create_session_invalid_session"))
 
-api_TestSuite.addTest(TestApiCalls("test_get_link_valid"))
-api_TestSuite.addTest(TestApiCalls("test_get_link_valid_targ_dict"))
-api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_url_not_found"))
-api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
-api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
-api_TestSuite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
+api_test_suite.addTest(TestApiCalls("test_get_link_valid"))
+api_test_suite.addTest(TestApiCalls("test_get_link_valid_targ_dict"))
+api_test_suite.addTest(TestApiCalls("test_get_link_invalid_url_not_found"))
+api_test_suite.addTest(TestApiCalls("test_get_link_invalid_key_not_found"))
+api_test_suite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_value"))
+api_test_suite.addTest(TestApiCalls("test_get_link_invalid_targ_dict_key"))
 
-api_TestSuite.addTest(TestApiCalls("test_get_projects_valid"))
-api_TestSuite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
+api_test_suite.addTest(TestApiCalls("test_get_projects_valid"))
+api_test_suite.addTest(TestApiCalls("test_get_projects_invalid_missing_key"))
 
-api_TestSuite.addTest(TestApiCalls("test_get_samples_valid"))
-api_TestSuite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
+api_test_suite.addTest(TestApiCalls("test_get_samples_valid"))
+api_test_suite.addTest(TestApiCalls("test_get_samples_invalid_proj_id"))
 
-api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_valid"))
-api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
-api_TestSuite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
+api_test_suite.addTest(TestApiCalls("test_get_sequence_files_valid"))
+api_test_suite.addTest(TestApiCalls("test_get_sequence_files_invalid_proj"))
+api_test_suite.addTest(TestApiCalls("test_get_sequence_files_invalid_sample"))
 
-api_TestSuite.addTest(TestApiCalls("test_send_project_valid"))
-api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_name"))
-api_TestSuite.addTest(TestApiCalls("test_send_project_invalid_server_res"))
+api_test_suite.addTest(TestApiCalls("test_send_project_valid"))
+api_test_suite.addTest(TestApiCalls("test_send_project_invalid_name"))
+api_test_suite.addTest(TestApiCalls("test_send_project_invalid_server_res"))
 
-api_TestSuite.addTest(TestApiCalls("test_send_samples_valid"))
-api_TestSuite.addTest(TestApiCalls("test_send_samples_invalid_proj_id"))
-api_TestSuite.addTest(TestApiCalls("test_send_samples_invalid_server_res"))
+api_test_suite.addTest(TestApiCalls("test_send_samples_valid"))
+api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_proj_id"))
+api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_server_res"))
 
 if __name__ == "__main__":
     suiteList = []
 
-    suiteList.append(api_TestSuite)
+    suiteList.append(api_test_suite)
     fullSuite = unittest.TestSuite(suiteList)
 
     runner = unittest.TextTestRunner()
