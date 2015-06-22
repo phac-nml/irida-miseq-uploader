@@ -74,7 +74,7 @@ def validate_sample_sheet(sample_sheet_file):
         if all_data_headers_found is False:
             missing_str = ""
             for data_header in found_data_headers:
-                if found_data_headers[data_header] == False:
+                if found_data_headers[data_header] is False:
                     missing_str = missing_str + data_header + ", "
 
             missing_str = missing_str[:-2]  # remove last ", "
