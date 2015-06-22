@@ -1,25 +1,26 @@
-class ValidationResult():
-	def __init__(self):
-		self.valid=None
-		self.errorMsgs=[]
+class ValidationResult:
 
-	def addErrorMsg(self,msg):
-		self.errorMsgs.append(msg)
+    def __init__(self):
+        self.valid = None
+        self.error_msgs = []
 
-	def setValid(self,boolean):
-		self.valid=boolean
+    def add_error_msg(self, msg):
+        self.error_msgs.append(msg)
 
-	def isValid(self):
-		return self.valid
+    def set_valid(self, boolean):
+        self.valid = boolean
 
-	def errorCount(self):
-		return len(self.errorMsgs)
+    def is_valid(self):
+        return self.valid
 
-	def getErrors(self):
-		retVal=""
-		if len(self.errorMsgs)>0:
-			for errorMsg in self.errorMsgs:
-				retVal=retVal+errorMsg+"\n"
-		else:
-			retVal="No error messages"
-		return retVal
+    def error_count(self):
+        return len(self.error_msgs)
+
+    def get_errors(self):
+        ret_val = ""
+        if len(self.error_msgs) > 0:
+            for error_msg in self.error_msgs:
+                ret_val = ret_val + error_msg + "\n"
+        else:
+            ret_val = "No error messages"
+        return ret_val

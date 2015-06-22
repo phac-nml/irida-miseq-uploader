@@ -1,246 +1,300 @@
 import sys
-sys.path.append("../../")
-
 import unittest
-
 from os import path
-from Parsers.miseqParser import parseSamples,getPairFiles
-from Validation.offlineValidation import validateSampleSheet, validatePairFiles, validateSampleList, validateURLForm
 
-pathToModule=path.dirname(__file__)
-if len(pathToModule)==0:
-	pathToModule='.'
+sys.path.append("../../")
+from Parsers.miseqParser import parse_samples, get_pair_files
+from Validation.offlineValidation import (validate_sample_sheet,
+                                          validate_pair_files,
+                                          validate_sample_list,
+                                          validate_URL_form)
+
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
+
 
 class TestOfflineValidation(unittest.TestCase):
 
-	def setUp(self):
-		print "\nStarting " + self.__module__ + ": " + self._testMethodName
+    def setUp(self):
 
-	def test_validateSampleSheet_validSheet(self):
-		csvFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
-		vRes=validateSampleSheet(csvFile)
-		self.assertTrue( vRes.isValid() )
+        print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
-	def test_validateSampleSheet_emptySheet(self):
-		csvFile=path.join(pathToModule,"testSampleSheets","emptySampleSheet.csv")
-		vRes=validateSampleSheet(csvFile)
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 3)
+    def test_validate_sample_sheet_valid_sheet(self):
 
-		self.assertTrue( "Missing required data header(s): Sample_Project, Sample_Name, Description, Sample_ID" in vRes.getErrors())
-		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
-		self.assertTrue( "[Data] section not found in SampleSheet" in vRes.getErrors())
+        csv_file = path.join(path_to_module, "fake_ngs_data",
+                             "SampleSheet.csv")
+        v_res = validate_sample_sheet(csv_file)
+        self.assertTrue(v_res.is_valid())
 
-	def test_validateSampleSheet_missing_DataHeader(self):
-		csvFile=path.join(pathToModule,"testSampleSheets","missingDataHeader.csv")#has [Header]+[Data] but missing required data header (Sample_Project)
-		vRes=validateSampleSheet(csvFile)
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 1)
+    def test_validate_sample_sheet_empty_sheet(self):
 
-		self.assertTrue( "Missing required data header(s): Sample_Project" in vRes.getErrors())
+        csv_file = path.join(
+            path_to_module, "testSampleSheets", "emptySampleSheet.csv")
+        v_res = validate_sample_sheet(csv_file)
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 3)
 
-	def test_validateSampleSheet_missing_HeaderSection(self):
-		csvFile=path.join(pathToModule,"testSampleSheets","missingHeaderSection.csv")#has [Data] and required data headers but missing [Header]
-		vRes=validateSampleSheet(csvFile)
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 1)
+        self.assertTrue(
+            "Missing required data header(s): Sample_Project, Sample_Name," +
+            " Description, Sample_ID" in v_res.get_errors())
+        self.assertTrue(
+            "[Header] section not found in SampleSheet" in v_res.get_errors())
+        self.assertTrue(
+            "[Data] section not found in SampleSheet" in v_res.get_errors())
 
-		self.assertTrue( "[Header] section not found in SampleSheet" in vRes.getErrors())
+    def test_validate_sample_sheet_missing_data_header(self):
 
-	def test_validatePairFiles_valid(self):
-		dataDir=path.join(pathToModule,"fake_ngs_data")
+        # has [Header]+[Data] but missing required data header (Sample_Project)
+        csv_file = path.join(
+            path_to_module, "testSampleSheets", "missingDataHeader.csv")
+        v_res = validate_sample_sheet(csv_file)
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
 
-		sampleID="01-1111"
-		pfList1=getPairFiles(dataDir,sampleID)
+        self.assertTrue(
+            "Missing required data header(s): Sample_Project"
+            in v_res.get_errors())
 
-		self.assertEqual( len(pfList1), 2)
-		vRes1=validatePairFiles(pfList1)
+    def test_validate_sample_sheet_missing_header_sect(self):
 
-		self.assertTrue( vRes1.isValid())
-		self.assertEqual( vRes1.errorCount(), 0 )
-		self.assertTrue("No error messages" in vRes1.getErrors())
+        # has [Data] and required data headers but missing [Header]
+        csv_file = path.join(
+            path_to_module, "testSampleSheets", "missingHeaderSection.csv")
+        v_res = validate_sample_sheet(csv_file)
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
 
-		sampleID="02-2222"
-		pfList2=getPairFiles(dataDir,sampleID)
+        self.assertTrue(
+            "[Header] section not found in SampleSheet" in v_res.get_errors())
 
-		self.assertEqual( len(pfList2), 2)
-		vRes2=validatePairFiles(pfList2)
+    def test_validate_pair_files_valid(self):
 
-		self.assertTrue( vRes2.isValid() )
-		self.assertEqual( vRes2.errorCount(), 0 )
-		self.assertTrue("No error messages" in vRes2.getErrors())
+        data_dir = path.join(path_to_module, "fake_ngs_data")
 
-		pfList3= pfList1+pfList2
-		self.assertEqual( len(pfList3), 4)
+        sample_id = "01-1111"
+        pf_list1 = get_pair_files(data_dir, sample_id)
 
-		vRes3=validatePairFiles(pfList3)
-		self.assertTrue( vRes3.isValid() )
-		self.assertEqual( vRes3.errorCount(), 0 )
-		self.assertTrue("No error messages" in vRes3.getErrors())
+        self.assertEqual(len(pf_list1), 2)
+        v_res1 = validate_pair_files(pf_list1)
 
+        self.assertTrue(v_res1.is_valid())
+        self.assertEqual(v_res1.error_count(), 0)
+        self.assertTrue("No error messages" in v_res1.get_errors())
 
-	def test_validatePairFiles_invalid_oddLength(self):
-		dataDir=path.join(pathToModule,"testSeqPairFiles","oddLength")
+        sample_id = "02-2222"
+        pf_list2 = get_pair_files(data_dir, sample_id)
 
-		sampleID="01-1111"
-		pfList=getPairFiles(dataDir,sampleID)
+        self.assertEqual(len(pf_list2), 2)
+        v_res2 = validate_pair_files(pf_list2)
 
-		self.assertEqual( len(pfList), 1)
-		vRes= validatePairFiles(pfList)
+        self.assertTrue(v_res2.is_valid())
+        self.assertEqual(v_res2.error_count(), 0)
+        self.assertTrue("No error messages" in v_res2.get_errors())
 
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 1)
-		self.assertTrue("The given file list has an odd number of files" in vRes.getErrors())
+        pf_list3 = pf_list1 + pf_list2
+        self.assertEqual(len(pf_list3), 4)
 
-	def test_validatePairFiles_invalid_noPair(self):
-		dataDir=path.join(pathToModule,"testSeqPairFiles","noPair")
+        v_res3 = validate_pair_files(pf_list3)
+        self.assertTrue(v_res3.is_valid())
+        self.assertEqual(v_res3.error_count(), 0)
+        self.assertTrue("No error messages" in v_res3.get_errors())
 
-		sampleID="01-1111"
-		pfList1=getPairFiles(dataDir,sampleID)
-		#01-1111_S1_L001_R1_001.fastq.gz, 01-1111_S1_L001_R9_001.fastq.gz
+    def test_validate_pair_files_invalid_odd_length(self):
 
-		self.assertEqual( len(pfList1), 2)
-		vRes1=validatePairFiles(pfList1)
+        data_dir = path.join(path_to_module, "testSeqPairFiles", "oddLength")
 
-		self.assertFalse( vRes1.isValid() )
-		self.assertEqual( vRes1.errorCount(), 1 )
-		self.assertTrue( "No pair sequence file found" in vRes1.getErrors() )
+        sample_id = "01-1111"
+        pf_list = get_pair_files(data_dir, sample_id)
 
+        self.assertEqual(len(pf_list), 1)
+        v_res = validate_pair_files(pf_list)
 
-		sampleID="02-2222"
-		pfList2=getPairFiles(dataDir,sampleID)
-		#02-2222_S1_L001_R2_001.fastq.gz, 02-2222_S1_L001_R8_001.fastq.gz
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
+        self.assertTrue(
+            "The given file list has an odd number of files"
+            in v_res.get_errors())
 
-		self.assertEqual( len(pfList2), 2)
-		vRes2=validatePairFiles(pfList2)
+    def test_validate_pair_files_invalid_no_pair(self):
 
-		self.assertFalse( vRes2.isValid() )
-		self.assertEqual( vRes2.errorCount(), 1)
-		self.assertTrue( "No pair sequence file found" in vRes2.getErrors() )
+        data_dir = path.join(path_to_module, "testSeqPairFiles", "noPair")
 
-		pfList3= pfList1+pfList2
-		self.assertEqual( len(pfList3), 4)
+        sample_id = "01-1111"
+        pf_list1 = get_pair_files(data_dir, sample_id)
+        # 01-1111_S1_L001_R1_001.fastq.gz, 01-1111_S1_L001_R9_001.fastq.gz
 
-		vRes3=validatePairFiles(pfList3)
+        self.assertEqual(len(pf_list1), 2)
+        v_res1 = validate_pair_files(pf_list1)
 
-		self.assertFalse( vRes3.isValid() )
-		self.assertEqual( vRes3.errorCount(), 1)
-		self.assertTrue( "No pair sequence file found" in vRes3.getErrors() )
+        self.assertFalse(v_res1.is_valid())
+        self.assertEqual(v_res1.error_count(), 1)
+        self.assertTrue("No pair sequence file found" in v_res1.get_errors())
 
+        sample_id = "02-2222"
+        pf_list2 = get_pair_files(data_dir, sample_id)
+        # 02-2222_S1_L001_R2_001.fastq.gz, 02-2222_S1_L001_R8_001.fastq.gz
 
-	def test_validatePairFiles_invalid_seqFiles(self):
-		dataDir=path.join(pathToModule,"testSeqPairFiles","invalidSeqFiles")
+        self.assertEqual(len(pf_list2), 2)
+        v_res2 = validate_pair_files(pf_list2)
 
-		sampleID="01-1111"
-		pfList1=getPairFiles(dataDir,sampleID)
-		#01-1111_S1_L001_R0_001.fastq.gz, 01-1111_S1_L001_R3_001.fastq.gz
+        self.assertFalse(v_res2.is_valid())
+        self.assertEqual(v_res2.error_count(), 1)
+        self.assertTrue("No pair sequence file found" in v_res2.get_errors())
 
-		self.assertEqual( len(pfList1), 2)
-		vRes1=validatePairFiles(pfList1)
+        pf_list3 = pf_list1 + pf_list2
+        self.assertEqual(len(pf_list3), 4)
 
-		self.assertFalse( vRes1.isValid() )
-		self.assertEqual( vRes1.errorCount(), 1)
-		self.assertTrue("doesn't contain either 'R1' or 'R2' in filename" in vRes1.getErrors())
+        v_res3 = validate_pair_files(pf_list3)
 
-		sampleID="02-2222"
-		pfList2=getPairFiles(dataDir,sampleID)
-		#02-2222_S1_L001_R5_001.fastq.gz, 02-2222_S1_L001_R4_001.fastq.gz
+        self.assertFalse(v_res3.is_valid())
+        self.assertEqual(v_res3.error_count(), 1)
+        self.assertTrue("No pair sequence file found" in v_res3.get_errors())
 
-		self.assertEqual( len(pfList2), 2)
-		vRes2=validatePairFiles(pfList2)
+    def test_validate_pair_files_invalid_seq_files(self):
 
-		self.assertFalse( vRes2.isValid() )
-		self.assertEqual( vRes2.errorCount(), 1 )
-		self.assertTrue("doesn't contain either 'R1' or 'R2' in filename" in vRes2.getErrors())
+        data_dir = path.join(
+            path_to_module, "testSeqPairFiles", "invalidSeqFiles")
 
-		pfList3= pfList1+ pfList2
+        sample_id = "01-1111"
+        pf_list1 = get_pair_files(data_dir, sample_id)
+        # 01-1111_S1_L001_R0_001.fastq.gz, 01-1111_S1_L001_R3_001.fastq.gz
 
-		self.assertEqual( len(pfList3),4 )
-		vRes3=validatePairFiles(pfList3)
+        self.assertEqual(len(pf_list1), 2)
+        v_res1 = validate_pair_files(pf_list1)
 
-		self.assertFalse( vRes3.isValid() )
-		self.assertEqual( vRes3.errorCount(), 1 )
-		self.assertTrue("doesn't contain either 'R1' or 'R2' in filename" in vRes3.getErrors())
+        self.assertFalse(v_res1.is_valid())
+        self.assertEqual(v_res1.error_count(), 1)
+        self.assertTrue(
+            "doesn't contain either 'R1' or 'R2' in filename"
+            in v_res1.get_errors())
 
-	def test_validateSampleList_valid(self):
-		csvFile=path.join(pathToModule,"fake_ngs_data","SampleSheet.csv")
+        sample_id = "02-2222"
+        pf_list2 = get_pair_files(data_dir, sample_id)
+        # 02-2222_S1_L001_R5_001.fastq.gz, 02-2222_S1_L001_R4_001.fastq.gz
 
-		samplesList=parseSamples(csvFile)
-		self.assertEqual( len(samplesList), 3)
+        self.assertEqual(len(pf_list2), 2)
+        v_res2 = validate_pair_files(pf_list2)
 
-		vRes=validateSampleList(samplesList)
-		self.assertTrue( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 0 )
-		self.assertTrue( "No error messages" in vRes.getErrors() )
+        self.assertFalse(v_res2.is_valid())
+        self.assertEqual(v_res2.error_count(), 1)
+        self.assertTrue(
+            "doesn't contain either 'R1' or 'R2' in filename"
+            in v_res2.get_errors())
 
-	def test_validateSampleList_invalid_noSampleProj(self):
-		csvFile=path.join(pathToModule,"testSeqPairFiles","noSampleProj","SampleSheet.csv")#missing Sample_Project
+        pf_list3 = pf_list1 + pf_list2
 
-		samplesList=parseSamples(csvFile)
+        self.assertEqual(len(pf_list3), 4)
+        v_res3 = validate_pair_files(pf_list3)
 
-		self.assertEqual( len(samplesList), 3)
-		vRes=validateSampleList(samplesList)
+        self.assertFalse(v_res3.is_valid())
+        self.assertEqual(v_res3.error_count(), 1)
+        self.assertTrue(
+            "doesn't contain either 'R1' or 'R2' in filename"
+            in v_res3.get_errors())
 
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 1 )
-		self.assertTrue( "No sampleProject found for sample" in vRes.getErrors() )
+    def test_validate_sample_list_valid(self):
 
-	def test_validateSampleList_invalid_Empty(self):
-		samplesList=[]
+        csv_file = path.join(path_to_module, "fake_ngs_data",
+                             "SampleSheet.csv")
 
-		self.assertEqual( len(samplesList), 0)
-		vRes=validateSampleList(samplesList)
+        sample_list = parse_samples(csv_file)
+        self.assertEqual(len(sample_list), 3)
 
-		self.assertFalse( vRes.isValid() )
-		self.assertEqual( vRes.errorCount(), 1 )
-		self.assertTrue( "The given list of samples is empty" in vRes.getErrors() )
+        v_res = validate_sample_list(sample_list)
+        self.assertTrue(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 0)
+        self.assertTrue("No error messages" in v_res.get_errors())
 
-	def test_validateURLForm(self):
-		urlList=[
-			{"url":"http://google.com/",
-			"valid":True},
+    def test_validateSampleList_invalid_no_sample_proj(self):
 
-			{"url":"http://localhost:8080/",
-			"valid":True},
+        # missing Sample_Project
+        csv_file = path.join(
+            path_to_module, "testSeqPairFiles", "noSampleProj",
+            "SampleSheet.csv")
 
-			{"url":"www.google.com/",
-			"valid":False},
+        sample_list = parse_samples(csv_file)
 
-			{"url":"www.google.com",
-			"valid":False},
+        self.assertEqual(len(sample_list), 3)
+        v_res = validate_sample_list(sample_list)
 
-			{"url":"google.com",
-			"valid":False}
-		]
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
+        self.assertTrue(
+            "No sampleProject found for sample" in v_res.get_errors())
 
-		for item in urlList:
-			isValid= validateURLForm( item["url"] )
-			self.assertEqual( isValid, item["valid"] )
+    def test_validateSampleList_invalid_empty(self):
 
+        sample_list = []
 
-offValidationTestSuite= unittest.TestSuite()
+        self.assertEqual(len(sample_list), 0)
+        v_res = validate_sample_list(sample_list)
 
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_validSheet") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_missing_DataHeader") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_emptySheet") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleSheet_missing_HeaderSection") )
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
+        self.assertTrue(
+            "The given list of samples is empty" in v_res.get_errors())
 
-offValidationTestSuite.addTest( TestOfflineValidation("test_validatePairFiles_valid") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validatePairFiles_invalid_oddLength") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validatePairFiles_invalid_noPair") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validatePairFiles_invalid_seqFiles") )
+    def test_validate_URL_form(self):
 
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleList_valid") )
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateSampleList_invalid_noSampleProj") )
+        url_list = [
+            {"url": "http://google.com/",
+             "valid": True},
 
-offValidationTestSuite.addTest( TestOfflineValidation("test_validateURLForm") )
+            {"url": "http://localhost:8080/",
+             "valid": True},
 
+            {"url": "www.google.com/",
+             "valid": False},
 
-if __name__=="__main__":
-	suiteList=[]
+            {"url": "www.google.com",
+             "valid": False},
 
-	suiteList.append(offValidationTestSuite)
-	fullSuite = unittest.TestSuite(suiteList)
+            {"url": "google.com",
+             "valid": False}
+        ]
 
-	runner = unittest.TextTestRunner()
-	runner.run(fullSuite)
+        for item in url_list:
+            is_valid = validate_URL_form(item["url"])
+            self.assertEqual(is_valid, item["valid"])
+
+
+off_validation_test_suite = unittest.TestSuite()
+
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_sample_sheet_valid_sheet"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_sample_sheet_missing_data_header"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_sample_sheet_missing_header_sect"))
+
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_pair_files_valid"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_pair_files_invalid_odd_length"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
+
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_sample_list_valid"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validateSampleList_invalid_no_sample_proj"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validateSampleList_invalid_empty"))
+
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_URL_form"))
+
+
+if __name__ == "__main__":
+    suite_list = []
+
+    suite_list.append(off_validation_test_suite)
+    full_suite = unittest.TestSuite(suite_list)
+
+    runner = unittest.TextTestRunner()
+    runner.run(full_suite)

@@ -1,32 +1,33 @@
 """
-	Holds pair files and Sample metadata:	
-    samplePlate
-    sampleWell
-    i7IndexID
-    index
-    i5IndexID
-    index2
-	etc.
-
+Holds pair files and Sample metadata:
+samplePlate
+sampleWell
+i7IndexID
+index
+i5IndexID
+index2
+etc.
 """
-class SequenceFile:
-	def __init__(self, newPropertiesDict, newPairFileList):
-		self.propertiesDict=newPropertiesDict#Sample metadata
-		self.pairFileList=newPairFileList
-		self.pairFileList.sort()
-	
-	def getProperties(self):
-		return self.propertiesDict
-		
-	def get(self,key):
-		retVal=None
-		if self.propertiesDict.has_key(key):
-			retVal=self.propertiesDict[key]
-		return retVal
-		
-	def getPairFiles(self):
-		return self.pairFileList
 
-	def __str__(self):
-		return str(self.propertiesDict) + str(self.pairFileList)
-	
+
+class SequenceFile:
+
+    def __init__(self, properties_dict, pair_file_list):
+        self.properties_dict = properties_dict  # Sample metadata
+        self.pair_file_list = pair_file_list
+        self.pair_file_list.sort()
+
+    def get_properties(self):
+        return self.properties_dict
+
+    def get(self, key):
+        retVal = None
+        if self.properties_dict in key:
+            retVal = self.properties_dict[key]
+        return retVal
+
+    def get_pair_files(self):
+        return self.pair_file_list
+
+    def __str__(self):
+        return str(self.properties_dict) + str(self.pair_file_list)

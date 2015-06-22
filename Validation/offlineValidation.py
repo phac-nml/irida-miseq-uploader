@@ -1,182 +1,205 @@
 import sys
-sys.path.append("../")
-
 from csv import reader
 from copy import deepcopy
-from Parsers.miseqParser import getCsvReader
-from Model.ValidationResult import ValidationResult
 from urlparse import urlparse
 
-def validateSampleSheet(sampleSheetFile):
-	"""
-	Checks if the given sampleSheetFile can be parsed
-	Requires [Header] because it contains Workflow
-	Requires [Data] for creating Sample objects and requires Sample_ID, Sample_Name, Sample_Project and Description table headers
-
-	arguments:
-		sampleSheetFile -- path to SampleSheet.csv
-
-	returns ValidationResult object - stores bool valid and list of string error messages
-	"""
-
-	csvReader=getCsvReader(sampleSheetFile)
-
-	vRes=ValidationResult()
-
-	valid=False
-	allDataHeadersFound=False
-	dataSectionFound=False
-	headerSectionFound=False
-	checkDataHeaders=False
-
-	#status of required data headers
-	foundDataHeaders={
-		"Sample_ID":False,
-		"Sample_Name":False,
-		"Sample_Project":False,
-		"Description":False}
-
-	for line in csvReader:
-
-		if "[Data]" in line:
-			dataSectionFound=True
-			checkDataHeaders=True#next line contains data headers
-
-		elif "[Header]" in line:
-			headerSectionFound=True
-
-		elif checkDataHeaders==True:
-
-			for dataHeader in foundDataHeaders.keys():
-				if dataHeader in line:
-					foundDataHeaders[dataHeader]=True
-
-			#if all required dataHeaders are found
-			if all(foundDataHeaders.values()):
-				allDataHeadersFound=True
-
-			checkDataHeaders=False
-
-	if all([headerSectionFound==True, dataSectionFound==True, allDataHeadersFound==True]):
-		valid=True
-
-	else:
-		if headerSectionFound==False:
-			vRes.addErrorMsg("[Header] section not found in SampleSheet")
-
-		if dataSectionFound==False:
-			vRes.addErrorMsg("[Data] section not found in SampleSheet")
-
-		if allDataHeadersFound==False:
-			missingStr=""
-			for dataHeader in foundDataHeaders:
-				if  foundDataHeaders[dataHeader]==False:
-					missingStr=missingStr+dataHeader+", "
-
-			missingStr=missingStr[:-2]# remove last ", "
-			vRes.addErrorMsg("Missing required data header(s): " + missingStr)
-
-	vRes.setValid(valid)
-
-	return vRes
+sys.path.append("../")
+from Parsers.miseqParser import get_csv_reader
+from Model.ValidationResult import ValidationResult
 
 
-def validatePairFiles(fileList):
-	"""
-	Validate files in fileList to have a matching pair file.
-	R1 sequence file must have a match of R2 sequence file.
-	All files in fileList must have a pair to be valid.
+def validate_sample_sheet(sample_sheet_file):
 
-	arguments:
-		fileList -- list containing fastq.gz files
-		doesn't alter fileList
+    """
+    Checks if the given sample_sheet_file can be parsed
+    Requires [Header] because it contains Workflow
+    Requires [Data] for creating Sample objects and requires
+        Sample_ID, Sample_Name, Sample_Project and Description table headers
 
-	returns ValidationResult object - stores bool valid and list of string error messages
-	"""
+    arguments:
+            sample_sheet_file -- path to SampleSheet.csv
 
-	vRes=ValidationResult()
-	validationFList=deepcopy(fileList)
-	valid=False
-	if len(validationFList)>0 and len(validationFList)%2==0:
-		valid=True
+    returns ValidationResult object - stores bool valid and
+        list of string error messages
+    """
 
-		for file in validationFList:
-			if 'R1' in file:
-				matchingPairFile=file.replace('R1','R2')
-			elif 'R2' in file:
-				matchingPairFile=file.replace('R2','R1')
-			else:
-				valid=False
-				vRes.addErrorMsg(file + " doesn't contain either 'R1' or 'R2' in filename.\nRequired for identifying sequence files.")
-				break
+    csv_reader = get_csv_reader(sample_sheet_file)
 
-			if matchingPairFile in validationFList:
-				validationFList.remove(matchingPairFile)
-				validationFList.remove(file)
+    v_res = ValidationResult()
 
-			else:
-				valid=False
-				vRes.addErrorMsg("No pair sequence file found for:" + file + "\nRequired matching sequence file: " + matchingPairFile)
-				break
+    valid = False
+    all_data_headers_found = False
+    data_sect_found = False
+    header_sect_found = False
+    check_data_headers = False
 
-	else:
-		vRes.addErrorMsg("The given file list has an odd number of files.\nRequires an even number of files in order for each sequence file to have a pair.")
+    # status of required data headers
+    found_data_headers = {
+        "Sample_ID": False,
+        "Sample_Name": False,
+        "Sample_Project": False,
+        "Description": False}
 
-	vRes.setValid(valid)
-	return vRes
+    for line in csv_reader:
 
+        if "[Data]" in line:
+            data_sect_found = True
+            check_data_headers = True  # next line contains data headers
 
-def validateSampleList(samplesList):
-	"""
-	Iterates through given samples list and tries to validate each sample via validateSample method - sample must have a "sampleProject" key
+        elif "[Header]" in line:
+            header_sect_found = True
 
-	arguments:
-		samplesList -- list containing Sample objects
+        elif check_data_headers:
 
-	returns ValidationResult object - stores bool valid and list of string error messages
-	"""
-	valid=False
-	vRes=ValidationResult()
-	if len(samplesList) > 0:
-		valid=True
-		for sample in samplesList:
-			res=validateSample(sample)
-			if res==False:
-				valid=False
-				vRes.addErrorMsg( "No sampleProject found for sample with ID: " + sample.getID() )
-				break
+            for data_header in found_data_headers.keys():
+                if data_header in line:
+                    found_data_headers[data_header] = True
 
-	else:
-		vRes.addErrorMsg("The given list of samples is empty.\nRequires atleast 1 sample in list.")
+            # if all required dataHeaders are found
+            if all(found_data_headers.values()):
+                all_data_headers_found = True
 
-	vRes.setValid(valid)
-	return vRes
+            check_data_headers = False
 
+    if all([header_sect_found, data_sect_found, all_data_headers_found]):
+        valid = True
 
-def validateSample(sample):
-	"""
-	Checks if sample has project identifier attached to it
-	"""
-	valid=False
+    else:
+        if header_sect_found is False:
+            v_res.add_error_msg("[Header] section not found in SampleSheet")
 
-	sampleProj=sample.get("sampleProject")
-	if sampleProj!=None and len(sampleProj)>0:
-		valid=True
-	return valid
+        if data_sect_found is False:
+            v_res.add_error_msg("[Data] section not found in SampleSheet")
+
+        if all_data_headers_found is False:
+            missing_str = ""
+            for data_header in found_data_headers:
+                if found_data_headers[data_header] is False:
+                    missing_str = missing_str + data_header + ", "
+
+            missing_str = missing_str[:-2]  # remove last ", "
+            v_res.add_error_msg("Missing required data header(s): " +
+                                missing_str)
+
+    v_res.set_valid(valid)
+
+    return v_res
 
 
-def validateURLForm(url):
+def validate_pair_files(fileList):
+
+    """
+    Validate files in fileList to have a matching pair file.
+    R1 sequence file must have a match of R2 sequence file.
+    All files in fileList must have a pair to be valid.
+
+    arguments:
+            fileList -- list containing fastq.gz files
+            doesn't alter fileList
+
+    returns ValidationResult object - stores bool valid and
+        list of string error messages
+    """
+
+    v_res = ValidationResult()
+    validation_file_list = deepcopy(fileList)
+    valid = False
+    if len(validation_file_list) > 0 and len(validation_file_list) % 2 == 0:
+        valid = True
+
+        for file in validation_file_list:
+            if 'R1' in file:
+                matching_pair_file = file.replace('R1', 'R2')
+            elif 'R2' in file:
+                matching_pair_file = file.replace('R2', 'R1')
+            else:
+                valid = False
+                v_res.add_error_msg(
+                    file + " doesn't contain either 'R1' or 'R2' in filename" +
+                    ".\nRequired for identifying sequence files.")
+                break
+
+            if matching_pair_file in validation_file_list:
+                validation_file_list.remove(matching_pair_file)
+                validation_file_list.remove(file)
+
+            else:
+                valid = False
+                v_res.add_error_msg("No pair sequence file found for:" + file +
+                                    "\nRequired matching sequence file: " +
+                                    matching_pair_file)
+                break
+
+    else:
+        v_res.add_error_msg(
+            "The given file list has an odd number of files." +
+            "\nRequires an even number of files in order for each " +
+            "sequence file to have a pair.")
+
+    v_res.set_valid(valid)
+    return v_res
+
+
+def validate_sample_list(sample_list):
+
+    """
+    Iterates through given samples list and tries to validate each sample via
+        validate_sample method - sample must have a "sampleProject" key
+
+    arguments:
+            sample_list -- list containing Sample objects
+
+    returns ValidationResult object - stores bool valid and
+        list of string error messages
+    """
+
+    valid = False
+    v_res = ValidationResult()
+    if len(sample_list) > 0:
+        valid = True
+        for sample in sample_list:
+            res = validate_sample(sample)
+            if res is False:
+                valid = False
+                v_res.add_error_msg(
+                    "No sampleProject found for sample with ID: " +
+                    sample.get_id())
+                break
+
+    else:
+        v_res.add_error_msg(
+            "The given list of samples is empty." +
+            "\nRequires atleast 1 sample in list.")
+
+    v_res.set_valid(valid)
+    return v_res
+
+
+def validate_sample(sample):
+
+    """
+    Checks if sample has project identifier attached to it
+    """
+
+    valid = False
+
+    sample_proj = sample.get("sampleProject")
+    if sample_proj is not None and len(sample_proj) > 0:
+        valid = True
+    return valid
+
+
+def validate_URL_form(url):
+
     """
         offline 'validation' of url. parse through url and see if its malformed
-
     """
 
-    valid=False
+    valid = False
 
-    parsed=urlparse(url)
+    parsed = urlparse(url)
 
-    if len(parsed.scheme)>0:
-        valid=True
-
+    if len(parsed.scheme) > 0:
+        valid = True
 
     return valid

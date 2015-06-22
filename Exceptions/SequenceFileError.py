@@ -1,2 +1,2 @@
 class SequenceFileError(Exception):
-  pass
+    pass
