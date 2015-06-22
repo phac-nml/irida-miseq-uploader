@@ -1,7 +1,6 @@
 import ast
 import json
 import httplib
-import sys
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
@@ -11,7 +10,6 @@ from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 
-sys.path.append("../")
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
 from Model.Sample import Sample
@@ -432,7 +430,7 @@ if __name__ == "__main__":
     proj_list = api.get_projects()
     print "#Project count:", len(proj_list)
 
-    p = Project("projectX", projectDescription="orange")
+    p = Project("projectX", proj_description="orange")
     print api.send_project(p)
 
     proj_list = api.get_projects()

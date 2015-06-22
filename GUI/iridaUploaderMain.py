@@ -1,10 +1,7 @@
 import wx
-import sys
 from ConfigParser import RawConfigParser
 from pprint import pprint
 from os import path
-
-sys.path.append("../")
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files)

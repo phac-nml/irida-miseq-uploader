@@ -1,8 +1,6 @@
 import unittest
 import json
 import httplib
-from sys import path, argv
-path.append("../../")
 from urllib2 import URLError, urlopen, HTTPError
 
 from mock import patch, MagicMock
@@ -12,7 +10,6 @@ from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
 
 import API.apiCalls
-
 
 class Foo(object):
 
