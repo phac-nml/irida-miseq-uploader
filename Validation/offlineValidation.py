@@ -9,6 +9,7 @@ from Model.ValidationResult import ValidationResult
 
 
 def validate_sample_sheet(sample_sheet_file):
+
     """
     Checks if the given sample_sheet_file can be parsed
     Requires [Header] because it contains Workflow
@@ -24,7 +25,7 @@ def validate_sample_sheet(sample_sheet_file):
 
     csv_reader = get_csv_reader(sample_sheet_file)
 
-    vRes = ValidationResult()
+    v_res = ValidationResult()
 
     valid = False
     all_data_headers_found = False
@@ -65,10 +66,10 @@ def validate_sample_sheet(sample_sheet_file):
 
     else:
         if header_sect_found is False:
-            vRes.add_error_msg("[Header] section not found in SampleSheet")
+            v_res.add_error_msg("[Header] section not found in SampleSheet")
 
         if data_sect_found is False:
-            vRes.add_error_msg("[Data] section not found in SampleSheet")
+            v_res.add_error_msg("[Data] section not found in SampleSheet")
 
         if all_data_headers_found is False:
             missing_str = ""
@@ -77,15 +78,16 @@ def validate_sample_sheet(sample_sheet_file):
                     missing_str = missing_str + data_header + ", "
 
             missing_str = missing_str[:-2]  # remove last ", "
-            vRes.add_error_msg("Missing required data header(s): " +
-                               missing_str)
+            v_res.add_error_msg("Missing required data header(s): " +
+                                missing_str)
 
-    vRes.set_valid(valid)
+    v_res.set_valid(valid)
 
-    return vRes
+    return v_res
 
 
 def validate_pair_files(fileList):
+
     """
     Validate files in fileList to have a matching pair file.
     R1 sequence file must have a match of R2 sequence file.
@@ -99,7 +101,7 @@ def validate_pair_files(fileList):
         list of string error messages
     """
 
-    vRes = ValidationResult()
+    v_res = ValidationResult()
     validation_file_list = deepcopy(fileList)
     valid = False
     if len(validation_file_list) > 0 and len(validation_file_list) % 2 == 0:
@@ -112,7 +114,7 @@ def validate_pair_files(fileList):
                 matching_pair_file = file.replace('R2', 'R1')
             else:
                 valid = False
-                vRes.add_error_msg(
+                v_res.add_error_msg(
                     file + " doesn't contain either 'R1' or 'R2' in filename" +
                     ".\nRequired for identifying sequence files.")
                 break
@@ -123,22 +125,23 @@ def validate_pair_files(fileList):
 
             else:
                 valid = False
-                vRes.add_error_msg("No pair sequence file found for:" + file +
-                                   "\nRequired matching sequence file: " +
-                                   matching_pair_file)
+                v_res.add_error_msg("No pair sequence file found for:" + file +
+                                    "\nRequired matching sequence file: " +
+                                    matching_pair_file)
                 break
 
     else:
-        vRes.add_error_msg(
+        v_res.add_error_msg(
             "The given file list has an odd number of files." +
             "\nRequires an even number of files in order for each " +
             "sequence file to have a pair.")
 
-    vRes.set_valid(valid)
-    return vRes
+    v_res.set_valid(valid)
+    return v_res
 
 
 def validate_sample_list(sample_list):
+
     """
     Iterates through given samples list and tries to validate each sample via
         validate_sample method - sample must have a "sampleProject" key
@@ -149,32 +152,35 @@ def validate_sample_list(sample_list):
     returns ValidationResult object - stores bool valid and
         list of string error messages
     """
+
     valid = False
-    vRes = ValidationResult()
+    v_res = ValidationResult()
     if len(sample_list) > 0:
         valid = True
         for sample in sample_list:
             res = validate_sample(sample)
             if res is False:
                 valid = False
-                vRes.add_error_msg(
+                v_res.add_error_msg(
                     "No sampleProject found for sample with ID: " +
                     sample.get_id())
                 break
 
     else:
-        vRes.add_error_msg(
+        v_res.add_error_msg(
             "The given list of samples is empty." +
             "\nRequires atleast 1 sample in list.")
 
-    vRes.set_valid(valid)
-    return vRes
+    v_res.set_valid(valid)
+    return v_res
 
 
 def validate_sample(sample):
+
     """
     Checks if sample has project identifier attached to it
     """
+
     valid = False
 
     sample_proj = sample.get("sampleProject")
@@ -184,9 +190,9 @@ def validate_sample(sample):
 
 
 def validate_URL_form(url):
+
     """
         offline 'validation' of url. parse through url and see if its malformed
-
     """
 
     valid = False
