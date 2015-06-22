@@ -35,34 +35,34 @@ class TestMiSeqParser(unittest.TestCase):
     def test_get_csv_reader_valid_sheet(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
-                              "SampleSheet.csv")
+                               "SampleSheet.csv")
         csv_reader = get_csv_reader(sheet_file)
 
     def test_parse_metadata(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
-                              "SampleSheet.csv")
+                               "SampleSheet.csv")
         meta_data = parse_metadata(sheet_file)
 
-        correct_metadata = {'readLengths': ['251', '250'],
-                           'assay': 'Nextera XT',
-                           'description': 'Superbug',
-                           'application': 'FASTQ Only',
-                           'investigatorName': 'Some Guy',
-                           'adapter': 'AAAAGGGGAAAAGGGGAAA',
-                           'workflow': 'GenerateFASTQ',
-                           'reversecomplement': '0',
-                           'iemfileversion': '4',
-                           'date': '10/15/2013',
-                           'experimentName': '1',
-                           'chemistry': 'Amplicon'}
+        correct_metadata = {"readLengths": ["251", "250"],
+                            "assay": "Nextera XT",
+                            "description": "Superbug",
+                            "application": "FASTQ Only",
+                            "investigatorName": "Some Guy",
+                            "adapter": "AAAAGGGGAAAAGGGGAAA",
+                            "workflow": "GenerateFASTQ",
+                            "reversecomplement": "0",
+                            "iemfileversion": "4",
+                            "date": "10/15/2013",
+                            "experimentName": "1",
+                            "chemistry": "Amplicon"}
 
         self.assertEqual(correct_metadata, meta_data)
 
     def test_complete_parse_samples(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
-                              "SampleSheet.csv")
+                               "SampleSheet.csv")
         data_dir = path.join(path_to_module, "fake_ngs_data")
 
         sample_list = complete_parse_samples(sheet_file)
@@ -107,42 +107,42 @@ class TestMiSeqParser(unittest.TestCase):
     def test_parse_samples(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
-                              "SampleSheet.csv")
+                               "SampleSheet.csv")
         sample_list = parse_samples(sheet_file)
 
         correct_samples = [
-            {'Sample_Well': '01',
-             'index': 'AAAAAAAA',
-             'Sample_Plate': '1',
-             'I7_Index_ID': 'N01',
-             'sampleName': '01-1111',
-             'sampleProject': '6',
-             'sequencerSampleId': '01-1111',
-             'I5_Index_ID': 'S01',
-             'index2': 'TTTTTTTT',
-             'description': 'Super bug '},
+            {"Sample_Well": "01",
+             "index": "AAAAAAAA",
+             "Sample_Plate": "1",
+             "I7_Index_ID": "N01",
+             "sampleName": "01-1111",
+             "sampleProject": "6",
+             "sequencerSampleId": "01-1111",
+             "I5_Index_ID": "S01",
+             "index2": "TTTTTTTT",
+             "description": "Super bug "},
 
-            {'Sample_Well': '02',
-             'index': 'GGGGGGGG',
-             'Sample_Plate': '2',
-             'I7_Index_ID': 'N02',
-             'sampleName': '02-2222',
-             'sampleProject': '6',
-             'sequencerSampleId': '02-2222',
-             'I5_Index_ID': 'S02',
-             'index2': 'CCCCCCCC',
-             'description': 'Scary bug '},
+            {"Sample_Well": "02",
+             "index": "GGGGGGGG",
+             "Sample_Plate": "2",
+             "I7_Index_ID": "N02",
+             "sampleName": "02-2222",
+             "sampleProject": "6",
+             "sequencerSampleId": "02-2222",
+             "I5_Index_ID": "S02",
+             "index2": "CCCCCCCC",
+             "description": "Scary bug "},
 
-            {'Sample_Well': '03',
-             'index': 'CCCCCCCC',
-             'Sample_Plate': '3',
-             'I7_Index_ID': 'N03',
-             'sampleName': '03-3333',
-             'sampleProject': '6',
-             'sequencerSampleId': '03-3333',
-             'I5_Index_ID': 'S03',
-             'index2': 'GGGGGGGG',
-             'description': 'Deadly bug '}
+            {"Sample_Well": "03",
+             "index": "CCCCCCCC",
+             "Sample_Plate": "3",
+             "I7_Index_ID": "N03",
+             "sampleName": "03-3333",
+             "sampleProject": "6",
+             "sequencerSampleId": "03-3333",
+             "I5_Index_ID": "S03",
+             "index2": "GGGGGGGG",
+             "description": "Deadly bug "}
         ]
 
         sample_list_values = [sample.get_dict() for sample in sample_list]
@@ -150,28 +150,28 @@ class TestMiSeqParser(unittest.TestCase):
 
     def test_parse_out_sequence_file(self):
 
-        sample = Sample({'Sample_Well': '03',
-                         'index': 'CCCCCCCC',
-                         'Sample_Plate': '3',
-                         'I7_Index_ID': 'N03',
-                         'sampleName': '03-3333',
-                         'sampleProject': '6',
-                         'sequencerSampleId': '03-3333',
-                         'I5_Index_ID': 'S03',
-                         'index2': 'GGGGGGGG',
-                         'description': 'Deadly bug '})
+        sample = Sample({"Sample_Well": "03",
+                         "index": "CCCCCCCC",
+                         "Sample_Plate": "3",
+                         "I7_Index_ID": "N03",
+                         "sampleName": "03-3333",
+                         "sampleProject": "6",
+                         "sequencerSampleId": "03-3333",
+                         "I5_Index_ID": "S03",
+                         "index2": "GGGGGGGG",
+                         "description": "Deadly bug "})
 
-        correct_sample = {'description': 'Deadly bug ',
-                         'sampleName': '03-3333',
-                         'sequencerSampleId': '03-3333',
-                         'sampleProject': '6'}
+        correct_sample = {"description": "Deadly bug ",
+                          "sampleName": "03-3333",
+                          "sequencerSampleId": "03-3333",
+                          "sampleProject": "6"}
 
-        correct_seq_file = {'index': 'CCCCCCCC',
-                          'I7_Index_ID': 'N03',
-                          'Sample_Well': '03',
-                          'Sample_Plate': '3',
-                          'index2': 'GGGGGGGG',
-                          'I5_Index_ID': 'S03'}
+        correct_seq_file = {"index": "CCCCCCCC",
+                            "I7_Index_ID": "N03",
+                            "Sample_Well": "03",
+                            "Sample_Plate": "3",
+                            "index2": "GGGGGGGG",
+                            "I5_Index_ID": "S03"}
 
         seq_file = parse_out_sequence_file(sample)
 
@@ -222,7 +222,8 @@ class TestMiSeqParser(unittest.TestCase):
 
 parser_test_suite = unittest.TestSuite()
 
-parser_test_suite.addTest(TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
+parser_test_suite.addTest(
+    TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
 parser_test_suite.addTest(TestMiSeqParser("test_get_csv_reader_valid_sheet"))
 
 parser_test_suite.addTest(TestMiSeqParser("test_parse_metadata"))
