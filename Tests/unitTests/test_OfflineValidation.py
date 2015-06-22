@@ -286,14 +286,15 @@ off_validation_test_suite.addTest(
 off_validation_test_suite.addTest(
     TestOfflineValidation("test_validateSampleList_invalid_empty"))
 
-off_validation_test_suite.addTest(TestOfflineValidation("test_validate_URL_form"))
+off_validation_test_suite.addTest(
+    TestOfflineValidation("test_validate_URL_form"))
 
 
 if __name__ == "__main__":
-    suiteList = []
+    suite_list = []
 
-    suiteList.append(off_validation_test_suite)
-    fullSuite = unittest.TestSuite(suiteList)
+    suite_list.append(off_validation_test_suite)
+    full_suite = unittest.TestSuite(suite_list)
 
     runner = unittest.TextTestRunner()
-    runner.run(fullSuite)
+    runner.run(full_suite)
