@@ -11,6 +11,7 @@ from requests.models import Response
 
 import API.apiCalls
 
+
 class Foo(object):
 
     """
