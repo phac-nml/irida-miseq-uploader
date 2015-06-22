@@ -188,16 +188,16 @@ class ApiCalls:
             response = self.session.get(targ_url)
 
             if len(targ_dict) > 0:
-                resources_List = response.json()["resource"]["resources"]
+                resources_list = response.json()["resource"]["resources"]
                 try:
-                    links_list = next(r["links"] for r in resources_List
+                    links_list = next(r["links"] for r in resources_list
                                       if r[targ_dict["key"]] ==
                                       targ_dict["value"])
 
                 except KeyError:
                     raise KeyError(targ_dict["key"] + " not found." +
                                    " Available keys: " +
-                                   ", ".join(resources_List[0].keys()))
+                                   ", ".join(resources_list[0].keys()))
 
                 except StopIteration:
                     raise KeyError(targ_dict["value"] + " not found.")
@@ -243,8 +243,8 @@ class ApiCalls:
 
         except KeyError, e:
             e.args = map(str, e.args)
-            msgArg = " ".join(e.args)
-            raise KeyError(msgArg + " not found." + " Available keys: " +
+            msg_arg = " ".join(e.args)
+            raise KeyError(msg_arg + " not found." + " Available keys: " +
                            ", ".join(result[0].keys()))
 
         return project_list
@@ -441,20 +441,20 @@ if __name__ == "__main__":
     print "#" * 20
 
     proj_targ = proj_list[0]
-    sList = api.get_samples(proj_targ)
-    print "#Sample count:", len(sList)
+    s_list = api.get_samples(proj_targ)
+    print "#Sample count:", len(s_list)
 
     s = Sample({"sequencerSampleId": "09-9999", "sampleName": "09-9999"})
     # raises error on second run because ID won't be unique anymore for same
     # proj_targ
     print api.send_samples(proj_targ, [s])
 
-    sList = api.get_samples(proj_targ)
-    print "#Sample count:", len(sList)
+    s_list = api.get_samples(proj_targ)
+    print "#Sample count:", len(s_list)
 
     print "#" * 20
 
     proj_targ = proj_list[3]
-    sList = api.get_samples(proj_targ)
-    seqFiles = api.get_sequence_files(proj_targ, sList[len(sList) - 1])
-    print seqFiles
+    s_list = api.get_samples(proj_targ)
+    seq_files = api.get_sequence_files(proj_targ, s_list[len(s_list) - 1])
+    print seq_files
