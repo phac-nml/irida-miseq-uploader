@@ -29,10 +29,10 @@ class MainPanel(wx.Panel):
         self.seq_run = None
         self.browse_path = "../"  # os.getcwd()
         self.file_dlg = None
-        self.conf_parser = RawConfigParser()
-        self.config_file = path_to_module + "/../config.conf"
-        self.conf_parser.read(self.config_file)
         self.p_bar_percent = 0
+        self.base_URL = ""
+        self.username = ""
+        self.password = ""
 
         self.LONG_BOX_SIZE = (400, 32)  # url and directories
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
@@ -40,20 +40,12 @@ class MainPanel(wx.Panel):
         self.LABEL_TEXT_HEIGHT = 32
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
-        self.username_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.password_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.user_pass_log_container = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_select_sample_sheet_section()
-        self.add_URL_section()
-        self.add_username_section()
-        self.add_password_section()
         self.add_log_panel_section()
         self.add_progress_bar()
         self.add_upload_button()
@@ -62,22 +54,11 @@ class MainPanel(wx.Panel):
 
         self.top_sizer.Add(
             self.directory_sizer, proportion=0, flag=wx.ALL, border=5)
-        self.top_sizer.Add(self.url_sizer, proportion=0, flag=wx.ALL, border=5)
 
         self.top_sizer.AddSpacer(30)
 
-        self.user_pass_container.Add(
-            self.username_sizer, proportion=0, flag=wx.ALL, border=5)
-        self.user_pass_container.Add(
-            self.password_sizer, proportion=0, flag=wx.ALL, border=5)
-
-        self.user_pass_log_container.Add(
-            self.user_pass_container, proportion=0, flag=wx.ALL, border=5)
-        self.user_pass_log_container.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.ALL, border=5)
-
         self.top_sizer.Add(
-            self.user_pass_log_container, proportion=0, flag=wx.ALL, border=5)
+            self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
 
@@ -95,41 +76,6 @@ class MainPanel(wx.Panel):
         self.Layout()
 
         self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
-
-    def add_URL_section(self):
-
-        """
-        Adds URL text label and text box in to panel
-        Sets a tooltip when hovering over text label or text box describing
-            the URL that needs to be entered in the text box
-
-        no return value
-        """
-
-        self.base_URL_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Base URL")
-        self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.prev_URL = self.conf_parser.get("iridaUploader", "baseURL")
-        self.base_URL_box.SetValue(self.prev_URL)
-
-        self.save_URL_checkbox = wx.CheckBox(
-            parent=self, id=-1, label="Save URL for future use")
-        if len(self.prev_URL) > 0:
-            self.save_URL_checkbox.SetValue(True)
-        else:
-            self.save_URL_checkbox.SetValue(False)
-        self.Bind(
-            wx.EVT_CHECKBOX, self.url_checkbox_handler, self.save_URL_checkbox)
-
-        self.url_sizer.Add(self.base_URL_label, 0, wx.ALL, 5)
-        self.url_sizer.Add(self.base_URL_box, 0, wx.ALL, 5)
-        self.url_sizer.Add(self.save_URL_checkbox, 0, wx.ALL, 5)
-
-        tip = "Enter the URL for the IRIDA server"
-        self.base_URL_box.SetToolTipString(tip)
-        self.base_URL_label.SetToolTipString(tip)
 
     def add_select_sample_sheet_section(self):
 
@@ -168,53 +114,6 @@ class MainPanel(wx.Panel):
         # tabbing in to directorybox
         self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
 
-    def add_username_section(self):
-
-        """
-        Adds username text label and text box in to panel
-
-        no return value
-        """
-
-        self.username_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Username")
-        self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.username_sizer.Add(self.username_label)
-        self.username_sizer.Add(self.username_box)
-
-    def add_password_section(self):
-
-        """
-        Adds password text label and text box in to panel
-
-        no return value
-        """
-
-        self.password_label = wx.StaticText(
-            self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Password")
-        self.password_box = wx.TextCtrl(
-            self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
-        self.password_sizer.Add(self.password_label)
-        self.password_sizer.Add(self.password_box)
-
-    def add_log_panel_section(self):
-
-        """
-        Adds log panel text control for displaying progress and errors
-
-        no return value
-        """
-
-        self.log_panel = wx.TextCtrl(
-            self, id=-1,
-            value="Waiting for user to select SampleSheet file.\n\n",
-            size=(500, 200), style=wx.TE_MULTILINE | wx.TE_READONLY)
-        self.log_panel_sizer.Add(self.log_panel)
-
     def add_progress_bar(self):
 
         """
@@ -252,6 +151,21 @@ class MainPanel(wx.Panel):
             "Select a valid SampleSheet file to enable button."
         self.upload_button.SetToolTipString(tip)
 
+    def add_log_panel_section(self):
+
+        """
+        Adds log panel text control for displaying progress and errors
+
+        no return value
+        """
+
+        self.log_panel = wx.TextCtrl(
+            self, id=-1,
+            value="Waiting for user to select SampleSheet file.\n\n",
+            size=(self.parent.WINDOW_SIZE[0]*0.95, 200),
+            style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.log_panel_sizer.Add(self.log_panel)
+
     def display_warning(self, warn_msg):
 
         """Displays warning message
@@ -273,41 +187,12 @@ class MainPanel(wx.Panel):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
-        Check status of saveUrlCheckbox and see if a new url to save has been
-        entered.
-        this handles the case of the checkbox starting already checked,
-            then a new base url is typed and the checkbox is not clicked so
-            it still remains checked.
-            since the checkbox is not clicked the handler bound to it is not
-            invoked so we call it here when closing the window to save if a new
-            url has been enterred
         destroy parent(MainFrame) to continue with regular closing procedure
 
         no return value
         """
 
-        self.url_checkbox_handler()
         self.parent.Destroy()
-
-    def url_checkbox_handler(self, event=""):
-
-        """
-        Function bound to url checkbox being clicked.
-        If the checkbox is checked then save the url currently in the
-            baseUrlBox to the config file
-        If the checkbox is unchecked then write back the original
-            value of baseURL.
-        """
-
-        if self.save_URL_checkbox.IsChecked():
-            self.conf_parser.set(
-                "iridaUploader", "baseURL", self.base_URL_box.GetValue())
-
-        else:
-            self.conf_parser.set("iridaUploader", "baseURL", self.prev_URL)
-
-        with open(self.config_file, 'wb') as configfile:
-            self.conf_parser.write(configfile)
 
     def upload_to_server(self, event):
 
@@ -322,9 +207,9 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        print("Server URL: " + self.base_URL_box.GetValue() + "\n" + "User: " +
-              self.username_box.GetValue() + "\n" + "Password: " +
-              self.password_box.GetValue()).strip()
+        print("Server URL: " + self.base_URL + "\n" + "User: " +
+              self.username + "\n" + "Password: " +
+              self.password.strip())
         self.p_bar_percent += 1
         self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
         self.progress_bar.SetValue(self.p_bar_percent)
@@ -471,6 +356,7 @@ class MainFrame(wx.Frame):
         # use default frame style but disable border resize and maximize
 
         self.mp = MainPanel(self)
+        self.Center()
         self.Show()
 
 
