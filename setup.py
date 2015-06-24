@@ -11,8 +11,7 @@ setup(name="iridaUploader",
       url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
       author='Kevin Camba',
       author_email='kevin.camba@phac-aspc.gc.ca',
-      packages=["API", "Exceptions", "GUI", "Model", "Parsers", "Tests",
-                "Tests/unitTests", "Tests/integrationTests", "Validation"],
+      packages=["API", "Exceptions", "GUI", "Model", "Parsers", "Validation"],
       install_requires=["mock", "rauth", "selenium", "pep8"],
       zip_safe=False
       )
