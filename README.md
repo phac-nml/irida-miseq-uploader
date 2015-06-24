@@ -18,6 +18,7 @@ wxpython:
 ### virtualenv usage  
 
 Install virtualenv
+
     $ pip install virtualenv
 
 Build a virtualenv and install the dependencies:
