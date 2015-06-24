@@ -1,9 +1,7 @@
-import sys
 from csv import reader
 from copy import deepcopy
 from urlparse import urlparse
 
-sys.path.append("../")
 from Parsers.miseqParser import get_csv_reader
 from Model.ValidationResult import ValidationResult
 

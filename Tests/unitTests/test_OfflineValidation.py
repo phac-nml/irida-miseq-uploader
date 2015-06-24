@@ -1,8 +1,6 @@
-import sys
 import unittest
 from os import path
 
-sys.path.append("../../")
 from Parsers.miseqParser import parse_samples, get_pair_files
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,

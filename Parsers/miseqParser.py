@@ -1,11 +1,9 @@
-import sys
 from os import walk, path
 from fnmatch import filter as fnfilter
 from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 
-sys.path.append("../")
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError

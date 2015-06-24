@@ -1,9 +1,7 @@
 import unittest
-import sys
 from os import path
 from csv import reader
 
-sys.path.append("../../")
 from Model.Sample import Sample
 from Parsers.miseqParser import (parse_metadata, parse_samples, get_csv_reader,
                                  get_pair_files, parse_out_sequence_file,
