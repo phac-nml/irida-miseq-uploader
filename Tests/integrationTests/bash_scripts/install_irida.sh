@@ -6,7 +6,7 @@ mkdir repos
 pushd repos
 
 echo "Downloading IRIDA..."
-if ! git clone git@irida.corefacility.ca:irida/irida.git
+if ! git clone http://irida.corefacility.ca/gitlab/irida/irida.git
 then
     echo >&2 "Failed to clone"
 else
