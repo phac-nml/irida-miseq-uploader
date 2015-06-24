@@ -19,10 +19,11 @@ class SettingsPanel(wx.Panel):
         self.conf_parser.read(self.config_file)
         self.p_bar_percent = 0
 
-        self.LONG_BOX_SIZE = (400, 32)  # url and directories
-        self.SHORT_BOX_SIZE = (200, 32)  # user and pass
+        self.LONG_BOX_SIZE = (400, 32)  # url
+        self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
+        self.SIZER_BORDER = 5
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -30,30 +31,53 @@ class SettingsPanel(wx.Panel):
         self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
         self.username_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.password_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.user_pass_client_secret_container = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
+        self.client_id_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.user_pass_id_secret_container = wx.BoxSizer(wx.HORIZONTAL)
+
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.add_URL_section()
         self.add_username_section()
         self.add_password_section()
+        self.add_client_id_section()
+        self.add_client_secret_section()
         self.add_log_panel_section()
 
-        self.top_sizer.AddSpacer(30)
+        self.top_sizer.Add(self.url_sizer, proportion=0,
+                           flag=wx.ALL, border=self.SIZER_BORDER)
 
-        self.top_sizer.Add(self.url_sizer, proportion=0, flag=wx.ALL, border=5)
+        self.top_sizer.AddSpacer(40)
 
         self.user_pass_container.Add(
-            self.username_sizer, proportion=0, flag=wx.ALL, border=5)
+            self.username_sizer, proportion=0,
+            flag=wx.ALL, border=self.SIZER_BORDER)
         self.user_pass_container.Add(
-            self.password_sizer, proportion=0, flag=wx.ALL, border=5)
+            self.password_sizer, proportion=0,
+            flag=wx.ALL, border=self.SIZER_BORDER)
 
-        self.user_pass_client_secret_container.Add(
-            self.user_pass_container, proportion=0, flag=wx.ALL, border=5)
+        self.id_secret_container.Add(
+            self.client_id_sizer, proportion=0,
+            flag=wx.ALL, border=self.SIZER_BORDER)
+        self.id_secret_container.Add(
+            self.client_secret_sizer, proportion=0,
+            flag=wx.ALL, border=self.SIZER_BORDER)
+
+        self.user_pass_id_secret_container.Add(self.user_pass_container)
+        self.user_pass_id_secret_container.Add(self.id_secret_container)
+
+        spacer_size = (self.parent.WINDOW_SIZE[0] -
+                       self.user_pass_id_secret_container.GetMinSize()[0] -
+                       (self.SIZER_BORDER*2))
+        self.user_pass_id_secret_container.InsertSpacer(1, spacer_size)
 
         self.top_sizer.Add(
-            self.user_pass_client_secret_container, proportion=0,
-            flag=wx.ALL, border=5)
+            self.user_pass_id_secret_container, proportion=0,
+            flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
@@ -62,7 +86,7 @@ class SettingsPanel(wx.Panel):
 
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=5)
+            flag=wx.ALL | wx.ALIGN_CENTER, border=self.SIZER_BORDER)
 
         self.top_sizer.AddStretchSpacer()
 
@@ -136,7 +160,11 @@ class SettingsPanel(wx.Panel):
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Username")
+
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
+        self.username = self.conf_parser.get("apiCalls", "username")
+        self.username_box.SetValue(self.username)
+
         self.username_sizer.Add(self.username_label)
         self.username_sizer.Add(self.username_box)
 
@@ -152,10 +180,54 @@ class SettingsPanel(wx.Panel):
             self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Password")
+
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
+        self.password = self.conf_parser.get("apiCalls", "password")
+        self.password_box.SetValue(self.password)
+
         self.password_sizer.Add(self.password_label)
         self.password_sizer.Add(self.password_box)
+
+    def add_client_id_section(self):
+
+        """
+        Adds client ID text label and text box in to panel
+
+        no return value
+        """
+
+        self.client_id_label = wx.StaticText(
+            parent=self, id=-1,
+            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
+            label="Client ID")
+
+        self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
+        self.client_id = self.conf_parser.get("apiCalls", "client_id")
+        self.client_id_box.SetValue(self.client_id)
+
+        self.client_id_sizer.Add(self.client_id_label)
+        self.client_id_sizer.Add(self.client_id_box)
+
+    def add_client_secret_section(self):
+
+        """
+        Adds client secret text label and text box in to panel
+
+        no return value
+        """
+
+        self.client_secret_label = wx.StaticText(
+            self, id=-1,
+            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
+            label="Client Secret")
+
+        self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
+        self.client_secret = self.conf_parser.get("apiCalls", "client_secret")
+        self.client_secret_box.SetValue(self.client_secret)
+
+        self.client_secret_sizer.Add(self.client_secret_label)
+        self.client_secret_sizer.Add(self.client_secret_box)
 
     def add_log_panel_section(self):
 
@@ -197,11 +269,3 @@ if __name__ == "__main__":
     frame = MainFrame()
     frame.Show()
     app.MainLoop()
-
-'''
-if __name__ == "__main__":
-    app = wx.App(False)
-    sp = SettingsPanel()
-    sp.Show()
-    app.MainLoop()
-'''
