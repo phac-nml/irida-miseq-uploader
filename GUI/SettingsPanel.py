@@ -28,6 +28,9 @@ class SettingsPanel(wx.Panel):
         self.SIZER_BORDER = 5
         self.LOG_PANEL_SIZE = (self.parent.WINDOW_SIZE[0]*0.95, 200)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 50
+        self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
+        self.LOG_PNL_UPDATED_TXT_COLOR = wx.GREEN
+        self.LOG_PNL_ERR_TXT_COLOR = wx.RED
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -275,13 +278,16 @@ class SettingsPanel(wx.Panel):
         """
 
         self.log_panel = wx.TextCtrl(
-            self, id=-1,
-            value="Settings menu.\n" +
-                  "Click 'Save' to keep any changes you make.\n" +
-                  "Click 'Close' to go back to uploader window.\n" +
-                  "Click 'Default' to restore settings to default values.\n",
+            self, id=-1, value="",
             size=(self.LOG_PANEL_SIZE),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
+        value = ("Settings menu.\n" +
+                 "Click 'Save' to keep any changes you make.\n" +
+                 "Click 'Close' to go back to uploader window.\n" +
+                 "Click 'Default' to restore settings to default values.\n")
+
+        self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+        self.log_panel.AppendText(value)
         self.log_panel_sizer.Add(self.log_panel)
 
     def add_default_btn(self):
@@ -320,10 +326,9 @@ class SettingsPanel(wx.Panel):
         self.write_config_data(targ_section, default_settings_dict)
 
         self.load_curr_config()
-        self.log_panel.AppendText("Settings restored to default values:\n")
-        for key in self.config_dict.keys():
-            self.log_panel.AppendText(key + " = " + self.config_dict[key])
-            self.log_panel.AppendText("\n")
+        changes_dict = self.get_changes_dict()
+        self.log_panel.AppendText("\nSettings restored to default values:\n")
+        self.print_config_to_log_panel(changes_dict)
 
         self.base_URL_box.SetValue(default_settings_dict["baseURL"])
         self.username_box.SetValue(default_settings_dict["username"])
@@ -331,11 +336,31 @@ class SettingsPanel(wx.Panel):
         self.client_id_box.SetValue(default_settings_dict["client_id"])
         self.client_secret_box.SetValue(default_settings_dict["client_secret"])
 
+    def print_config_to_log_panel(self, changes_dict):
+
+        """
+        prints config_dict key and value pairs
+        if config_dict[key] is different from changes_dict[key] then
+        print it in a different color set by `self.LOG_PNL_UPDATED_TXT_COLOR`
+
+        no return value
+        """
+
+        for key in self.config_dict.keys():
+
+            if key in changes_dict:
+                self.log_panel.SetForegroundColour(
+                    self.LOG_PNL_UPDATED_TXT_COLOR)
+
+            self.log_panel.AppendText(key + " = " + self.config_dict[key])
+            self.log_panel.AppendText("\n")
+
+            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+
     def add_save_btn(self):
 
         """
-        Adds save button
-        save will save all changes made
+        Adds save button. Clicking it will call save_changes().
 
         no return value
         """
@@ -345,7 +370,27 @@ class SettingsPanel(wx.Panel):
         self.buttons_sizer.Add(self.save_btn)
 
     def save_changes(self, evt):
-        self.log_panel.AppendText("Settings saved\n")
+
+        """
+        Save data from config boxes that have been changed in to config file.
+        Display saved config in log panel.
+
+        no return value
+        """
+
+        changes_dict = self.get_changes_dict()
+        if len(changes_dict) > 0:
+            self.log_panel.AppendText("\nSaving...\n")
+
+            targ_section = "apiCalls"
+            self.write_config_data(targ_section, changes_dict)
+
+            self.load_curr_config()
+            self.print_config_to_log_panel(changes_dict)
+        else:
+            self.log_panel.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
+            self.log_panel.AppendText("No changes to save.\n")
+            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
 
     def add_close_btn(self):
 
@@ -370,11 +415,7 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        box_val_dict = self.get_curr_box_values()
-        changes_dict = {}
-        for key in self.config_dict.keys():
-            if self.config_dict[key] != box_val_dict[key]:
-                changes_dict[key] = str(box_val_dict[key])
+        changes_dict = self.get_changes_dict()
 
         if len(changes_dict) > 0:
             changes_str = ""
@@ -398,6 +439,15 @@ class SettingsPanel(wx.Panel):
                 prompt_msg.Destroy()
 
         self.parent.Destroy()
+
+    def get_changes_dict(self):
+
+        box_val_dict = self.get_curr_box_values()
+        changes_dict = {key: str(box_val_dict[key])
+                        for key in self.config_dict.keys()
+                        if self.config_dict[key] != box_val_dict[key]}
+
+        return changes_dict
 
     def get_curr_box_values(self):
 
