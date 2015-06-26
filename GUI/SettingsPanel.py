@@ -1,7 +1,10 @@
 import wx
+import sys
 from os import path
+from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
+from API.apiCalls import ApiCalls
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -21,7 +24,7 @@ class SettingsPanel(wx.Panel):
         self.config_dict = OrderedDict()
         self.load_curr_config()
 
-        self.LONG_BOX_SIZE = (400, 32)  # url
+        self.LONG_BOX_SIZE = (500, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
@@ -29,8 +32,12 @@ class SettingsPanel(wx.Panel):
         self.LOG_PANEL_SIZE = (self.parent.WINDOW_SIZE[0]*0.95, 200)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 50
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
-        self.LOG_PNL_UPDATED_TXT_COLOR = wx.GREEN
+        self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
+        self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.VALID_CONNECTION_COLOR = (50, 255, 50)
+        self.INVALID_CONNECTION_COLOR = (204, 0, 0)
+        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -62,7 +69,8 @@ class SettingsPanel(wx.Panel):
         self.SetSizer(self.top_sizer)
 
         self.top_sizer.Add(self.url_sizer, proportion=0,
-                           flag=wx.ALL, border=self.SIZER_BORDER)
+                           flag=wx.ALL | wx.ALIGN_CENTER,
+                           border=self.SIZER_BORDER)
 
         self.user_pass_container.Add(
             self.username_sizer, proportion=0,
@@ -111,6 +119,7 @@ class SettingsPanel(wx.Panel):
             self.buttons_sizer, proportion=0, flag=wx.TOP, border=space_bottom)
 
         self.Layout()
+
         self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def load_curr_config(self):
@@ -133,6 +142,96 @@ class SettingsPanel(wx.Panel):
         self.config_dict["client_secret"] = self.conf_parser.get(
                                             "apiCalls", "client_secret")
 
+    def attempt_connect_to_api(self):
+
+        """
+        attempt to create a connection to api with saved config credentials
+
+        no return value
+        """
+
+        try:
+            ApiCalls(self.config_dict["client_id"],
+                     self.config_dict["client_secret"],
+                     self.config_dict["baseURL"],
+                     self.config_dict["username"],
+                     self.config_dict["password"])
+
+            self.base_URL_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
+            self.username_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
+            self.password_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
+            self.client_id_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
+            self.client_secret_box.SetBackgroundColour(
+                                                self.VALID_CONNECTION_COLOR)
+
+            self.log_color_print("\nSuccessfully connected to API.\n",
+                                 self.LOG_PNL_OK_TXT_COLOR)
+
+        except ConnectionError, e:
+            self.handle_URL_error(e)
+
+        except KeyError, e:
+            self.handle_key_error(e)
+
+        except ValueError, e:
+            self.log_color_print("Cannot connect to url:\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+            self.log_color_print("Value error message: " + str(e.message),
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+
+        except:
+            self.log_color_print("Unexpected error:" + "\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+            self.log_color_print(str(sys.exc_info())+"\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+        self.Layout()
+
+    def handle_URL_error(self, e, msg_printed=False):
+        self.log_color_print("Cannot connect to url:\n",
+                             self.LOG_PNL_ERR_TXT_COLOR)
+        if msg_printed is False:
+            self.log_color_print("Message from server: " + str(e.message),
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+        self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
+
+    def handle_key_error(self, e):
+
+        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.log_color_print("Invalid credentials:\n",
+                             self.LOG_PNL_ERR_TXT_COLOR)
+
+        if "Bad credentials" in str(e.message):
+            self.log_color_print("Username or password is incorrect.\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+            self.username_box.SetBackgroundColour(
+                self.INVALID_CONNECTION_COLOR)
+
+            self.password_box.SetBackgroundColour(
+                self.INVALID_CONNECTION_COLOR)
+
+        elif "clientId does not exist" in str(e.message):
+            self.client_id_box.SetBackgroundColour(
+                self.INVALID_CONNECTION_COLOR)
+
+        elif "Bad client credentials" in str(e.message):
+            self.client_secret_box.SetBackgroundColour(
+                self.INVALID_CONNECTION_COLOR)
+
+        elif "No client credentials were provided" in str(e.message):
+            self.handle_URL_error(e, msg_printed=True)
+
+        self.log_color_print("Message from server: " + str(e.message),
+                             self.LOG_PNL_ERR_TXT_COLOR)
+
     def add_URL_section(self):
 
         """
@@ -151,42 +250,12 @@ class SettingsPanel(wx.Panel):
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
-        self.save_URL_checkbox = wx.CheckBox(
-            parent=self, id=-1, label="Save URL for future use")
-        if len(self.orig_URL) > 0:
-            self.save_URL_checkbox.SetValue(True)
-        else:
-            self.save_URL_checkbox.SetValue(False)
-        self.Bind(
-            wx.EVT_CHECKBOX, self.url_checkbox_handler, self.save_URL_checkbox)
-
         self.url_sizer.Add(self.base_URL_label, 0, wx.ALL, 5)
         self.url_sizer.Add(self.base_URL_box, 0, wx.ALL, 5)
-        self.url_sizer.Add(self.save_URL_checkbox, 0, wx.ALL, 5)
 
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
         self.base_URL_label.SetToolTipString(tip)
-
-    def url_checkbox_handler(self, event=""):
-
-        """
-        Function bound to url checkbox being clicked.
-        If the checkbox is checked then save the url currently in the
-            baseUrlBox to the config file
-        If the checkbox is unchecked then write back the original
-            value of baseURL.
-        """
-
-        if self.save_URL_checkbox.IsChecked():
-            self.conf_parser.set(
-                "apiCalls", "baseURL", self.base_URL_box.GetValue())
-
-        else:
-            self.conf_parser.set("apiCalls", "baseURL", self.orig_URL)
-
-        with open(self.config_file, 'wb') as configfile:
-            self.conf_parser.write(configfile)
 
     def add_username_section(self):
 
@@ -202,8 +271,7 @@ class SettingsPanel(wx.Panel):
             label="Username")
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.username = self.config_dict["username"]
-        self.username_box.SetValue(self.username)
+        self.username_box.SetValue(self.config_dict["username"])
 
         self.username_sizer.Add(self.username_label)
         self.username_sizer.Add(self.username_box)
@@ -223,8 +291,7 @@ class SettingsPanel(wx.Panel):
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
-        self.password = self.config_dict["password"]
-        self.password_box.SetValue(self.password)
+        self.password_box.SetValue(self.config_dict["password"])
 
         self.password_sizer.Add(self.password_label)
         self.password_sizer.Add(self.password_box)
@@ -243,8 +310,7 @@ class SettingsPanel(wx.Panel):
             label="Client ID")
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.client_id = self.config_dict["client_id"]
-        self.client_id_box.SetValue(self.client_id)
+        self.client_id_box.SetValue(self.config_dict["client_id"])
 
         self.client_id_sizer.Add(self.client_id_label)
         self.client_id_sizer.Add(self.client_id_box)
@@ -263,8 +329,7 @@ class SettingsPanel(wx.Panel):
             label="Client Secret")
 
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.client_secret = self.config_dict["client_secret"]
-        self.client_secret_box.SetValue(self.client_secret)
+        self.client_secret_box.SetValue(self.config_dict["client_secret"])
 
         self.client_secret_sizer.Add(self.client_secret_label)
         self.client_secret_sizer.Add(self.client_secret_box)
@@ -336,6 +401,8 @@ class SettingsPanel(wx.Panel):
         self.client_id_box.SetValue(default_settings_dict["client_id"])
         self.client_secret_box.SetValue(default_settings_dict["client_secret"])
 
+        self.attempt_connect_to_api()
+
     def print_config_to_log_panel(self, changes_dict):
 
         """
@@ -392,6 +459,8 @@ class SettingsPanel(wx.Panel):
             self.log_panel.AppendText("No changes to save.\n")
             self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
 
+        self.attempt_connect_to_api()
+
     def add_close_btn(self):
 
         """
@@ -439,6 +508,12 @@ class SettingsPanel(wx.Panel):
                 prompt_msg.Destroy()
 
         self.parent.Destroy()
+
+    def log_color_print(self, msg, color):
+
+        self.log_panel.SetForegroundColour(color)
+        self.log_panel.AppendText(msg)
+        self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
 
     def get_changes_dict(self):
 
@@ -498,9 +573,13 @@ class MainFrame(wx.Frame):
         self.Center()
         self.Show()
 
+    def attempt_connect(self):
+        self.sp.attempt_connect_to_api()
+
 
 if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
+    frame.attempt_connect()
     app.MainLoop()
