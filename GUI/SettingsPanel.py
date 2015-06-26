@@ -24,6 +24,8 @@ class SettingsPanel(wx.Panel):
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
+        self.LOG_PANEL_SIZE = (self.parent.WINDOW_SIZE[0]*0.95, 200)
+        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 50
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -36,10 +38,11 @@ class SettingsPanel(wx.Panel):
         self.client_id_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.client_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.user_pass_id_secret_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_URL_section()
         self.add_username_section()
@@ -47,11 +50,14 @@ class SettingsPanel(wx.Panel):
         self.add_client_id_section()
         self.add_client_secret_section()
         self.add_log_panel_section()
+        self.add_default_btn()
+        self.add_save_btn()
+        self.add_cancel_btn()
+
+        self.SetSizer(self.top_sizer)
 
         self.top_sizer.Add(self.url_sizer, proportion=0,
                            flag=wx.ALL, border=self.SIZER_BORDER)
-
-        self.top_sizer.AddSpacer(40)
 
         self.user_pass_container.Add(
             self.username_sizer, proportion=0,
@@ -67,31 +73,40 @@ class SettingsPanel(wx.Panel):
             self.client_secret_sizer, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
-        self.user_pass_id_secret_container.Add(self.user_pass_container)
-        self.user_pass_id_secret_container.Add(self.id_secret_container)
+        self.credentials_container.Add(self.user_pass_container)
+        self.credentials_container.Add(self.id_secret_container)
 
         spacer_size = (self.parent.WINDOW_SIZE[0] -
-                       self.user_pass_id_secret_container.GetMinSize()[0] -
+                       self.credentials_container.GetMinSize()[0] -
                        (self.SIZER_BORDER*2))
-        self.user_pass_id_secret_container.InsertSpacer(1, spacer_size)
+        self.credentials_container.InsertSpacer(1, (spacer_size, -1))
 
         self.top_sizer.Add(
-            self.user_pass_id_secret_container, proportion=0,
+            self.credentials_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
+        self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
-        self.top_sizer.AddStretchSpacer()
-
-        self.top_sizer.Add(
-            self.progress_bar_sizer, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=self.SIZER_BORDER)
-
-        self.top_sizer.AddStretchSpacer()
-
-        self.SetSizer(self.top_sizer)
         self.Layout()
+
+        button_spacing = (self.parent.WINDOW_SIZE[0] -
+                          (self.default_btn.GetSize()[0] +
+                          self.save_btn.GetSize()[0] +
+                          self.cancel_btn.GetSize()[0]) -
+                          (self.SIZER_BORDER*2))
+        self.buttons_sizer.InsertSpacer(1, button_spacing)
+
+        space_bottom = (self.parent.WINDOW_SIZE[1] -
+                        (self.log_panel_sizer.GetPosition()[1] +
+                         self.LOG_PANEL_SIZE[1] +
+                         self.default_btn.GetSize()[1] + self.SIZER_BORDER))
+        self.top_sizer.Add(
+            self.buttons_sizer, proportion=0, flag=wx.TOP, border=space_bottom)
+
+        self.Layout()
+        self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def add_URL_section(self):
 
@@ -243,9 +258,71 @@ class SettingsPanel(wx.Panel):
                   "Click 'Save' to keep any changes you make.\n" +
                   "Click 'Cancel' to ignore changes.\n" +
                   "Click 'Default' to restore settings to default values.\n",
-            size=(self.parent.WINDOW_SIZE[0]*0.95, 200),
+            size=(self.LOG_PANEL_SIZE),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.log_panel_sizer.Add(self.log_panel)
+
+    def add_default_btn(self):
+
+        """
+        Add default button
+        default will restore settings to default values
+
+        no return value
+        """
+
+        self.default_btn = wx.Button(self, label="Restore to default")
+        self.default_btn.Bind(wx.EVT_BUTTON, self.restore_settings)
+        self.buttons_sizer.Add(self.default_btn, flag=wx.LEFT,
+                               border=self.SIZER_BORDER)
+
+    def restore_settings(self, evt):
+        self.log_panel.AppendText("Restoring to default settings\n")
+
+    def add_save_btn(self):
+
+        """
+        Adds save button
+        save will save all changes made
+
+        no return value
+        """
+
+        self.save_btn = wx.Button(self, label="Save")
+        self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
+        self.buttons_sizer.Add(self.save_btn)
+
+    def save_changes(self, evt):
+        self.log_panel.AppendText("Settings saved\n")
+        # exiting in 3,2,1 or You can now close this window
+
+    def add_cancel_btn(self):
+
+        """
+        Add cancel button
+        cancel will ignore all changes made
+
+        no return value
+        """
+
+        self.cancel_btn = wx.Button(self, label="Cancel")
+        self.cancel_btn.Bind(wx.EVT_BUTTON, self.ignore_changes)
+        self.buttons_sizer.Add(self.cancel_btn)
+
+    def ignore_changes(self, evt):
+        self.log_panel.AppendText("No changes have been made\n")
+
+    def close_handler(self, event=""):
+
+        """
+        Function bound to window/MainFrame being closed (close button/alt+f4)
+        Destroy parent(MainFrame) to continue with regular closing procedure
+        Can also be called manually
+
+        no return value
+        """
+
+        self.parent.Destroy()
 
 
 class MainFrame(wx.Frame):
