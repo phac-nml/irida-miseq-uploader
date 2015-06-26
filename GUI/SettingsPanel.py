@@ -1,6 +1,7 @@
 import wx
 from os import path
 from ConfigParser import RawConfigParser
+from collections import OrderedDict
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -17,7 +18,8 @@ class SettingsPanel(wx.Panel):
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
         self.conf_parser.read(self.config_file)
-        self.p_bar_percent = 0
+        self.config_dict = OrderedDict()
+        self.load_curr_config()
 
         self.LONG_BOX_SIZE = (400, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
@@ -108,6 +110,26 @@ class SettingsPanel(wx.Panel):
         self.Layout()
         self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
 
+    def load_curr_config(self):
+
+        """
+        Read from config file and load baseURL, username, password, client ID
+        and client secret in to a config_dict
+
+        no return value
+        """
+
+        self.config_dict["baseURL"] = self.conf_parser.get("iridaUploader",
+                                                           "baseURL")
+        self.config_dict["username"] = self.conf_parser.get("apiCalls",
+                                                            "username")
+        self.config_dict["password"] = self.conf_parser.get("apiCalls",
+                                                            "password")
+        self.config_dict["client_id"] = self.conf_parser.get("apiCalls",
+                                                             "client_id")
+        self.config_dict["client_secret"] = self.conf_parser.get(
+                                            "apiCalls", "client_secret")
+
     def add_URL_section(self):
 
         """
@@ -123,7 +145,7 @@ class SettingsPanel(wx.Panel):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Base URL")
         self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.prev_URL = self.conf_parser.get("iridaUploader", "baseURL")
+        self.prev_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.prev_URL)
 
         self.save_URL_checkbox = wx.CheckBox(
@@ -177,7 +199,7 @@ class SettingsPanel(wx.Panel):
             label="Username")
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.username = self.conf_parser.get("apiCalls", "username")
+        self.username = self.config_dict["username"]
         self.username_box.SetValue(self.username)
 
         self.username_sizer.Add(self.username_label)
@@ -198,7 +220,7 @@ class SettingsPanel(wx.Panel):
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
-        self.password = self.conf_parser.get("apiCalls", "password")
+        self.password = self.config_dict["password"]
         self.password_box.SetValue(self.password)
 
         self.password_sizer.Add(self.password_label)
@@ -218,7 +240,7 @@ class SettingsPanel(wx.Panel):
             label="Client ID")
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.client_id = self.conf_parser.get("apiCalls", "client_id")
+        self.client_id = self.config_dict["client_id"]
         self.client_id_box.SetValue(self.client_id)
 
         self.client_id_sizer.Add(self.client_id_label)
@@ -238,7 +260,7 @@ class SettingsPanel(wx.Panel):
             label="Client Secret")
 
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
-        self.client_secret = self.conf_parser.get("apiCalls", "client_secret")
+        self.client_secret = self.config_dict["client_secret"]
         self.client_secret_box.SetValue(self.client_secret)
 
         self.client_secret_sizer.Add(self.client_secret_label)
@@ -277,7 +299,31 @@ class SettingsPanel(wx.Panel):
                                border=self.SIZER_BORDER)
 
     def restore_settings(self, evt):
-        self.log_panel.AppendText("Restoring to default settings\n")
+
+        """
+        Restore settings to their default values and write them to the
+            config file
+        call load_curr_config() to reload the config_dict and show their values
+            in the log panel
+
+        no return value
+        """
+
+        self.conf_parser.set(
+            "iridaUploader", "baseURL", "http://localhost:8080/api/")
+        self.conf_parser.set("apiCalls", "client_id", "testClient")
+        self.conf_parser.set("apiCalls", "client_secret", "testClientSecret")
+        self.conf_parser.set("apiCalls", "username", "admin")
+        self.conf_parser.set("apiCalls", "password", "password1")
+
+        with open(self.config_file, 'wb') as configfile:
+            self.conf_parser.write(configfile)
+
+        self.load_curr_config()
+        self.log_panel.AppendText("Settings restored to default values:\n")
+        for key in self.config_dict.keys():
+            self.log_panel.AppendText(key + " = " + self.config_dict[key])
+            self.log_panel.AppendText("\n")
 
     def add_save_btn(self):
 
