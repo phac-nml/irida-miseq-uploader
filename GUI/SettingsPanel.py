@@ -54,7 +54,7 @@ class SettingsPanel(wx.Panel):
         self.add_log_panel_section()
         self.add_default_btn()
         self.add_save_btn()
-        self.add_cancel_btn()
+        self.add_close_btn()
 
         self.SetSizer(self.top_sizer)
 
@@ -96,7 +96,7 @@ class SettingsPanel(wx.Panel):
         button_spacing = (self.parent.WINDOW_SIZE[0] -
                           (self.default_btn.GetSize()[0] +
                           self.save_btn.GetSize()[0] +
-                          self.cancel_btn.GetSize()[0]) -
+                          self.close_btn.GetSize()[0]) -
                           (self.SIZER_BORDER*2))
         self.buttons_sizer.InsertSpacer(1, button_spacing)
 
@@ -119,7 +119,7 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        self.config_dict["baseURL"] = self.conf_parser.get("iridaUploader",
+        self.config_dict["baseURL"] = self.conf_parser.get("apiCalls",
                                                            "baseURL")
         self.config_dict["username"] = self.conf_parser.get("apiCalls",
                                                             "username")
@@ -145,12 +145,12 @@ class SettingsPanel(wx.Panel):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Base URL")
         self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.prev_URL = self.config_dict["baseURL"]
-        self.base_URL_box.SetValue(self.prev_URL)
+        self.orig_URL = self.config_dict["baseURL"]
+        self.base_URL_box.SetValue(self.orig_URL)
 
         self.save_URL_checkbox = wx.CheckBox(
             parent=self, id=-1, label="Save URL for future use")
-        if len(self.prev_URL) > 0:
+        if len(self.orig_URL) > 0:
             self.save_URL_checkbox.SetValue(True)
         else:
             self.save_URL_checkbox.SetValue(False)
@@ -177,10 +177,10 @@ class SettingsPanel(wx.Panel):
 
         if self.save_URL_checkbox.IsChecked():
             self.conf_parser.set(
-                "iridaUploader", "baseURL", self.base_URL_box.GetValue())
+                "apiCalls", "baseURL", self.base_URL_box.GetValue())
 
         else:
-            self.conf_parser.set("iridaUploader", "baseURL", self.prev_URL)
+            self.conf_parser.set("apiCalls", "baseURL", self.orig_URL)
 
         with open(self.config_file, 'wb') as configfile:
             self.conf_parser.write(configfile)
@@ -278,7 +278,7 @@ class SettingsPanel(wx.Panel):
             self, id=-1,
             value="Settings menu.\n" +
                   "Click 'Save' to keep any changes you make.\n" +
-                  "Click 'Cancel' to ignore changes.\n" +
+                  "Click 'Close' to go back to uploader window.\n" +
                   "Click 'Default' to restore settings to default values.\n",
             size=(self.LOG_PANEL_SIZE),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
@@ -287,43 +287,49 @@ class SettingsPanel(wx.Panel):
     def add_default_btn(self):
 
         """
-        Add default button
-        default will restore settings to default values
+        Add default button. Clicking it will call restore_default_settings().
 
         no return value
         """
 
         self.default_btn = wx.Button(self, label="Restore to default")
-        self.default_btn.Bind(wx.EVT_BUTTON, self.restore_settings)
+        self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
         self.buttons_sizer.Add(self.default_btn, flag=wx.LEFT,
                                border=self.SIZER_BORDER)
 
-    def restore_settings(self, evt):
+    def restore_default_settings(self, evt):
 
         """
         Restore settings to their default values and write them to the
             config file
         call load_curr_config() to reload the config_dict and show their values
             in the log panel
+        update config box values
 
         no return value
         """
 
-        self.conf_parser.set(
-            "iridaUploader", "baseURL", "http://localhost:8080/api/")
-        self.conf_parser.set("apiCalls", "client_id", "testClient")
-        self.conf_parser.set("apiCalls", "client_secret", "testClientSecret")
-        self.conf_parser.set("apiCalls", "username", "admin")
-        self.conf_parser.set("apiCalls", "password", "password1")
+        default_settings_dict = {}
+        default_settings_dict["baseURL"] = "http://localhost:8080/api/"
+        default_settings_dict["username"] = "admin"
+        default_settings_dict["password"] = "password1"
+        default_settings_dict["client_id"] = "testClient"
+        default_settings_dict["client_secret"] = "testClientSecret"
 
-        with open(self.config_file, 'wb') as configfile:
-            self.conf_parser.write(configfile)
+        targ_section = "apiCalls"
+        self.write_config_data(targ_section, default_settings_dict)
 
         self.load_curr_config()
         self.log_panel.AppendText("Settings restored to default values:\n")
         for key in self.config_dict.keys():
             self.log_panel.AppendText(key + " = " + self.config_dict[key])
             self.log_panel.AppendText("\n")
+
+        self.base_URL_box.SetValue(default_settings_dict["baseURL"])
+        self.username_box.SetValue(default_settings_dict["username"])
+        self.password_box.SetValue(default_settings_dict["password"])
+        self.client_id_box.SetValue(default_settings_dict["client_id"])
+        self.client_secret_box.SetValue(default_settings_dict["client_secret"])
 
     def add_save_btn(self):
 
@@ -340,35 +346,91 @@ class SettingsPanel(wx.Panel):
 
     def save_changes(self, evt):
         self.log_panel.AppendText("Settings saved\n")
-        # exiting in 3,2,1 or You can now close this window
 
-    def add_cancel_btn(self):
+    def add_close_btn(self):
 
         """
-        Add cancel button
-        cancel will ignore all changes made
+        Add close button. Clicking it will call close_handler().
 
         no return value
         """
 
-        self.cancel_btn = wx.Button(self, label="Cancel")
-        self.cancel_btn.Bind(wx.EVT_BUTTON, self.ignore_changes)
-        self.buttons_sizer.Add(self.cancel_btn)
+        self.close_btn = wx.Button(self, label="Close")
+        self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
+        self.buttons_sizer.Add(self.close_btn)
 
-    def ignore_changes(self, evt):
-        self.log_panel.AppendText("No changes have been made\n")
-
-    def close_handler(self, event=""):
+    def close_handler(self, event):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
         Destroy parent(MainFrame) to continue with regular closing procedure
-        Can also be called manually
+        Check if any changes have been made that weren't saved and prompt user
+        if they want to save them.
 
         no return value
         """
 
+        box_val_dict = self.get_curr_box_values()
+        changes_dict = {}
+        for key in self.config_dict.keys():
+            if self.config_dict[key] != box_val_dict[key]:
+                changes_dict[key] = str(box_val_dict[key])
+
+        if len(changes_dict) > 0:
+            changes_str = ""
+            for item in changes_dict.items():
+                changes_str += " = ".join(item) + "\n"
+
+            dlg_msg = ("You have unsaved changes:\n" + changes_str + "\n" +
+                       "Save changes?")
+            prompt_msg = wx.MessageDialog(self, dlg_msg,
+                                          caption="Unsaved changes!",
+                                          style=wx.YES_NO | wx.YES_DEFAULT |
+                                          wx.STAY_ON_TOP |
+                                          wx.ICON_EXCLAMATION)
+
+            user_choice = prompt_msg.ShowModal()
+            if user_choice == wx.ID_YES:
+                targ_section = "apiCalls"
+                self.write_config_data(targ_section, changes_dict)
+
+            else:
+                prompt_msg.Destroy()
+
         self.parent.Destroy()
+
+    def get_curr_box_values(self):
+
+        """
+        Get current values in the textboxes/TextCtrl relating to config data
+        and store them in val dict
+
+        return val_dict
+        """
+
+        val_dict = {}
+        val_dict["baseURL"] = self.base_URL_box.GetValue()
+        val_dict["username"] = self.username_box.GetValue()
+        val_dict["password"] = self.password_box.GetValue()
+        val_dict["client_id"] = self.client_id_box.GetValue()
+        val_dict["client_secret"] = self.client_secret_box.GetValue()
+
+        return val_dict
+
+    def write_config_data(self, targ_section, new_config_data_dict):
+
+        """
+        write to config file: update values based on new_config_data_dict
+        in the targ_section
+
+        no return value
+        """
+
+        for key in new_config_data_dict.keys():
+            self.conf_parser.set(targ_section, key, new_config_data_dict[key])
+
+        with open(self.config_file, 'wb') as configfile:
+            self.conf_parser.write(configfile)
 
 
 class MainFrame(wx.Frame):
