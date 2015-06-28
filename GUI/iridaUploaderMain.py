@@ -11,7 +11,7 @@ from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_sample_list)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-
+from SettingsPanel import SettingsPanel
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -44,9 +44,11 @@ class MainPanel(wx.Panel):
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.settings_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
+        self.add_settings_button()
         self.add_progress_bar()
         self.add_upload_button()
 
@@ -59,6 +61,9 @@ class MainPanel(wx.Panel):
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+
+        self.top_sizer.Add(
+			self.settings_button_sizer, proportion=0, flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
 
         self.top_sizer.AddStretchSpacer()
 
@@ -165,6 +170,22 @@ class MainPanel(wx.Panel):
             size=(self.parent.WINDOW_SIZE[0]*0.95, 200),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.log_panel_sizer.Add(self.log_panel)
+
+    def open_settings(self, evt):
+        self.parent.sp.Center()
+        self.parent.sp.Show()
+
+    def add_settings_button(self):
+
+        """
+        Adds settings button to open settings menu
+
+        no return value
+        """
+
+        self.settings_button = wx.Button(self, label="Settings")
+        self.settings_button.Bind(wx.EVT_BUTTON, self.open_settings)
+        self.settings_button_sizer.Add(self.settings_button)
 
     def display_warning(self, warn_msg):
 
@@ -356,9 +377,10 @@ class MainFrame(wx.Frame):
         # use default frame style but disable border resize and maximize
 
         self.mp = MainPanel(self)
+        self.sp = SettingsPanel(self)
+        self.sp.Hide()
         self.Center()
         self.Show()
-
 
 if __name__ == "__main__":
     app = wx.App(False)

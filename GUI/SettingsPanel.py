@@ -11,12 +11,14 @@ if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class SettingsPanel(wx.Panel):
+class SettingsPanel(wx.Frame):
 
     def __init__(self, parent=None):
 
         self.parent = parent
-        wx.Panel.__init__(self, parent)
+        # wx.Panel.__init__(self, parent)
+        self.WINDOW_SIZE = (600, 400)
+        wx.Frame.__init__(self, parent, title="Settings", size=self.WINDOW_SIZE)
 
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
@@ -29,7 +31,7 @@ class SettingsPanel(wx.Panel):
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.parent.WINDOW_SIZE[0]*0.95, 200)
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 50
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
@@ -89,7 +91,7 @@ class SettingsPanel(wx.Panel):
         self.credentials_container.Add(self.user_pass_container)
         self.credentials_container.Add(self.id_secret_container)
 
-        spacer_size = (self.parent.WINDOW_SIZE[0] -
+        spacer_size = (self.WINDOW_SIZE[0] -
                        self.credentials_container.GetMinSize()[0] -
                        (self.SIZER_BORDER*2))
         self.credentials_container.InsertSpacer(1, (spacer_size, -1))
@@ -104,14 +106,14 @@ class SettingsPanel(wx.Panel):
 
         self.Layout()
 
-        button_spacing = (self.parent.WINDOW_SIZE[0] -
+        button_spacing = (self.WINDOW_SIZE[0] -
                           (self.default_btn.GetSize()[0] +
                           self.save_btn.GetSize()[0] +
                           self.close_btn.GetSize()[0]) -
                           (self.SIZER_BORDER*2))
         self.buttons_sizer.InsertSpacer(1, button_spacing)
 
-        space_bottom = (self.parent.WINDOW_SIZE[1] -
+        space_bottom = (self.WINDOW_SIZE[1] -
                         (self.log_panel_sizer.GetPosition()[1] +
                          self.LOG_PANEL_SIZE[1] +
                          self.default_btn.GetSize()[1] + self.SIZER_BORDER))
@@ -119,8 +121,7 @@ class SettingsPanel(wx.Panel):
             self.buttons_sizer, proportion=0, flag=wx.TOP, border=space_bottom)
 
         self.Layout()
-
-        self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
+        self.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def load_curr_config(self):
 
@@ -506,8 +507,7 @@ class SettingsPanel(wx.Panel):
 
             else:
                 prompt_msg.Destroy()
-
-        self.parent.Destroy()
+        self.parent.sp.Hide()
 
     def log_color_print(self, msg, color):
 
