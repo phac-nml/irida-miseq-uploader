@@ -1,10 +1,11 @@
 import wx
 from ConfigParser import RawConfigParser
 from pprint import pprint
-from os import path
+from os import path, getcwd
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
-                                 get_pair_files)
+                                 get_pair_files,
+								 recursive_find)
 from Model.SequencingRun import SequencingRun
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
@@ -27,8 +28,8 @@ class MainPanel(wx.Panel):
 
         self.sample_sheet_file = ""
         self.seq_run = None
-        self.browse_path = "../"  # os.getcwd()
-        self.file_dlg = None
+        self.browse_path = getcwd()
+        self.dir_dlg = None
         self.p_bar_percent = 0
         self.base_URL = ""
         self.username = ""
@@ -287,19 +288,20 @@ class MainPanel(wx.Panel):
 
         self.browse_button.SetFocus()
 
-        self.file_dlg = wx.FileDialog(
-            self, "Select SampleSheet.csv file",  defaultDir=self.browse_path,
+        self.dir_dlg = wx.DirDialog(
+            self, "Select directory containing Samplesheet.csv",   defaultPath=self.browse_path,
             style=wx.DD_DEFAULT_STYLE)
 
-        if self.file_dlg.ShowModal() == wx.ID_OK:
+        if self.dir_dlg.ShowModal() == wx.ID_OK:
 
-            self.browse_path = self.file_dlg.GetDirectory()
+            self.browse_path = self.dir_dlg.GetPath()
 
             try:
-                v_res = validate_sample_sheet(self.file_dlg.GetPath())
+                sample_sheet_file = str(recursive_find(self.dir_dlg.GetPath(), "SampleSheet.csv")[0])
+                v_res = validate_sample_sheet(sample_sheet_file)
 
                 if v_res.is_valid():
-                    self.sample_sheet_file = self.file_dlg.GetPath()
+                    self.sample_sheet_file = sample_sheet_file
 
                     try:
                         self.create_seq_run()
@@ -320,7 +322,7 @@ class MainPanel(wx.Panel):
             except SampleSheetError, e:
                 self.handle_invalid_sheet_or_seq_file(str(e))
 
-        self.file_dlg.Destroy()
+        self.dir_dlg.Destroy()
 
     def create_seq_run(self):
         """
