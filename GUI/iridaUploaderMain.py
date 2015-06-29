@@ -1,5 +1,4 @@
 import wx
-from ConfigParser import RawConfigParser
 from pprint import pprint
 from os import path, getcwd
 
@@ -12,19 +11,24 @@ from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_sample_list)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-from SettingsPanel import SettingsPanel
+from SettingsFrame import SettingsFrame
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class MainPanel(wx.Panel):
+class MainFrame(wx.Frame):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
 
         self.parent = parent
-        wx.Panel.__init__(self, parent)
+        self.WINDOW_SIZE = (700, 500)
+        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
+                          title="IRIDA Uploader",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
 
         self.sample_sheet_file = ""
         self.seq_run = None
@@ -53,27 +57,26 @@ class MainPanel(wx.Panel):
         self.add_progress_bar()
         self.add_upload_button()
 
-        self.top_sizer.AddSpacer(10)
+        self.top_sizer.AddSpacer(10)  # space between top and directory box
 
         self.top_sizer.Add(
             self.directory_sizer, proportion=0, flag=wx.ALL, border=5)
 
-        self.top_sizer.AddSpacer(30)
+        self.top_sizer.AddSpacer(30)  # between directory box & credentials
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.Add(
-			self.settings_button_sizer, proportion=0, flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
+            self.settings_button_sizer, proportion=0,
+            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
 
         self.top_sizer.AddStretchSpacer()
-
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER, border=5)
 
         self.top_sizer.AddStretchSpacer()
-
         self.top_sizer.Add(
             self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=5)
@@ -81,7 +84,11 @@ class MainPanel(wx.Panel):
         self.SetSizer(self.top_sizer)
         self.Layout()
 
-        self.parent.Bind(wx.EVT_CLOSE, self.close_handler)
+        self.Bind(wx.EVT_CLOSE, self.close_handler)
+        self.settings_frame = SettingsFrame(self)
+        self.settings_frame.Hide()
+        self.Center()
+        self.Show()
 
     def add_select_sample_sheet_section(self):
 
@@ -101,15 +108,15 @@ class MainPanel(wx.Panel):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File path")
         self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.browse_button = wx.Button(self, label="Choose samplesheet file")
+        self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
 
         self.directory_sizer.Add(self.dir_label, 0, wx.ALL, 5)
         self.directory_sizer.Add(self.dir_box, 0, wx.ALL, 5)
         self.directory_sizer.Add(self.browse_button, 0, wx.ALL, 5)
 
-        tip = "Select the SampleSheet.csv file for the sequence file(s) " + \
-            "that you want to upload"
+        tip = "Select the directory containing the SampleSheet.csv file " + \
+            "to be uploaded"
         self.dir_box.SetToolTipString(tip)
         self.dir_label.SetToolTipString(tip)
         self.browse_button.SetToolTipString(tip)
@@ -133,7 +140,7 @@ class MainPanel(wx.Panel):
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label=str(self.p_bar_percent) + "%")
         self.progress_bar = wx.Gauge(self, range=100, size=(
-            self.parent.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
+            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
         self.progress_bar_sizer.Add(self.progress_label)
         self.progress_bar_sizer.Add(self.progress_bar)
         self.progress_label.Hide()
@@ -167,14 +174,22 @@ class MainPanel(wx.Panel):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="Waiting for user to select SampleSheet file.\n\n",
-            size=(self.parent.WINDOW_SIZE[0]*0.95, 200),
+            value="Waiting for user to select directory containing " +
+                  "SampleSheet file.\n\n",
+            size=(self.WINDOW_SIZE[0]*0.95, 200),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.log_panel_sizer.Add(self.log_panel)
 
     def open_settings(self, evt):
-        self.parent.sp.Center()
-        self.parent.sp.Show()
+
+        """
+        Open the settings menu(SettingsFrame)
+
+        no return value
+        """
+
+        self.settings_frame.Center()
+        self.settings_frame.Show()
 
     def add_settings_button(self):
 
@@ -209,12 +224,12 @@ class MainPanel(wx.Panel):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
-        destroy parent(MainFrame) to continue with regular closing procedure
+        Destroy SettingsFrame and then destroy self
 
         no return value
         """
-
-        self.parent.Destroy()
+        self.settings_frame.Destroy()
+        self.Destroy()
 
     def upload_to_server(self, event):
 
@@ -325,6 +340,7 @@ class MainPanel(wx.Panel):
         self.dir_dlg.Destroy()
 
     def create_seq_run(self):
+
         """
         Try to create a SequencingRun object and store in to self.seq_run
         Parses out the metadata dictionary and sampleslist from selected
@@ -367,25 +383,9 @@ class MainPanel(wx.Panel):
                 raise SequenceFileError(v_res.get_errors())
 
 
-class MainFrame(wx.Frame):
-
-    def __init__(self):
-        self.WINDOW_SIZE = (700, 500)
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title="IRIDA Uploader",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
-        # use default frame style but disable border resize and maximize
-
-        self.mp = MainPanel(self)
-        self.sp = SettingsPanel(self)
-        self.sp.Hide()
-        self.Center()
-        self.Show()
-
 if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
+    frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()

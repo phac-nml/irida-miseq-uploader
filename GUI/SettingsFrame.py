@@ -11,14 +11,17 @@ if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class SettingsPanel(wx.Frame):
+class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
         self.parent = parent
-        # wx.Panel.__init__(self, parent)
-        self.WINDOW_SIZE = (600, 400)
-        wx.Frame.__init__(self, parent, title="Settings", size=self.WINDOW_SIZE)
+        self.WINDOW_SIZE = (600, 500)
+        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
+                          title="Settings",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
 
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
@@ -37,9 +40,9 @@ class SettingsPanel(wx.Frame):
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
-        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -56,6 +59,7 @@ class SettingsPanel(wx.Frame):
 
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_URL_section()
@@ -104,22 +108,11 @@ class SettingsPanel(wx.Frame):
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
-        self.Layout()
-
-        button_spacing = (self.WINDOW_SIZE[0] -
-                          (self.default_btn.GetSize()[0] +
-                          self.save_btn.GetSize()[0] +
-                          self.close_btn.GetSize()[0]) -
-                          (self.SIZER_BORDER*2))
-        self.buttons_sizer.InsertSpacer(1, button_spacing)
-
-        space_bottom = (self.WINDOW_SIZE[1] -
-                        (self.log_panel_sizer.GetPosition()[1] +
-                         self.LOG_PANEL_SIZE[1] +
-                         self.default_btn.GetSize()[1] + self.SIZER_BORDER))
+        self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
-            self.buttons_sizer, proportion=0, flag=wx.TOP, border=space_bottom)
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM)
 
+        self.Center()
         self.Layout()
         self.Bind(wx.EVT_CLOSE, self.close_handler)
 
@@ -127,7 +120,7 @@ class SettingsPanel(wx.Frame):
 
         """
         Read from config file and load baseURL, username, password, client ID
-        and client secret in to a config_dict
+        and client secret in to self.config_dict
 
         no return value
         """
@@ -179,7 +172,6 @@ class SettingsPanel(wx.Frame):
                                  self.LOG_PNL_ERR_TXT_COLOR)
             self.log_color_print("Value error message: " + str(e.message),
                                  self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
 
         except:
             self.log_color_print("Unexpected error:" + "\n",
@@ -187,9 +179,23 @@ class SettingsPanel(wx.Frame):
             self.log_color_print(str(sys.exc_info())+"\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.Layout()
+        self.Refresh()
 
     def handle_URL_error(self, e, msg_printed=False):
+
+        """
+        for handling ConnectionError when trying to connect to API
+        can also be called inside handle_key_error() in which case this method
+        won't print the message from server because it's already printed
+        in handle_key_error()
+
+        arguments:
+            e -- the ConnectionError object
+            msg_printed -- boolean for deciding whether or not to print msg
+
+        no return value
+        """
+
         self.log_color_print("Cannot connect to url:\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
@@ -199,6 +205,17 @@ class SettingsPanel(wx.Frame):
         self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
     def handle_key_error(self, e):
+
+        """
+        for handling KeyError when trying to connect to API
+        KeyError is raised when a base_URL that doesn't have an /api is given
+        which is why handle_URL_error() can be called in here
+
+        arguments:
+            e -- the KeyError object
+
+        no return value
+        """
 
         self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
         self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
@@ -346,7 +363,7 @@ class SettingsPanel(wx.Frame):
         self.log_panel = wx.TextCtrl(
             self, id=-1, value="",
             size=(self.LOG_PANEL_SIZE),
-            style=wx.TE_MULTILINE | wx.TE_READONLY)
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
         value = ("Settings menu.\n" +
                  "Click 'Save' to keep any changes you make.\n" +
                  "Click 'Close' to go back to uploader window.\n" +
@@ -366,8 +383,9 @@ class SettingsPanel(wx.Frame):
 
         self.default_btn = wx.Button(self, label="Restore to default")
         self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, flag=wx.LEFT,
-                               border=self.SIZER_BORDER)
+        self.buttons_sizer.Add(self.default_btn, 1,
+                               flag=wx.ALIGN_LEFT | wx.LEFT, border=5)
+        self.buttons_sizer.AddStretchSpacer(2)
 
     def restore_default_settings(self, evt):
 
@@ -377,6 +395,7 @@ class SettingsPanel(wx.Frame):
         call load_curr_config() to reload the config_dict and show their values
             in the log panel
         update config box values
+        attempt to connect to api after restoring to default settings
 
         no return value
         """
@@ -411,19 +430,20 @@ class SettingsPanel(wx.Frame):
         if config_dict[key] is different from changes_dict[key] then
         print it in a different color set by `self.LOG_PNL_UPDATED_TXT_COLOR`
 
+        arguments:
+            changes_dict -- dictionary containing difference between
+                            self.config_dict and values in config boxes
+
         no return value
         """
 
         for key in self.config_dict.keys():
+            msg = key + " = " + self.config_dict[key] + "\n"
 
             if key in changes_dict:
-                self.log_panel.SetForegroundColour(
-                    self.LOG_PNL_UPDATED_TXT_COLOR)
-
-            self.log_panel.AppendText(key + " = " + self.config_dict[key])
-            self.log_panel.AppendText("\n")
-
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+                self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR)
+            else:
+                self.log_panel.AppendText(msg)
 
     def add_save_btn(self):
 
@@ -435,7 +455,8 @@ class SettingsPanel(wx.Frame):
 
         self.save_btn = wx.Button(self, label="Save")
         self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
-        self.buttons_sizer.Add(self.save_btn)
+        self.buttons_sizer.Add(self.save_btn, 0,
+                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
 
     def save_changes(self, evt):
 
@@ -455,10 +476,10 @@ class SettingsPanel(wx.Frame):
 
             self.load_curr_config()
             self.print_config_to_log_panel(changes_dict)
+
         else:
-            self.log_panel.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_panel.AppendText("No changes to save.\n")
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+            self.log_color_print("No changes to save.\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
 
         self.attempt_connect_to_api()
 
@@ -472,13 +493,15 @@ class SettingsPanel(wx.Frame):
 
         self.close_btn = wx.Button(self, label="Close")
         self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
-        self.buttons_sizer.Add(self.close_btn)
+        self.buttons_sizer.Add(self.close_btn, 0,
+                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
 
     def close_handler(self, event):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
-        Destroy parent(MainFrame) to continue with regular closing procedure
+        Destroy self if running alone or hide self if running
+            attached to iridaUploaderMain
         Check if any changes have been made that weren't saved and prompt user
         if they want to save them.
 
@@ -507,15 +530,42 @@ class SettingsPanel(wx.Frame):
 
             else:
                 prompt_msg.Destroy()
-        self.parent.sp.Hide()
+
+        if self.parent is None:  # if running SettingsFrame by itself for tests
+            self.Destroy()
+        else:
+            self.Hide()  # running attached to iridaUploaderMain
 
     def log_color_print(self, msg, color):
 
-        self.log_panel.SetForegroundColour(color)
+        """
+        print colored text to the log_panel
+
+        arguments:
+            msg -- the message to print
+            color -- the color to print the message in
+
+        no return value
+        """
+
+        text_attrib = wx.TextAttr(color)
+
+        start_color = len(self.log_panel.GetValue())
+        end_color = start_color + len(msg)
+
         self.log_panel.AppendText(msg)
-        self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+        self.log_panel.SetStyle(start_color, end_color, text_attrib)
 
     def get_changes_dict(self):
+
+        """
+        get the difference between what's currently in the base_URL, username,
+            password, client id and client secret boxes compared to their
+            values in self.config_dict
+
+        returns dictionary containing only the differences between box values
+            and config_dict
+        """
 
         box_val_dict = self.get_curr_box_values()
         changes_dict = {key: str(box_val_dict[key])
@@ -528,7 +578,7 @@ class SettingsPanel(wx.Frame):
 
         """
         Get current values in the textboxes/TextCtrl relating to config data
-        and store them in val dict
+        and store them in val_dict
 
         return val_dict
         """
@@ -548,6 +598,11 @@ class SettingsPanel(wx.Frame):
         write to config file: update values based on new_config_data_dict
         in the targ_section
 
+        arguments:
+            targ_section -- the section in the config file to update
+            new_config_data_dict -- dict containing which config data to change
+                                    and what values to replace them
+
         no return value
         """
 
@@ -558,28 +613,9 @@ class SettingsPanel(wx.Frame):
             self.conf_parser.write(configfile)
 
 
-class MainFrame(wx.Frame):
-
-    def __init__(self):
-        self.WINDOW_SIZE = (700, 500)
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title="SettingsPanel",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
-        # use default frame style but disable border resize and maximize
-
-        self.sp = SettingsPanel(self)
-        self.Center()
-        self.Show()
-
-    def attempt_connect(self):
-        self.sp.attempt_connect_to_api()
-
-
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainFrame()
+    frame = SettingsFrame()
     frame.Show()
-    frame.attempt_connect()
+    frame.attempt_connect_to_api()
     app.MainLoop()
