@@ -11,7 +11,7 @@ from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_sample_list)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-from SettingsPanel import SettingsPanel
+from SettingsFrame import SettingsFrame
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -86,7 +86,7 @@ class MainFrame(wx.Frame):
         self.Layout()
 
         self.Bind(wx.EVT_CLOSE, self.close_handler)
-        self.sp = SettingsPanel(self)
+        self.sp = SettingsFrame(self)
         self.sp.Hide()
         self.Center()
         self.Show()

@@ -11,7 +11,7 @@ if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class SettingsPanel(wx.Frame):
+class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
@@ -511,7 +511,7 @@ class SettingsPanel(wx.Frame):
             else:
                 prompt_msg.Destroy()
 
-        if self.parent is None:  # if running SettingsPanel by itself
+        if self.parent is None:  # if running SettingsFrame by itself
             self.Destroy()
         else:
             self.Hide()  # running attached to iridaUploaderMain
@@ -567,7 +567,7 @@ class SettingsPanel(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = SettingsPanel()
+    frame = SettingsFrame()
     frame.Show()
     frame.attempt_connect_to_api()
     app.MainLoop()
