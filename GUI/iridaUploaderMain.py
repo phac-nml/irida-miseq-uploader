@@ -1,6 +1,6 @@
 import wx
 from pprint import pprint
-from os import path, getcwd
+from os import path, getcwd, pardir
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files,
@@ -32,7 +32,7 @@ class MainFrame(wx.Frame):
 
         self.sample_sheet_file = ""
         self.seq_run = None
-        self.browse_path = "../"  # getcwd()
+        self.browse_path = getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
         self.base_URL = ""
@@ -43,6 +43,11 @@ class MainFrame(wx.Frame):
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
+        self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
+        self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
+        self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
+        self.LOG_PNL_ERR_TXT_COLOR = wx.RED
+        self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -122,9 +127,9 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
-        # clicking directoryBox
+        # clicking dir_box
         self.dir_box.Bind(wx.EVT_LEFT_DOWN, self.open_dir_dlg)
-        # tabbing in to directorybox
+        # tabbing in to dir_box
         self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
 
     def add_progress_bar(self):
@@ -174,10 +179,14 @@ class MainFrame(wx.Frame):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="Waiting for user to select directory containing " +
-                  "SampleSheet file.\n\n",
+            value="",
             size=(self.WINDOW_SIZE[0]*0.95, 200),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
+
+        value = ("Waiting for user to select directory containing " +
+                 "SampleSheet file.\n\n")
+        self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+        self.log_panel.AppendText(value)
         self.log_panel_sizer.Add(self.log_panel)
 
     def open_settings(self, evt):
@@ -214,12 +223,32 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        self.log_panel.AppendText(warn_msg + "\n")
+        self.log_color_print(warn_msg + "\n", self.LOG_PNL_ERR_TXT_COLOR)
         warn_dlg = wx.MessageDialog(
             parent=self, message=warn_msg, caption="Warning!",
             style=wx.OK | wx.ICON_WARNING)
         warn_dlg.ShowModal()
         warn_dlg.Destroy()
+
+    def log_color_print(self, msg, color):
+
+        """
+        print colored text to the log_panel
+
+        arguments:
+            msg -- the message to print
+            color -- the color to print the message in
+
+        no return value
+        """
+
+        text_attrib = wx.TextAttr(color)
+
+        start_color = len(self.log_panel.GetValue())
+        end_color = start_color + len(msg)
+
+        self.log_panel.AppendText(msg)
+        self.log_panel.SetStyle(start_color, end_color, text_attrib)
 
     def close_handler(self, event):
 
@@ -274,9 +303,10 @@ class MainFrame(wx.Frame):
         no return value
         """
 
+        self.dir_box.SetBackgroundColour(self.INVALID_SAMPLESHEET_BG_COLOR)
         self.display_warning(msg)
         self.upload_button.Disable()
-        self.dir_box.SetValue("")
+
         self.progress_label.Hide()
         self.progress_bar.Hide()
         self.p_bar_percent = 0
@@ -287,7 +317,7 @@ class MainFrame(wx.Frame):
     def open_dir_dlg(self, event):
 
         """
-        Function bound to browseButton being clicked and directoryBox being
+        Function bound to browseButton being clicked and dir_box being
             clicked or tabbbed/focused
         Opens dir dialog for user to select directory containing
             SampleSheet.csv
@@ -297,8 +327,8 @@ class MainFrame(wx.Frame):
 
         arguments:
             event -- EVT_BUTTON when browse button is clicked
-                    or EVT_SET_FOCUS when directoryBox is focused via tabbing
-                    or EVT_LEFT_DOWN when directoryBox is clicked
+                    or EVT_SET_FOCUS when dir_box is focused via tabbing
+                    or EVT_LEFT_DOWN when dir_box is clicked
 
         no return value
         """
@@ -307,12 +337,13 @@ class MainFrame(wx.Frame):
 
         self.dir_dlg = wx.DirDialog(
             self, "Select directory containing Samplesheet.csv",
-            defaultPath=self.browse_path,
+            defaultPath=path.join(self.browse_path, pardir),
             style=wx.DD_DEFAULT_STYLE)
 
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
             self.browse_path = self.dir_dlg.GetPath()
+            self.dir_box.SetValue(self.dir_dlg.GetPath())
 
             try:
                 res_list = recursive_find(self.dir_dlg.GetPath(),
@@ -336,13 +367,15 @@ class MainFrame(wx.Frame):
 
                 if v_res.is_valid():
                     self.sample_sheet_file = sample_sheet_file
+                    self.dir_box.SetBackgroundColour(
+                        self.VALID_SAMPLESHEET_BG_COLOR)
 
                     try:
                         self.create_seq_run()
-                        self.dir_box.SetValue(self.sample_sheet_file)
+
                         self.upload_button.Enable()
-                        self.log_panel.AppendText(
-                            "Selected SampleSheet is valid\n")
+                        self.log_color_print("Selected SampleSheet is valid\n",
+                                             self.LOG_PNL_OK_TXT_COLOR)
                         self.progress_label.Show()
                         self.progress_bar.Show()
                         self.Layout()
