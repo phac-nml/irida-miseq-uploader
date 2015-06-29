@@ -107,22 +107,11 @@ class SettingsFrame(wx.Frame):
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
-        self.Layout()
-
-        button_spacing = (self.WINDOW_SIZE[0] -
-                          (self.default_btn.GetSize()[0] +
-                          self.save_btn.GetSize()[0] +
-                          self.close_btn.GetSize()[0]) -
-                          (self.SIZER_BORDER*2))
-        self.buttons_sizer.InsertSpacer(1, button_spacing)
-
-        space_bottom = (self.WINDOW_SIZE[1] -
-                        (self.log_panel_sizer.GetPosition()[1] +
-                         self.LOG_PANEL_SIZE[1] +
-                         self.default_btn.GetSize()[1] + self.SIZER_BORDER))
+        self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
-            self.buttons_sizer, proportion=0, flag=wx.TOP, border=space_bottom)
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM)
 
+        self.Center()
         self.Layout()
         self.Bind(wx.EVT_CLOSE, self.close_handler)
 
@@ -349,7 +338,7 @@ class SettingsFrame(wx.Frame):
         self.log_panel = wx.TextCtrl(
             self, id=-1, value="",
             size=(self.LOG_PANEL_SIZE),
-            style=wx.TE_MULTILINE | wx.TE_READONLY)
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
         value = ("Settings menu.\n" +
                  "Click 'Save' to keep any changes you make.\n" +
                  "Click 'Close' to go back to uploader window.\n" +
@@ -369,8 +358,9 @@ class SettingsFrame(wx.Frame):
 
         self.default_btn = wx.Button(self, label="Restore to default")
         self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, flag=wx.LEFT,
-                               border=self.SIZER_BORDER)
+        self.buttons_sizer.Add(self.default_btn, 1,
+                               flag=wx.ALIGN_LEFT | wx.LEFT, border=5)
+        self.buttons_sizer.AddStretchSpacer(2)
 
     def restore_default_settings(self, evt):
 
@@ -380,6 +370,7 @@ class SettingsFrame(wx.Frame):
         call load_curr_config() to reload the config_dict and show their values
             in the log panel
         update config box values
+        attempt to connect to api after restoring to defualt settings
 
         no return value
         """
@@ -418,15 +409,12 @@ class SettingsFrame(wx.Frame):
         """
 
         for key in self.config_dict.keys():
+            msg = key + " = " + self.config_dict[key] + "\n"
 
             if key in changes_dict:
-                self.log_panel.SetForegroundColour(
-                    self.LOG_PNL_UPDATED_TXT_COLOR)
-
-            self.log_panel.AppendText(key + " = " + self.config_dict[key])
-            self.log_panel.AppendText("\n")
-
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+                self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR)
+            else:
+                self.log_panel.AppendText(msg)
 
     def add_save_btn(self):
 
@@ -438,7 +426,8 @@ class SettingsFrame(wx.Frame):
 
         self.save_btn = wx.Button(self, label="Save")
         self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
-        self.buttons_sizer.Add(self.save_btn)
+        self.buttons_sizer.Add(self.save_btn, 0,
+                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
 
     def save_changes(self, evt):
 
@@ -459,10 +448,8 @@ class SettingsFrame(wx.Frame):
             self.load_curr_config()
             self.print_config_to_log_panel(changes_dict)
         else:
-            self.log_panel.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_panel.AppendText("No changes to save.\n")
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
-
+            self.log_color_print("No changes to save.\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
         self.attempt_connect_to_api()
 
     def add_close_btn(self):
@@ -475,7 +462,8 @@ class SettingsFrame(wx.Frame):
 
         self.close_btn = wx.Button(self, label="Close")
         self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
-        self.buttons_sizer.Add(self.close_btn)
+        self.buttons_sizer.Add(self.close_btn, 0,
+                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
 
     def close_handler(self, event):
 
@@ -518,9 +506,12 @@ class SettingsFrame(wx.Frame):
 
     def log_color_print(self, msg, color):
 
-        self.log_panel.SetForegroundColour(color)
+        text_attrib = wx.TextAttr(color)
+
+        start_color = len(self.log_panel.GetValue())
+        end_color = start_color + len(msg)
         self.log_panel.AppendText(msg)
-        self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
+        self.log_panel.SetStyle(start_color, end_color, text_attrib)
 
     def get_changes_dict(self):
 
