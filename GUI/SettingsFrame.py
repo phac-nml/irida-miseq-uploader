@@ -40,9 +40,9 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
-        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -59,6 +59,7 @@ class SettingsFrame(wx.Frame):
 
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_URL_section()
@@ -119,7 +120,7 @@ class SettingsFrame(wx.Frame):
 
         """
         Read from config file and load baseURL, username, password, client ID
-        and client secret in to a config_dict
+        and client secret in to self.config_dict
 
         no return value
         """
@@ -182,6 +183,19 @@ class SettingsFrame(wx.Frame):
 
     def handle_URL_error(self, e, msg_printed=False):
 
+        """
+        for handling ConnectionError when trying to connect to API
+        can also be called inside handle_key_error() in which case this method
+        won't print the message from server because it's already printed
+        in handle_key_error()
+
+        arguments:
+            e -- the ConnectionError object
+            msg_printed -- boolean for deciding whether or not to print msg
+
+        no return value
+        """
+
         self.log_color_print("Cannot connect to url:\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
@@ -191,6 +205,17 @@ class SettingsFrame(wx.Frame):
         self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
     def handle_key_error(self, e):
+
+        """
+        for handling KeyError when trying to connect to API
+        KeyError is raised when a base_URL that doesn't have an /api is given
+        which is why handle_URL_error() can be called in here
+
+        arguments:
+            e -- the KeyError object
+
+        no return value
+        """
 
         self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
         self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
@@ -370,7 +395,7 @@ class SettingsFrame(wx.Frame):
         call load_curr_config() to reload the config_dict and show their values
             in the log panel
         update config box values
-        attempt to connect to api after restoring to defualt settings
+        attempt to connect to api after restoring to default settings
 
         no return value
         """
@@ -404,6 +429,10 @@ class SettingsFrame(wx.Frame):
         prints config_dict key and value pairs
         if config_dict[key] is different from changes_dict[key] then
         print it in a different color set by `self.LOG_PNL_UPDATED_TXT_COLOR`
+
+        arguments:
+            changes_dict -- dictionary containing difference between
+                            self.config_dict and values in config boxes
 
         no return value
         """
@@ -447,9 +476,11 @@ class SettingsFrame(wx.Frame):
 
             self.load_curr_config()
             self.print_config_to_log_panel(changes_dict)
+
         else:
             self.log_color_print("No changes to save.\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
+
         self.attempt_connect_to_api()
 
     def add_close_btn(self):
@@ -469,7 +500,8 @@ class SettingsFrame(wx.Frame):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
-        Destroy parent(MainFrame) to continue with regular closing procedure
+        Destroy self if running alone or hide self if running
+            attached to iridaUploaderMain
         Check if any changes have been made that weren't saved and prompt user
         if they want to save them.
 
@@ -499,21 +531,41 @@ class SettingsFrame(wx.Frame):
             else:
                 prompt_msg.Destroy()
 
-        if self.parent is None:  # if running SettingsFrame by itself
+        if self.parent is None:  # if running SettingsFrame by itself for tests
             self.Destroy()
         else:
             self.Hide()  # running attached to iridaUploaderMain
 
     def log_color_print(self, msg, color):
 
+        """
+        print colored text to the log_panel
+
+        arguments:
+            msg -- the message to print
+            color -- the color to print the message in
+
+        no return value
+        """
+
         text_attrib = wx.TextAttr(color)
 
         start_color = len(self.log_panel.GetValue())
         end_color = start_color + len(msg)
+
         self.log_panel.AppendText(msg)
         self.log_panel.SetStyle(start_color, end_color, text_attrib)
 
     def get_changes_dict(self):
+
+        """
+        get the difference between what's currently in the base_URL, username,
+            password, client id and client secret boxes compared to their
+            values in self.config_dict
+
+        returns dictionary containing only the differences between box values
+            and config_dict
+        """
 
         box_val_dict = self.get_curr_box_values()
         changes_dict = {key: str(box_val_dict[key])
@@ -526,7 +578,7 @@ class SettingsFrame(wx.Frame):
 
         """
         Get current values in the textboxes/TextCtrl relating to config data
-        and store them in val dict
+        and store them in val_dict
 
         return val_dict
         """
@@ -545,6 +597,11 @@ class SettingsFrame(wx.Frame):
         """
         write to config file: update values based on new_config_data_dict
         in the targ_section
+
+        arguments:
+            targ_section -- the section in the config file to update
+            new_config_data_dict -- dict containing which config data to change
+                                    and what values to replace them
 
         no return value
         """

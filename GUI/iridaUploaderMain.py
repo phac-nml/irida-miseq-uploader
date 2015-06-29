@@ -1,5 +1,4 @@
 import wx
-from ConfigParser import RawConfigParser
 from pprint import pprint
 from os import path
 
@@ -29,6 +28,7 @@ class MainFrame(wx.Frame):
                           size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
+
         self.sample_sheet_file = ""
         self.seq_run = None
         self.browse_path = "../"  # os.getcwd()
@@ -71,13 +71,11 @@ class MainFrame(wx.Frame):
             flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
 
         self.top_sizer.AddStretchSpacer()
-
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER, border=5)
 
         self.top_sizer.AddStretchSpacer()
-
         self.top_sizer.Add(
             self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=5)
@@ -86,8 +84,8 @@ class MainFrame(wx.Frame):
         self.Layout()
 
         self.Bind(wx.EVT_CLOSE, self.close_handler)
-        self.sp = SettingsFrame(self)
-        self.sp.Hide()
+        self.settings_frame = SettingsFrame(self)
+        self.settings_frame.Hide()
         self.Center()
         self.Show()
 
@@ -109,15 +107,15 @@ class MainFrame(wx.Frame):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File path")
         self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
-        self.browse_button = wx.Button(self, label="Choose samplesheet file")
+        self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
 
         self.directory_sizer.Add(self.dir_label, 0, wx.ALL, 5)
         self.directory_sizer.Add(self.dir_box, 0, wx.ALL, 5)
         self.directory_sizer.Add(self.browse_button, 0, wx.ALL, 5)
 
-        tip = "Select the SampleSheet.csv file for the sequence file(s) " + \
-            "that you want to upload"
+        tip = "Select the directory containing the SampleSheet.csv file " + \
+            "to be uploaded"
         self.dir_box.SetToolTipString(tip)
         self.dir_label.SetToolTipString(tip)
         self.browse_button.SetToolTipString(tip)
@@ -175,14 +173,22 @@ class MainFrame(wx.Frame):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="Waiting for user to select SampleSheet file.\n\n",
+            value="Waiting for user to select directory containing " +
+                  "SampleSheet file.\n\n",
             size=(self.WINDOW_SIZE[0]*0.95, 200),
             style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.log_panel_sizer.Add(self.log_panel)
 
     def open_settings(self, evt):
-        self.sp.Center()
-        self.sp.Show()
+
+        """
+        Open the settings menu(SettingsFrame)
+
+        no return value
+        """
+
+        self.settings_frame.Center()
+        self.settings_frame.Show()
 
     def add_settings_button(self):
 
@@ -217,11 +223,11 @@ class MainFrame(wx.Frame):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
-        destroy parent(MainFrame) to continue with regular closing procedure
+        Destroy SettingsFrame and then destroy self
 
         no return value
         """
-        self.sp.Destroy()
+        self.settings_frame.Destroy()
         self.Destroy()
 
     def upload_to_server(self, event):
@@ -332,6 +338,7 @@ class MainFrame(wx.Frame):
         self.file_dlg.Destroy()
 
     def create_seq_run(self):
+
         """
         Try to create a SequencingRun object and store in to self.seq_run
         Parses out the metadata dictionary and sampleslist from selected
@@ -378,5 +385,5 @@ if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.sp.attempt_connect_to_api()
+    frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()
