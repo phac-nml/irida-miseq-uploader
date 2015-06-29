@@ -16,9 +16,12 @@ class SettingsPanel(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        # wx.Panel.__init__(self, parent)
-        self.WINDOW_SIZE = (600, 400)
-        wx.Frame.__init__(self, parent, title="Settings", size=self.WINDOW_SIZE)
+        self.WINDOW_SIZE = (600, 500)
+        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
+                          title="Settings",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
 
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
@@ -179,7 +182,6 @@ class SettingsPanel(wx.Frame):
                                  self.LOG_PNL_ERR_TXT_COLOR)
             self.log_color_print("Value error message: " + str(e.message),
                                  self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
 
         except:
             self.log_color_print("Unexpected error:" + "\n",
@@ -187,9 +189,10 @@ class SettingsPanel(wx.Frame):
             self.log_color_print(str(sys.exc_info())+"\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.Layout()
+        self.Refresh()
 
     def handle_URL_error(self, e, msg_printed=False):
+
         self.log_color_print("Cannot connect to url:\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
@@ -507,7 +510,11 @@ class SettingsPanel(wx.Frame):
 
             else:
                 prompt_msg.Destroy()
-        self.parent.sp.Hide()
+
+        if self.parent is None:  # if running SettingsPanel by itself
+            self.Destroy()
+        else:
+            self.Hide()  # running attached to iridaUploaderMain
 
     def log_color_print(self, msg, color):
 
@@ -558,28 +565,9 @@ class SettingsPanel(wx.Frame):
             self.conf_parser.write(configfile)
 
 
-class MainFrame(wx.Frame):
-
-    def __init__(self):
-        self.WINDOW_SIZE = (700, 500)
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title="SettingsPanel",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
-        # use default frame style but disable border resize and maximize
-
-        self.sp = SettingsPanel(self)
-        self.Center()
-        self.Show()
-
-    def attempt_connect(self):
-        self.sp.attempt_connect_to_api()
-
-
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainFrame()
+    frame = SettingsPanel()
     frame.Show()
-    frame.attempt_connect()
+    frame.attempt_connect_to_api()
     app.MainLoop()
