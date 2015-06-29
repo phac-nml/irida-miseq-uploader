@@ -4,7 +4,7 @@ from os import path, getcwd
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files,
-								 recursive_find)
+                                 recursive_find)
 from Model.SequencingRun import SequencingRun
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
@@ -32,7 +32,7 @@ class MainFrame(wx.Frame):
 
         self.sample_sheet_file = ""
         self.seq_run = None
-        self.browse_path = getcwd()
+        self.browse_path = "../"  # getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
         self.base_URL = ""
@@ -205,7 +205,8 @@ class MainFrame(wx.Frame):
 
     def display_warning(self, warn_msg):
 
-        """Displays warning message
+        """
+        Displays warning message as a popup and writes it in to log_panel
 
         arguments:
                 warn_msg -- message to display in warning dialog message box
@@ -288,8 +289,9 @@ class MainFrame(wx.Frame):
         """
         Function bound to browseButton being clicked and directoryBox being
             clicked or tabbbed/focused
-        Opens file dialog for user to select SampleSheet.csv
-        Validates the selected SampleSheet
+        Opens dir dialog for user to select directory containing
+            SampleSheet.csv
+        Validates the found SampleSheet.csv
         If it's valid then proceed to create the sequence run (create_seq_run)
         else displays warning messagebox containing the error(s)
 
@@ -304,7 +306,8 @@ class MainFrame(wx.Frame):
         self.browse_button.SetFocus()
 
         self.dir_dlg = wx.DirDialog(
-            self, "Select directory containing Samplesheet.csv",   defaultPath=self.browse_path,
+            self, "Select directory containing Samplesheet.csv",
+            defaultPath=self.browse_path,
             style=wx.DD_DEFAULT_STYLE)
 
         if self.dir_dlg.ShowModal() == wx.ID_OK:
@@ -312,7 +315,23 @@ class MainFrame(wx.Frame):
             self.browse_path = self.dir_dlg.GetPath()
 
             try:
-                sample_sheet_file = str(recursive_find(self.dir_dlg.GetPath(), "SampleSheet.csv")[0])
+                res_list = recursive_find(self.dir_dlg.GetPath(),
+                                          "SampleSheet.csv")
+                if len(res_list) == 1:
+                    sample_sheet_file = res_list[0]
+
+                elif len(res_list) == 0:
+                    err_msg = ("No SampleSheet.csv file was found in the " +
+                               "selected directory: " + self.dir_dlg.GetPath())
+                    raise SampleSheetError(err_msg)
+
+                else:
+                    err_msg = ("More than one SampleSheet.csv file was " +
+                               "found. Directory must contain only one " +
+                               "SampleSheet.csv file.\nFound files:\n " +
+                               "\n ".join(res_list))
+                    raise SampleSheetError(err_msg)
+
                 v_res = validate_sample_sheet(sample_sheet_file)
 
                 if v_res.is_valid():
