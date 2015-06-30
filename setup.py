@@ -22,4 +22,4 @@ setup(name="iridaUploader",
 
 py_version = str(sys.version_info.major) + "." + str(sys.version_info.minor)
 dest = path.join(site.USER_BASE, "lib", "python" + py_version, "site-packages")
-copy2("./config.conf",dest)
+copy2("./config.conf", dest)

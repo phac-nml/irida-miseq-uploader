@@ -331,7 +331,7 @@ class MainFrame(wx.Frame):
         """
 
         self.browse_button.SetFocus()
-        
+
         self.dir_dlg = wx.DirDialog(
             self, "Select directory containing Samplesheet.csv",
             defaultPath=path.join(self.browse_path, pardir),
