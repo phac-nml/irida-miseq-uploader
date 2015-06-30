@@ -33,7 +33,7 @@ Build a virtualenv and install the dependencies:
     $ cd iridauploader
     $ pip install -r requirements.txt
     $ scripts/virtualenv_wx.sh
-    $ python setup.py install
+    $ python setup.py install --user
 
 Remember that wxPython must be already installed using:
 

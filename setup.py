@@ -1,4 +1,8 @@
+import sys
+import site
 from distutils.core import setup
+from shutil import move, copy2
+from os import path
 
 
 def readme():
@@ -15,3 +19,7 @@ setup(name="iridaUploader",
       install_requires=["mock", "rauth", "selenium", "pep8"],
       zip_safe=False
       )
+
+py_version = str(sys.version_info.major) + "." + str(sys.version_info.minor)
+dest = path.join(site.USER_BASE, "lib", "python" + py_version, "site-packages")
+copy2("./config.conf",dest)
