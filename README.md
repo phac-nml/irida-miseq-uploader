@@ -2,11 +2,14 @@
 
 
 ### Linux Installation
+
 Install pip and wxpython:
 
     $ sudo apt-get install python-pip python-wxgtk2.8
 
+
 ### Windows Installation
+
 pip:
 
     https://pip.pypa.io/en/latest/installing.html
