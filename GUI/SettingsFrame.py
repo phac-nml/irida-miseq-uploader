@@ -39,7 +39,7 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
-        self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
