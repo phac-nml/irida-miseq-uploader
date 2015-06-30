@@ -35,9 +35,6 @@ class MainFrame(wx.Frame):
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
-        self.base_URL = ""
-        self.username = ""
-        self.password = ""
 
         self.LONG_BOX_SIZE = (400, 32)  # url and directories
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
@@ -334,7 +331,7 @@ class MainFrame(wx.Frame):
         """
 
         self.browse_button.SetFocus()
-
+        
         self.dir_dlg = wx.DirDialog(
             self, "Select directory containing Samplesheet.csv",
             defaultPath=path.join(self.browse_path, pardir),
@@ -343,17 +340,17 @@ class MainFrame(wx.Frame):
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
             self.browse_path = self.dir_dlg.GetPath()
-            self.dir_box.SetValue(self.dir_dlg.GetPath())
+            self.dir_box.SetValue(self.browse_path)
 
             try:
-                res_list = recursive_find(self.dir_dlg.GetPath(),
+                res_list = recursive_find(self.browse_path,
                                           "SampleSheet.csv")
                 if len(res_list) == 1:
                     sample_sheet_file = res_list[0]
 
                 elif len(res_list) == 0:
                     err_msg = ("No SampleSheet.csv file was found in the " +
-                               "selected directory: " + self.dir_dlg.GetPath())
+                               "selected directory: " + self.browse_path)
                     raise SampleSheetError(err_msg)
 
                 else:
@@ -389,6 +386,7 @@ class MainFrame(wx.Frame):
             except SampleSheetError, e:
                 self.handle_invalid_sheet_or_seq_file(str(e))
 
+        self.Refresh()
         self.dir_dlg.Destroy()
 
     def create_seq_run(self):
