@@ -10,6 +10,12 @@ path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
     path_to_module = '.'
 
+DEFAULT_BASE_URL = "http://localhost:8080/api/"
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "password1"
+DEFAULT_CLIENT_ID = "testClient"
+DEFAULT_CLIENT_SECRET = "testClientSecret"
+
 
 class SettingsFrame(wx.Frame):
 
@@ -401,11 +407,11 @@ class SettingsFrame(wx.Frame):
         """
 
         default_settings_dict = {}
-        default_settings_dict["baseURL"] = "http://localhost:8080/api/"
-        default_settings_dict["username"] = "admin"
-        default_settings_dict["password"] = "password1"
-        default_settings_dict["client_id"] = "testClient"
-        default_settings_dict["client_secret"] = "testClientSecret"
+        default_settings_dict["baseURL"] = DEFAULT_BASE_URL
+        default_settings_dict["username"] = DEFAULT_USERNAME
+        default_settings_dict["password"] = DEFAULT_PASSWORD
+        default_settings_dict["client_id"] = DEFAULT_CLIENT_ID
+        default_settings_dict["client_secret"] = DEFAULT_CLIENT_SECRET
 
         targ_section = "apiCalls"
         self.write_config_data(targ_section, default_settings_dict)
