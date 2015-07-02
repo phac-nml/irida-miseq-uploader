@@ -535,6 +535,13 @@ class SettingsFrame(wx.Frame):
                 self.write_config_data(targ_section, changes_dict)
 
             else:
+                self.base_URL_box.SetValue(self.config_dict["baseURL"])
+                self.username_box.SetValue(self.config_dict["username"])
+                self.password_box.SetValue(self.config_dict["password"])
+                self.client_id_box.SetValue(self.config_dict["client_id"])
+                self.client_secret_box.SetValue(
+                    self.config_dict["client_secret"])
+
                 prompt_msg.Destroy()
 
         if self.parent is None:  # if running SettingsFrame by itself for tests
