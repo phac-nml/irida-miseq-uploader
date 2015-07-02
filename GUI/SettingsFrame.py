@@ -10,6 +10,12 @@ path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
     path_to_module = '.'
 
+DEFAULT_BASE_URL = "http://localhost:8080/api/"
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "password1"
+DEFAULT_CLIENT_ID = "testClient"
+DEFAULT_CLIENT_SECRET = "testClientSecret"
+
 
 class SettingsFrame(wx.Frame):
 
@@ -39,7 +45,7 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
-        self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
@@ -401,11 +407,11 @@ class SettingsFrame(wx.Frame):
         """
 
         default_settings_dict = {}
-        default_settings_dict["baseURL"] = "http://localhost:8080/api/"
-        default_settings_dict["username"] = "admin"
-        default_settings_dict["password"] = "password1"
-        default_settings_dict["client_id"] = "testClient"
-        default_settings_dict["client_secret"] = "testClientSecret"
+        default_settings_dict["baseURL"] = DEFAULT_BASE_URL
+        default_settings_dict["username"] = DEFAULT_USERNAME
+        default_settings_dict["password"] = DEFAULT_PASSWORD
+        default_settings_dict["client_id"] = DEFAULT_CLIENT_ID
+        default_settings_dict["client_secret"] = DEFAULT_CLIENT_SECRET
 
         targ_section = "apiCalls"
         self.write_config_data(targ_section, default_settings_dict)
@@ -529,6 +535,13 @@ class SettingsFrame(wx.Frame):
                 self.write_config_data(targ_section, changes_dict)
 
             else:
+                self.base_URL_box.SetValue(self.config_dict["baseURL"])
+                self.username_box.SetValue(self.config_dict["username"])
+                self.password_box.SetValue(self.config_dict["password"])
+                self.client_id_box.SetValue(self.config_dict["client_id"])
+                self.client_secret_box.SetValue(
+                    self.config_dict["client_secret"])
+
                 prompt_msg.Destroy()
 
         if self.parent is None:  # if running SettingsFrame by itself for tests
