@@ -84,23 +84,23 @@ def validate_sample_sheet(sample_sheet_file):
     return v_res
 
 
-def validate_pair_files(fileList):
+def validate_pair_files(file_list):
 
     """
-    Validate files in fileList to have a matching pair file.
+    Validate files in file_list to have a matching pair file.
     R1 sequence file must have a match of R2 sequence file.
-    All files in fileList must have a pair to be valid.
+    All files in file_list must have a pair to be valid.
 
     arguments:
-            fileList -- list containing fastq.gz files
-            doesn't alter fileList
+            file_list -- list containing fastq.gz files
+            doesn't alter file_list
 
     returns ValidationResult object - stores bool valid and
         list of string error messages
     """
 
     v_res = ValidationResult()
-    validation_file_list = deepcopy(fileList)
+    validation_file_list = deepcopy(file_list)
     valid = False
     if len(validation_file_list) > 0 and len(validation_file_list) % 2 == 0:
         valid = True
@@ -132,7 +132,8 @@ def validate_pair_files(fileList):
         v_res.add_error_msg(
             "The given file list has an odd number of files." +
             "\nRequires an even number of files in order for each " +
-            "sequence file to have a pair.")
+            "sequence file to have a pair.\n" +
+            "Given file list:\n" + "\n ".join(file_list))
 
     v_res.set_valid(valid)
     return v_res

@@ -23,15 +23,15 @@ class MainFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (700, 500)
+        self.WINDOW_SIZE = (900, 700)
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
 
-        self.sample_sheet_file = ""
-        self.seq_run = None
+        self.sample_sheet_files = []
+        self.seq_run_list = []
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
@@ -39,7 +39,8 @@ class MainFrame(wx.Frame):
         self.username = ""
         self.password = ""
 
-        self.LONG_BOX_SIZE = (400, 32)  # url and directories
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
+        self.LONG_BOX_SIZE = (650, 32)  # choose directory
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
@@ -47,7 +48,7 @@ class MainFrame(wx.Frame):
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
-        self.LOG_PNL_OK_TXT_COLOR = wx.GREEN
+        self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -65,7 +66,7 @@ class MainFrame(wx.Frame):
         self.top_sizer.AddSpacer(10)  # space between top and directory box
 
         self.top_sizer.Add(
-            self.directory_sizer, proportion=0, flag=wx.ALL, border=5)
+            self.directory_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddSpacer(30)  # between directory box & credentials
 
@@ -180,7 +181,7 @@ class MainFrame(wx.Frame):
         self.log_panel = wx.TextCtrl(
             self, id=-1,
             value="",
-            size=(self.WINDOW_SIZE[0]*0.95, 200),
+            size=self.LOG_PANEL_SIZE,
             style=wx.TE_MULTILINE | wx.TE_READONLY)
 
         value = ("Waiting for user to select directory containing " +
@@ -230,7 +231,7 @@ class MainFrame(wx.Frame):
         warn_dlg.ShowModal()
         warn_dlg.Destroy()
 
-    def log_color_print(self, msg, color):
+    def log_color_print(self, msg, color=None):
 
         """
         print colored text to the log_panel
@@ -241,6 +242,9 @@ class MainFrame(wx.Frame):
 
         no return value
         """
+
+        if color is None:
+            color = self.LOG_PNL_REG_TXT_COLOR
 
         text_attrib = wx.TextAttr(color)
 
@@ -282,10 +286,10 @@ class MainFrame(wx.Frame):
         self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
         self.progress_bar.SetValue(self.p_bar_percent)
 
-        if self.seq_run is not None:
-            print self.seq_run.get_workflow()
-            pprint([self.seq_run.get_pair_files(sample.get_id())
-                    for sample in self.seq_run.get_sample_list()])
+        for sr in self.seq_run_list:
+            print sr.get_workflow()
+            pprint([sr.get_pair_files(sample.get_id())
+                    for sample in sr.get_sample_list()])
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
@@ -349,48 +353,74 @@ class MainFrame(wx.Frame):
             try:
                 res_list = self.find_sample_sheet(self.dir_dlg.GetPath(),
                                                   "SampleSheet.csv")
-                if len(res_list) == 1:
-                    sample_sheet_file = res_list[0]
+                if len(res_list) == 0:
+                    sub_dirs = [str(f) for f in listdir(self.dir_dlg.GetPath())
+                                if path.isdir(
+                                path.join(self.dir_dlg.GetPath(), f))]
 
-                elif len(res_list) == 0:
-                    err_msg = ("No SampleSheet.csv file was found in the " +
-                               "selected directory: " + self.dir_dlg.GetPath())
+                    err_msg = ("SampleSheet.csv file not found in the " +
+                               "selected directory:\n" +
+                               self.dir_dlg.GetPath())
+                    if len(sub_dirs) > 0:
+                        err_msg = (err_msg + " or its " +
+                                   "subdirectories: \n" + ", ".join(sub_dirs))
+
                     raise SampleSheetError(err_msg)
 
                 else:
-                    err_msg = ("More than one SampleSheet.csv file was " +
-                               "found. Directory must contain only one " +
-                               "SampleSheet.csv file.\nFound files:\n " +
-                               "\n ".join(res_list))
-                    raise SampleSheetError(err_msg)
+                    self.sample_sheet_files = res_list
 
-                v_res = validate_sample_sheet(sample_sheet_file)
-
-                if v_res.is_valid():
-                    self.sample_sheet_file = sample_sheet_file
-                    self.dir_box.SetBackgroundColour(
-                        self.VALID_SAMPLESHEET_BG_COLOR)
-
+                for ss in self.sample_sheet_files:
+                    self.log_color_print("Working on: " + ss)
                     try:
-                        self.create_seq_run()
-
-                        self.upload_button.Enable()
-                        self.log_color_print("Selected SampleSheet is valid\n",
-                                             self.LOG_PNL_OK_TXT_COLOR)
-                        self.progress_label.Show()
-                        self.progress_bar.Show()
-                        self.Layout()
-
+                        self.process_sample_sheet(ss)
                     except (SampleSheetError, SequenceFileError), e:
-                        self.handle_invalid_sheet_or_seq_file(str(e))
-
-                else:
-                    self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
+                        self.log_color_print(
+                            "Stopping the processing of SampleSheet.csv " +
+                            "files due to failed validation of previous " +
+                            "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
+                        break  # stop processing sheets if validation fails
 
             except SampleSheetError, e:
                 self.handle_invalid_sheet_or_seq_file(str(e))
 
         self.dir_dlg.Destroy()
+
+    def process_sample_sheet(self, sample_sheet_file):
+
+        """
+        validate samplesheet file and then tries to create a sequence run
+        raises errors if
+            samplesheet is not valid
+            failed to create sequence run (SequenceFileError)
+
+        arguments:
+            sample_sheet_file -- full path of SampleSheet.csv
+        """
+
+        v_res = validate_sample_sheet(sample_sheet_file)
+
+        if v_res.is_valid():
+            self.dir_box.SetBackgroundColour(
+                self.VALID_SAMPLESHEET_BG_COLOR)
+
+            try:
+                self.create_seq_run(sample_sheet_file)
+
+                self.upload_button.Enable()
+                self.log_color_print("Selected SampleSheet is valid\n",
+                                     self.LOG_PNL_OK_TXT_COLOR)
+                self.progress_label.Show()
+                self.progress_bar.Show()
+                self.Layout()
+
+            except (SampleSheetError, SequenceFileError), e:
+                self.handle_invalid_sheet_or_seq_file(str(e))
+                raise
+
+        else:
+            self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
+            raise
 
     def find_sample_sheet(self, top_dir, ss_pattern):
 
@@ -414,12 +444,13 @@ class MainFrame(wx.Frame):
             root = path.split(top_dir)[0]
 
             targ_dirs = [top_dir]
-            targ_dirs.extend([path.join(top_dir, item) for item in listdir(top_dir)
-                         if path.isdir(path.join(top_dir, item))])
+            targ_dirs.extend([path.join(top_dir, item)
+                             for item in listdir(top_dir)
+                             if path.isdir(path.join(top_dir, item))])
 
             top_dir_ss_found = False
 
-            for _dir in targ_dirs: #  dir is a keyword
+            for _dir in targ_dirs:  # dir is a keyword
                 for filename in fnfilter(listdir(_dir), ss_pattern):
                     full_path = path.join(_dir, filename)
                     if path.isfile(full_path):
@@ -431,12 +462,12 @@ class MainFrame(wx.Frame):
                         elif _dir != top_dir and top_dir_ss_found:
                             raise SampleSheetError(
                                 ("Found SampleSheet.csv in both top level " +
-                                "directory:\n {top_dir}\nand subdirectory:\n" +
-                                " {_dir}\nYou can only have either:\n" +
-                                "  One SampleSheet.csv on the top level " +
-                                "directory\n  Or multiple SampleSheet.csv " +
-                                "files in the the subdirectories").format(
-                                    top_dir=top_dir, _dir=_dir))
+                                 "directory:\n {t_dir}\nand subdirectory:\n" +
+                                 " {_dir}\nYou can only have either:\n" +
+                                 "  One SampleSheet.csv on the top level " +
+                                 "directory\n  Or multiple SampleSheet.csv " +
+                                 "files in the the subdirectories").format(
+                                    t_dir=top_dir, _dir=_dir))
                         else:
                             result_list.append(full_path)
 
@@ -446,12 +477,12 @@ class MainFrame(wx.Frame):
 
         return result_list
 
-    def create_seq_run(self):
+    def create_seq_run(self, sample_sheet_file):
 
         """
-        Try to create a SequencingRun object and store in to self.seq_run
+        Try to create a SequencingRun object and add it to self.seq_run_list
         Parses out the metadata dictionary and sampleslist from selected
-            self.sample_sheet_file
+            sample_sheet_file
         raises errors:
                 if parsing raises/throws Exceptions
                 if the parsed out samplesList fails validation
@@ -463,8 +494,8 @@ class MainFrame(wx.Frame):
         """
 
         try:
-            m_dict = parse_metadata(self.sample_sheet_file)
-            s_list = complete_parse_samples(self.sample_sheet_file)
+            m_dict = parse_metadata(sample_sheet_file)
+            s_list = complete_parse_samples(sample_sheet_file)
 
         except SequenceFileError, e:
             raise SequenceFileError(str(e))
@@ -475,19 +506,21 @@ class MainFrame(wx.Frame):
         v_res = validate_sample_list(s_list)
         if v_res.is_valid():
 
-            self.seq_run = SequencingRun()
-            self.seq_run.set_metadata(m_dict)
-            self.seq_run.set_sample_list(s_list)
+            seq_run = SequencingRun()
+            seq_run.set_metadata(m_dict)
+            seq_run.set_sample_list(s_list)
 
         else:
             raise SequenceFileError(v_res.get_errors())
 
-        for sample in self.seq_run.get_sample_list():
-            pf_list = self.seq_run.get_pair_files(sample.get_id())
+        for sample in seq_run.get_sample_list():
+            pf_list = seq_run.get_pair_files(sample.get_id())
 
             v_res = validate_pair_files(pf_list)
             if v_res.is_valid() is False:
                 raise SequenceFileError(v_res.get_errors())
+
+        self.seq_run_list.append(seq_run)
 
 
 if __name__ == "__main__":
