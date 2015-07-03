@@ -1,10 +1,10 @@
 import wx
 from pprint import pprint
-from os import path, getcwd, pardir
+from os import path, getcwd, pardir, listdir
+from fnmatch import filter as fnfilter
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
-                                 get_pair_files,
-                                 recursive_find)
+                                 get_pair_files)
 from Model.SequencingRun import SequencingRun
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
@@ -249,6 +249,7 @@ class MainFrame(wx.Frame):
 
         self.log_panel.AppendText(msg)
         self.log_panel.SetStyle(start_color, end_color, text_attrib)
+        self.log_panel.AppendText("\n")
 
     def close_handler(self, event):
 
@@ -346,8 +347,8 @@ class MainFrame(wx.Frame):
             self.dir_box.SetValue(self.dir_dlg.GetPath())
 
             try:
-                res_list = recursive_find(self.dir_dlg.GetPath(),
-                                          "SampleSheet.csv")
+                res_list = self.find_sample_sheet(self.dir_dlg.GetPath(),
+                                                  "SampleSheet.csv")
                 if len(res_list) == 1:
                     sample_sheet_file = res_list[0]
 
@@ -390,6 +391,60 @@ class MainFrame(wx.Frame):
                 self.handle_invalid_sheet_or_seq_file(str(e))
 
         self.dir_dlg.Destroy()
+
+    def find_sample_sheet(self, top_dir, ss_pattern):
+
+        """
+        Traverse through a directory and a level below it searching for
+            a file that matches the given SampleSheet pattern.
+        Raises an exception if a SampleSheet file is found at both the top lvl
+            directory and also inside one of its subdirectories
+
+        arguments:
+            top_dir -- top level directory to start searching from
+            ss_pattern -- SampleSheet pattern to try and match
+                          using fnfilter/ fnmatch.filter
+
+        returns list containing files that match pattern
+        """
+
+        result_list = []
+
+        if path.isdir(top_dir):
+            root = path.split(top_dir)[0]
+
+            targ_dirs = [top_dir]
+            targ_dirs.extend([path.join(top_dir, item) for item in listdir(top_dir)
+                         if path.isdir(path.join(top_dir, item))])
+
+            top_dir_ss_found = False
+
+            for _dir in targ_dirs: #  dir is a keyword
+                for filename in fnfilter(listdir(_dir), ss_pattern):
+                    full_path = path.join(_dir, filename)
+                    if path.isfile(full_path):
+
+                        if _dir == top_dir and top_dir_ss_found is False:
+                            top_dir_ss_found = True
+                            result_list.append(full_path)
+
+                        elif _dir != top_dir and top_dir_ss_found:
+                            raise SampleSheetError(
+                                ("Found SampleSheet.csv in both top level " +
+                                "directory:\n {top_dir}\nand subdirectory:\n" +
+                                " {_dir}\nYou can only have either:\n" +
+                                "  One SampleSheet.csv on the top level " +
+                                "directory\n  Or multiple SampleSheet.csv " +
+                                "files in the the subdirectories").format(
+                                    top_dir=top_dir, _dir=_dir))
+                        else:
+                            result_list.append(full_path)
+
+        else:
+            msg = "Invalid directory " + top_dir
+            raise IOError(msg)
+
+        return result_list
 
     def create_seq_run(self):
 
