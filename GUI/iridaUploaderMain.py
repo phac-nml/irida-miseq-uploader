@@ -2,6 +2,8 @@ import wx
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
+from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files)
@@ -222,11 +224,13 @@ class MainFrame(wx.Frame):
         """
 
         self.log_color_print(warn_msg + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-        warn_dlg = wx.MessageDialog(
+        self.warn_dlg = GMD(
             parent=self, message=warn_msg, caption="Warning!",
-            style=wx.OK | wx.ICON_WARNING)
-        warn_dlg.ShowModal()
-        warn_dlg.Destroy()
+            agwStyle=wx.OK | wx.ICON_EXCLAMATION)
+
+        self.warn_dlg.Message = warn_msg  # for testing
+        self.warn_dlg.ShowModal()
+        self.warn_dlg.Destroy()
 
     def log_color_print(self, msg, color=None):
 
@@ -361,7 +365,7 @@ class MainFrame(wx.Frame):
                                self.dir_dlg.GetPath())
                     if len(sub_dirs) > 0:
                         err_msg = (err_msg + " or its " +
-                                   "subdirectories: \n" + ", ".join(sub_dirs))
+                                   "subdirectories:\n" + ", ".join(sub_dirs))
 
                     raise SampleSheetError(err_msg)
 
