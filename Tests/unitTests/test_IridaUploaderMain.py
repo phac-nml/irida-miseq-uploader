@@ -46,6 +46,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
             self.assertTrue(self.frame.dir_dlg.IsShown())
             self.frame.dir_dlg.EndModal(wx.ID_OK)
+            self.assertFalse(self.frame.dir_dlg.IsShown())
 
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
@@ -60,6 +61,29 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertIn("Selected SampleSheet is valid",
                       self.frame.log_panel.GetValue())
+        self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
+                         self.frame.dir_box.GetBackgroundColour())
+
+    def test_sample_sheet_multiple_valid(self):
+        def handle_dir_dlg(self, evt):
+
+            self.assertTrue(self.frame.dir_dlg.IsShown())
+            self.frame.dir_dlg.EndModal(wx.ID_OK)
+            self.assertFalse(self.frame.dir_dlg.IsShown())
+
+        # using timer because dir_dlg thread is waiting for user input
+        self.frame.timer = wx.Timer(self.frame)
+        self.frame.browse_path = "./testMultiValidSheets/child"
+
+        self.frame.Bind(wx.EVT_TIMER,
+                        lambda evt: handle_dir_dlg(self, evt),
+                        self.frame.timer)
+
+        self.frame.timer.Start(self.WAIT_TIME, oneShot=True)
+        push_button(self.frame.browse_button)
+
+        self.assertEqual(self.frame.log_panel.GetValue().count(
+                         "Selected SampleSheet is valid"), 2)
         self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
 
@@ -108,6 +132,8 @@ gui_test_suite.addTest(
     TestIridaUploaderMain("test_open_sample_sheet"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_valid"))
+gui_test_suite.addTest(
+    TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
 
