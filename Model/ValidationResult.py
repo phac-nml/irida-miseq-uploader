@@ -19,8 +19,7 @@ class ValidationResult:
     def get_errors(self):
         ret_val = ""
         if len(self.error_msgs) > 0:
-            for error_msg in self.error_msgs:
-                ret_val = ret_val + error_msg + "\n"
+            ret_val = "\n".join(self.error_msgs)
         else:
             ret_val = "No error messages"
         return ret_val
