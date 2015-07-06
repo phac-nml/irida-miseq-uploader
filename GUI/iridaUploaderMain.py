@@ -373,7 +373,7 @@ class MainFrame(wx.Frame):
                     self.log_color_print("Processing: " + ss)
                     try:
                         self.process_sample_sheet(ss)
-                    except (SampleSheetError, SequenceFileError), e:
+                    except (SampleSheetError, SequenceFileError):
                         self.log_color_print(
                             "Stopping the processing of SampleSheet.csv " +
                             "files due to failed validation of previous " +
@@ -419,7 +419,7 @@ class MainFrame(wx.Frame):
 
         else:
             self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
-            raise
+            raise SampleSheetError
 
     def find_sample_sheet(self, top_dir, ss_pattern):
 
