@@ -74,7 +74,7 @@ class MainFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.settings_button_sizer, proportion=0,
-            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
+            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=20)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
@@ -181,7 +181,7 @@ class MainFrame(wx.Frame):
             self, id=-1,
             value="",
             size=self.LOG_PANEL_SIZE,
-            style=wx.TE_MULTILINE | wx.TE_READONLY)
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
@@ -373,7 +373,7 @@ class MainFrame(wx.Frame):
                     self.sample_sheet_files = res_list
 
                 for ss in self.sample_sheet_files:
-                    self.log_color_print("Working on: " + ss)
+                    self.log_color_print("Processing: " + ss)
                     try:
                         self.process_sample_sheet(ss)
                     except (SampleSheetError, SequenceFileError), e:
@@ -410,7 +410,7 @@ class MainFrame(wx.Frame):
                 self.create_seq_run(sample_sheet_file)
 
                 self.upload_button.Enable()
-                self.log_color_print("Selected SampleSheet is valid\n",
+                self.log_color_print(sample_sheet_file + " is valid\n",
                                      self.LOG_PNL_OK_TXT_COLOR)
                 self.progress_label.Show()
                 self.progress_bar.Show()
