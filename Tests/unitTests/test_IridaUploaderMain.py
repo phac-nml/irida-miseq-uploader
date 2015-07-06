@@ -1,5 +1,6 @@
 import unittest
 import wx
+import re
 from os import path, listdir
 
 from GUI.iridaUploaderMain import MainFrame
@@ -229,6 +230,58 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
 
+    def test_sample_sheet_invalid_seqfiles_no_pair(self):
+
+        def handle_dir_dlg(self, evt):
+
+            self.assertTrue(self.frame.dir_dlg.IsShown())
+            self.frame.dir_dlg.EndModal(wx.ID_OK)
+            self.assertFalse(self.frame.dir_dlg.IsShown())
+
+            self.frame.timer2 = wx.Timer(self.frame)
+            self.frame.Bind(wx.EVT_TIMER,
+                            lambda evt: handle_warn_dlg(self, evt),
+                            self.frame.timer2)
+            self.frame.timer2.Start(self.WAIT_TIME, oneShot=True)
+
+        def handle_warn_dlg(self, evt):
+
+            self.assertTrue(self.frame.warn_dlg.IsShown())
+
+            pattern1 = ("No pair sequence file found for: .+" +
+                        re.escape("01-1111_S1_L001_R1_001.fastq.gz"))
+            match1 = re.search(pattern1, self.frame.warn_dlg.Message)
+            self.assertIsNotNone(match1.group())
+
+            pattern2 = ("Required matching sequence file: .+" +
+                        re.escape("01-1111_S1_L001_R2_001.fastq.gz"))
+            match2 = re.search(pattern2, self.frame.warn_dlg.Message)
+            self.assertIsNotNone(match2.group())
+
+            self.frame.warn_dlg.EndModal(wx.ID_OK)
+            self.assertFalse(self.frame.warn_dlg.IsShown())
+
+            match3 = re.search(pattern1, self.frame.log_panel.GetValue())
+            match4 = re.search(pattern2, self.frame.log_panel.GetValue())
+
+            self.assertIsNotNone(match3.group())
+            self.assertIsNotNone(match4.group())
+
+        self.frame.browse_path = path.join(path_to_module, "testSeqPairFiles",
+                                           "noPair", "child")
+
+        # using timer because dir_dlg thread is waiting for user input
+        self.frame.timer = wx.Timer(self.frame)
+        self.frame.Bind(wx.EVT_TIMER,
+                        lambda evt: handle_dir_dlg(self, evt),
+                        self.frame.timer)
+        self.frame.timer.Start(self.WAIT_TIME, oneShot=True)
+
+        push_button(self.frame.browse_button)
+
+        self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
+                         self.frame.dir_box.GetBackgroundColour())
+
 gui_test_suite = unittest.TestSuite()
 
 gui_test_suite.addTest(
@@ -241,9 +294,10 @@ gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
-
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
+gui_test_suite.addTest(
+    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
 
 if __name__ == "__main__":
 
