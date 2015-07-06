@@ -69,6 +69,7 @@ class TestIridaUploaderMain(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertTrue(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_multiple_valid(self):
 
@@ -94,6 +95,7 @@ class TestIridaUploaderMain(unittest.TestCase):
                          "SampleSheet.csv is valid"), 2)
         self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertTrue(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_no_sheets(self):
 
@@ -137,6 +139,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_top_sub_ss(self):
         #  samplesheet found in both top of directory and subdirectory
@@ -188,6 +191,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_seqfiles(self):
 
@@ -229,6 +233,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_seqfiles_no_pair(self):
 
@@ -281,6 +286,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_seqfiles_odd_len(self):
 
@@ -327,6 +333,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
     def test_sample_sheet_invalid_seqfiles_no_project(self):
 
@@ -369,6 +376,7 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
+        self.assertFalse(self.frame.upload_button.IsEnabled())
 
 gui_test_suite = unittest.TestSuite()
 
