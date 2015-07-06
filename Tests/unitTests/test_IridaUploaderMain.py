@@ -51,6 +51,7 @@ class TestIridaUploaderMain(unittest.TestCase):
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
         self.frame.browse_path = "./fake_ngs_data/child"
+        # dir_dlg uses parent of browse_path; need /child to get /fake_ngs_data
 
         self.frame.Bind(wx.EVT_TIMER,
                         lambda evt: handle_dir_dlg(self, evt),
@@ -59,12 +60,13 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.timer.Start(self.WAIT_TIME, oneShot=True)
         push_button(self.frame.browse_button)
 
-        self.assertIn("Selected SampleSheet is valid",
+        self.assertIn("SampleSheet.csv is valid",
                       self.frame.log_panel.GetValue())
         self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
 
     def test_sample_sheet_multiple_valid(self):
+
         def handle_dir_dlg(self, evt):
 
             self.assertTrue(self.frame.dir_dlg.IsShown())
@@ -83,7 +85,7 @@ class TestIridaUploaderMain(unittest.TestCase):
         push_button(self.frame.browse_button)
 
         self.assertEqual(self.frame.log_panel.GetValue().count(
-                         "Selected SampleSheet is valid"), 2)
+                         "SampleSheet.csv is valid"), 2)
         self.assertEqual(self.frame.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.dir_box.GetBackgroundColour())
 
