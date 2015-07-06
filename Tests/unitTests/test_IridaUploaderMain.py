@@ -486,19 +486,39 @@ class TestIridaUploaderMain(unittest.TestCase):
 
     def test_sample_sheet_invalid_seqfiles_no_project(self):
 
-        def handle_dir_dlg(self, evt):
+        def poll_for_dir_dlg(self, evt, time_counter):
+
+            time_counter["value"] += self.POLL_INTERVAL
+
+            if (self.frame.dir_dlg is not None or
+                    time_counter["value"] == self.MAX_WAIT_TIME):
+                self.frame.timer.Stop()
+                handle_dir_dlg(self)
+
+        def handle_dir_dlg(self):
 
             self.assertTrue(self.frame.dir_dlg.IsShown())
             self.frame.dir_dlg.EndModal(wx.ID_OK)
             self.assertFalse(self.frame.dir_dlg.IsShown())
 
+            time_counter2 = {"value": 0}
             self.frame.timer2 = wx.Timer(self.frame)
             self.frame.Bind(wx.EVT_TIMER,
-                            lambda evt: handle_warn_dlg(self, evt),
+                            lambda evt: poll_for_warn_dlg(self,
+                                                          evt,
+                                                          time_counter2),
                             self.frame.timer2)
-            self.frame.timer2.Start(self.WAIT_TIME, oneShot=True)
+            self.frame.timer2.Start(self.POLL_INTERVAL)
 
-        def handle_warn_dlg(self, evt):
+        def poll_for_warn_dlg(self, evt, time_counter2):
+
+            time_counter2["value"] += self.POLL_INTERVAL
+            if (self.frame.dir_dlg is not None or
+                    time_counter2["value"] == self.MAX_WAIT_TIME):
+                self.frame.timer2.Stop()
+                handle_warn_dlg(self)
+
+        def handle_warn_dlg(self):
 
             self.assertTrue(self.frame.warn_dlg.IsShown())
 
@@ -511,15 +531,16 @@ class TestIridaUploaderMain(unittest.TestCase):
 
             self.assertIn(expected_txt, self.frame.log_panel.GetValue())
 
+        time_counter = {"value": 0}
+
         self.frame.browse_path = path.join(path_to_module, "testSeqPairFiles",
                                            "noSampleProj", "child")
 
-        # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER,
-                        lambda evt: handle_dir_dlg(self, evt),
+                        lambda evt: poll_for_dir_dlg(self, evt, time_counter),
                         self.frame.timer)
-        self.frame.timer.Start(self.WAIT_TIME, oneShot=True)
+        self.frame.timer.Start(self.POLL_INTERVAL)
 
         push_button(self.frame.browse_button)
 
@@ -550,7 +571,6 @@ gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
-
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
 gui_test_suite.addTest(
