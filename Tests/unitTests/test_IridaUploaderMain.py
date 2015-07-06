@@ -378,6 +378,15 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.upload_button.IsEnabled())
 
+    def test_open_settings(self):
+
+        push_button(self.frame.settings_button)
+        self.assertTrue(self.frame.settings_frame.IsShown())
+
+        push_button(self.frame.settings_frame.close_btn)
+        self.assertFalse(self.frame.settings_frame.IsShown())
+
+
 gui_test_suite = unittest.TestSuite()
 
 gui_test_suite.addTest(
@@ -398,6 +407,8 @@ gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
+gui_test_suite.addTest(
+    TestIridaUploaderMain("test_open_settings"))
 
 if __name__ == "__main__":
 
