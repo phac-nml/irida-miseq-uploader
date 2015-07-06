@@ -123,7 +123,8 @@ def validate_pair_files(file_list):
 
             else:
                 valid = False
-                v_res.add_error_msg("No pair sequence file found for: " + file +
+                v_res.add_error_msg("No pair sequence file found for: " +
+                                    file +
                                     "\nRequired matching sequence file: " +
                                     matching_pair_file)
                 break
