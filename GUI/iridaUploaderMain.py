@@ -127,10 +127,7 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
-        # clicking dir_box
-        self.dir_box.Bind(wx.EVT_LEFT_DOWN, self.open_dir_dlg)
-        # tabbing in to dir_box
-        self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
+        
 
     def add_progress_bar(self):
 
