@@ -127,7 +127,6 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
-        
 
     def add_progress_bar(self):
 
