@@ -3,7 +3,7 @@ from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
-
+from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files)
@@ -341,28 +341,29 @@ class MainFrame(wx.Frame):
 
         self.browse_button.SetFocus()
 
-        self.dir_dlg = wx.DirDialog(
+        self.dir_dlg = MDD(
             self, "Select directory containing Samplesheet.csv",
-            defaultPath=path.join(self.browse_path, pardir),
-            style=wx.DD_DEFAULT_STYLE)
-
+            defaultPath=path.dirname(self.browse_path),
+            agwStyle=wx.lib.agw.multidirdialog.DD_DIR_MUST_EXIST)
+        # agwStyle to disable "Create new folder"
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
-            self.browse_path = self.dir_dlg.GetPath()
+            self.browse_path = self.dir_dlg.GetPaths()[0].replace(
+                "Home directory", path.expanduser("~"))
             self.dir_box.SetValue(self.browse_path)
 
             try:
 
-                res_list = self.find_sample_sheet(self.dir_dlg.GetPath(),
+                res_list = self.find_sample_sheet(self.browse_path,
                                                   "SampleSheet.csv")
                 if len(res_list) == 0:
-                    sub_dirs = [str(f) for f in listdir(self.dir_dlg.GetPath())
+                    sub_dirs = [str(f) for f in listdir(self.browse_path)
                                 if path.isdir(
-                                path.join(self.dir_dlg.GetPath(), f))]
+                                path.join(self.browse_path, f))]
 
                     err_msg = ("SampleSheet.csv file not found in the " +
                                "selected directory:\n" +
-                               self.dir_dlg.GetPath())
+                               self.browse_path)
                     if len(sub_dirs) > 0:
                         err_msg = (err_msg + " or its " +
                                    "subdirectories:\n" + ", ".join(sub_dirs))

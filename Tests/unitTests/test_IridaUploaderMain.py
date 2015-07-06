@@ -4,6 +4,8 @@ from os import path, listdir
 
 from GUI.iridaUploaderMain import MainFrame
 
+path_to_module = path.dirname(path.abspath(__file__))
+
 
 def push_button(targ_obj):
     """
@@ -19,9 +21,10 @@ class TestIridaUploaderMain(unittest.TestCase):
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
         self.app = wx.App(False)
         self.frame = MainFrame()
-        self.WAIT_TIME = 300
+        self.WAIT_TIME = 2500
 
     def tearDown(self):
+        self.frame.Destroy()
         self.app.Destroy()
 
     def test_open_sample_sheet(self):
@@ -50,7 +53,8 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
-        self.frame.browse_path = "./fake_ngs_data/child"
+        self.frame.browse_path = path.join(path_to_module, "fake_ngs_data",
+                                           "child")
         # dir_dlg uses parent of browse_path; need /child to get /fake_ngs_data
 
         self.frame.Bind(wx.EVT_TIMER,
@@ -75,7 +79,8 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
-        self.frame.browse_path = "./testMultiValidSheets/child"
+        self.frame.browse_path = path.join(path_to_module,
+                                           "testMultiValidSheets", "child")
 
         self.frame.Bind(wx.EVT_TIMER,
                         lambda evt: handle_dir_dlg(self, evt),
@@ -115,7 +120,8 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
-        self.frame.browse_path = "./testSampleSheets/child"
+        self.frame.browse_path = path.join(path_to_module,
+                                           "testSampleSheets", "child")
 
         self.frame.Bind(wx.EVT_TIMER,
                         lambda evt: handle_dir_dlg(self, evt),
@@ -162,7 +168,8 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         # using timer because dir_dlg thread is waiting for user input
         self.frame.timer = wx.Timer(self.frame)
-        self.frame.browse_path = "./testSeqPairFiles/child"
+        self.frame.browse_path = path.join(path_to_module,
+                                           "testSeqPairFiles", "child")
 
         self.frame.Bind(wx.EVT_TIMER,
                         lambda evt: handle_dir_dlg(self, evt),
