@@ -8,7 +8,7 @@ from os import path, listdir
 from GUI.iridaUploaderMain import MainFrame
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))
-POLL_INTERVAL = 1  # milliseconds. set to larger num (e.g 1000) to "see" tests
+POLL_INTERVAL = 100  # milliseconds
 MAX_WAIT_TIME = 5000  # milliseconds
 
 
