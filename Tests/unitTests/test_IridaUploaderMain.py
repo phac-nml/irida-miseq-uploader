@@ -62,7 +62,7 @@ def poll_for_warn_dlg(self, time_counter2, handle_func):
 
     time_counter2["value"] += POLL_INTERVAL
 
-    if (self.frame.warn_dlg is not None or
+    if (hasattr(self.frame, "warn_dlg") or
             time_counter2["value"] == MAX_WAIT_TIME):
         self.frame.timer2.Stop()
 
