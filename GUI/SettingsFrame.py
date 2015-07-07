@@ -142,6 +142,14 @@ class SettingsFrame(wx.Frame):
         self.config_dict["client_secret"] = self.conf_parser.get(
                                             "apiCalls", "client_secret")
 
+    def create_api_obj(self):
+
+        ApiCalls(self.config_dict["client_id"],
+                 self.config_dict["client_secret"],
+                 self.config_dict["baseURL"],
+                 self.config_dict["username"],
+                 self.config_dict["password"])
+
     def attempt_connect_to_api(self):
 
         """
@@ -151,11 +159,8 @@ class SettingsFrame(wx.Frame):
         """
 
         try:
-            ApiCalls(self.config_dict["client_id"],
-                     self.config_dict["client_secret"],
-                     self.config_dict["baseURL"],
-                     self.config_dict["username"],
-                     self.config_dict["password"])
+
+            self.create_api_obj()
 
             self.base_URL_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
             self.username_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
