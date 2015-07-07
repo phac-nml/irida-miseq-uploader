@@ -32,7 +32,7 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.Destroy()
         self.app.Destroy()
 
-    def test_open_sample_sheet(self):
+    def test_sample_sheet_valid(self):
 
         """
         self.frame.timer calls poll_for_dir_dlg() once every self.POLL_INTERVAL
@@ -47,33 +47,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         using time_counter as dict because ints are immutable and didn't want
         to attach it to self in case it might get used by another function
         """
-
-        def poll_for_dir_dlg(self, evt, time_counter):
-
-            time_counter["value"] += self.POLL_INTERVAL
-
-            if (self.frame.dir_dlg is not None or
-                    time_counter["value"] == self.MAX_WAIT_TIME):
-                self.frame.timer.Stop()
-                handle_dir_dlg(self)
-
-        def handle_dir_dlg(self):
-
-            self.assertTrue(self.frame.dir_dlg.IsShown())
-            self.frame.dir_dlg.EndModal(wx.ID_CANCEL)
-
-        time_counter = {"value": 0}
-
-        # using timer because dir_dlg thread is waiting for user input
-        self.frame.timer = wx.Timer(self.frame)
-        self.frame.Bind(wx.EVT_TIMER,
-                        lambda evt: poll_for_dir_dlg(self, evt, time_counter),
-                        self.frame.timer)
-        self.frame.timer.Start(self.POLL_INTERVAL)
-
-        push_button(self.frame.browse_button)
-
-    def test_sample_sheet_valid(self):
 
         def poll_for_dir_dlg(self, evt, time_counter):
 
@@ -559,8 +532,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
 gui_test_suite = unittest.TestSuite()
 
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_open_sample_sheet"))
 gui_test_suite.addTest(
     TestIridaUploaderMain("test_sample_sheet_valid"))
 gui_test_suite.addTest(
