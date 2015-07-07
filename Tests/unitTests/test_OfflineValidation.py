@@ -257,42 +257,47 @@ class TestOfflineValidation(unittest.TestCase):
             self.assertEqual(is_valid, item["valid"])
 
 
-off_validation_test_suite = unittest.TestSuite()
+def load_test_suite():
 
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_sample_sheet_valid_sheet"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_sample_sheet_missing_data_header"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_sample_sheet_missing_header_sect"))
+    off_validation_test_suite = unittest.TestSuite()
 
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_pair_files_valid"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_pair_files_invalid_odd_length"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_sample_sheet_valid_sheet"))
 
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_sample_list_valid"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validateSampleList_invalid_no_sample_proj"))
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validateSampleList_invalid_empty"))
+    short_name1 = "test_validate_sample_sheet_missing_data_header"
+    off_validation_test_suite.addTest(TestOfflineValidation(short_name1))
 
-off_validation_test_suite.addTest(
-    TestOfflineValidation("test_validate_URL_form"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
+    off_validation_test_suite.addTest(TestOfflineValidation(
+        "test_validate_sample_sheet_missing_header_sect"))
 
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_pair_files_valid"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_pair_files_invalid_odd_length"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
+
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_sample_list_valid"))
+
+    short_name2 = "test_validateSampleList_invalid_no_sample_proj"
+    off_validation_test_suite.addTest(TestOfflineValidation(short_name2))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validateSampleList_invalid_empty"))
+
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_URL_form"))
+
+    return off_validation_test_suite
 
 if __name__ == "__main__":
-    suite_list = []
 
-    suite_list.append(off_validation_test_suite)
-    full_suite = unittest.TestSuite(suite_list)
+    test_suite = load_test_suite()
+    full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)

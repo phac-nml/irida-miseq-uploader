@@ -391,33 +391,36 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.assertFalse(self.frame.settings_frame.IsShown())
 
 
-gui_test_suite = unittest.TestSuite()
+def load_test_suite():
 
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_valid"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_open_settings"))
+    gui_test_suite = unittest.TestSuite()
+
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_valid"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_open_settings"))
+
+    return gui_test_suite
+
 
 if __name__ == "__main__":
 
-    suite_list = []
-
-    suite_list.append(gui_test_suite)
-    full_suite = unittest.TestSuite(suite_list)
+    test_suite = load_test_suite()
+    full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
