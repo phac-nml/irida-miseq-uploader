@@ -1,12 +1,14 @@
 import unittest
 import wx
 import re
+import traceback
+import sys
 from os import path, listdir
 
 from GUI.iridaUploaderMain import MainFrame
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))
-POLL_INTERVAL = 1  # milliseconds
+POLL_INTERVAL = 1  # milliseconds. set to larger num (e.g 1000) to "see" tests
 MAX_WAIT_TIME = 5000  # milliseconds
 
 
@@ -20,6 +22,11 @@ def push_button(targ_obj):
 
 def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
                      handle_func=None):
+    """
+    poll_warn_dlg and handle_func are used by functions that are expecting
+    to see a warning dialog because they are testing for the error messages
+    that are inside warn_dlg
+    """
 
     time_counter["value"] += POLL_INTERVAL
 
@@ -31,28 +38,40 @@ def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
 
 def handle_dir_dlg(self, poll_warn_dlg, handle_func):
 
-    self.assertTrue(self.frame.dir_dlg.IsShown())
-    self.frame.dir_dlg.EndModal(wx.ID_OK)
-    self.assertFalse(self.frame.dir_dlg.IsShown())
+    try:
+        self.assertTrue(self.frame.dir_dlg.IsShown())
+        self.frame.dir_dlg.EndModal(wx.ID_OK)
+        self.assertFalse(self.frame.dir_dlg.IsShown())
 
-    if poll_warn_dlg:
-        time_counter2 = {"value": 0}
-        self.frame.timer2 = wx.Timer(self.frame)
-        self.frame.Bind(wx.EVT_TIMER,
-                        lambda evt: poll_for_warn_dlg(self,
-                                                      time_counter2,
-                                                      handle_func),
-                        self.frame.timer2)
-        self.frame.timer2.Start(POLL_INTERVAL)
+        if poll_warn_dlg:
+            time_counter2 = {"value": 0}
+            self.frame.timer2 = wx.Timer(self.frame)
+            self.frame.Bind(wx.EVT_TIMER,
+                            lambda evt: poll_for_warn_dlg(self,
+                                                          time_counter2,
+                                                          handle_func),
+                            self.frame.timer2)
+            self.frame.timer2.Start(POLL_INTERVAL)
+
+    except (AssertionError, AttributeError):
+        print traceback.format_exc()
+        sys.exit(1)
 
 
 def poll_for_warn_dlg(self, time_counter2, handle_func):
 
     time_counter2["value"] += POLL_INTERVAL
-    if (self.frame.dir_dlg is not None or
+
+    if (self.frame.warn_dlg is not None or
             time_counter2["value"] == MAX_WAIT_TIME):
         self.frame.timer2.Stop()
-        handle_func(self)
+
+        try:
+            handle_func(self)
+
+        except (AssertionError, AttributeError):
+            print traceback.format_exc()
+            sys.exit(1)
 
 
 class TestIridaUploaderMain(unittest.TestCase):
@@ -62,6 +81,7 @@ class TestIridaUploaderMain(unittest.TestCase):
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
         self.app = wx.App(False)
         self.frame = MainFrame()
+        # print self.frame.dir_dlg
 
     def tearDown(self):
 
@@ -73,15 +93,22 @@ class TestIridaUploaderMain(unittest.TestCase):
         """
         self.frame.timer calls poll_for_dir_dlg() once every POLL_INTERVAL
             milliseconds.
+
         poll_for_dir_dlg() checks if the dir_dlg (select directory dialog) is
             no longer None (i.e if it has been created) and if so then call
             handle_dir_dlg for checking assertions etc.
-            if the MAX_WAIT_TIME is reached, handle_dir_dlg will still be
-            called and the assertions will naturally fail because
-            self.frame.dir_dlg is still None
 
-        using time_counter as dict because ints are immutable and didn't want
-        to attach it to self in case it might get used by another function
+        if the MAX_WAIT_TIME is reached, handle_dir_dlg will still be
+            called and if self.frame.dir_dlg is still None then an
+            AttributeError will be raised
+
+        if assertions fail inside the functions that are in a different thread
+            (handle_dir_dlg, poll_for_warn_dlg,
+             handle_warn_dlg/handle_func) then an AssertionError will be raised
+
+        Both AssertionError and AttributeError raised inside those threads will
+        print a traceback of what caused them to be raised and then calls
+        sys.exit to prevent the GUI program from hanging waiting for input
         """
 
         time_counter = {"value": 0}
