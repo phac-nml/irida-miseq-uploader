@@ -3,14 +3,23 @@ import Tests.unitTests.test_MiseqParser as test_MiseqParser
 import Tests.unitTests.test_ApiCalls as test_ApiCalls
 import Tests.unitTests.test_IridaUploaderMain as test_IridaUploaderMain
 
+import Tests.integrationTests.test_ApiCalls_integration as apiCalls_integration
+
 import unittest
 import platform
 from os import system, path, listdir, getcwd
 
 """
-For running all unittests or commenting out particular tests suites to only run
+For running all tests or commenting out particular tests suites to only run
 selected tests.
 """
+
+
+def run_integration_tests():
+
+    if platform.system() == "Linux":
+        print "Running integration tests"
+        apiCalls_integration.main()
 
 
 def run_unit_tests():
@@ -39,9 +48,8 @@ def run_unit_tests():
 
 def run_verify_PEP8():
 
-    print "Running PEP8 verification"
-
     if platform.system() == "Linux" and "scripts" in listdir(getcwd()):
+        print "Running PEP8 verification"
         res = system("./scripts/verifyPEP8.sh")
 
         if res == 0:
@@ -49,6 +57,9 @@ def run_verify_PEP8():
 
 
 if __name__ == "__main__":
+
+    # run_integration_tests()
+    # disabled by default because it takes a long time to run...
 
     run_unit_tests()
     run_verify_PEP8()
