@@ -120,6 +120,29 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
 
+    def test_key_err_invalid_client_secret(self):
+
+        def raise_key_err():
+            raise KeyError("Bad client credentials")
+
+        self.frame.create_api_obj = raise_key_err
+        self.frame.attempt_connect_to_api()
+
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+
 def load_test_suite():
 
     gui_sf_test_suite = unittest.TestSuite()
@@ -132,6 +155,8 @@ def load_test_suite():
         TestSettingsFrame("test_key_err_invalid_user_or_pass"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_key_err_invalid_client_id"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_key_err_invalid_client_secret"))
 
     return gui_sf_test_suite
 
