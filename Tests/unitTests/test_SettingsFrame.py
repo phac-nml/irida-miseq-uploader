@@ -177,6 +177,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.client_secret_box.GetValue(),
                                  new_client_secret)
 
+        self.frame.log_panel.Clear()
         push_button(self.frame.default_btn)
 
         self.assertEqual(self.frame.base_URL_box.GetValue(),
@@ -202,7 +203,22 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.NEUTRAL_TXT_CTRL_COLOR)
 
         self.assertIn("Settings restored to default values",
-                      self.frame.log_panel.GetValue())
+                            self.frame.log_panel.GetValue())
+        self.assertIn("baseURL = " +
+                            GUI.SettingsFrame.DEFAULT_BASE_URL,
+                            self.frame.log_panel.GetValue())
+        self.assertIn("username = " +
+                            GUI.SettingsFrame.DEFAULT_USERNAME,
+                            self.frame.log_panel.GetValue())
+        self.assertIn("password = " +
+                            GUI.SettingsFrame.DEFAULT_PASSWORD,
+                            self.frame.log_panel.GetValue())
+        self.assertIn("client_id = " +
+                            GUI.SettingsFrame.DEFAULT_CLIENT_ID,
+                            self.frame.log_panel.GetValue())
+        self.assertIn("client_secret = " +
+                            GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
+                            self.frame.log_panel.GetValue())
 
 
 def load_test_suite():
