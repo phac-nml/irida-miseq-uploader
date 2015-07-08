@@ -34,7 +34,16 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.frame.create_api_obj = dead_func
         self.frame.attempt_connect_to_api()
+
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.VALID_CONNECTION_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.VALID_CONNECTION_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.VALID_CONNECTION_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.VALID_CONNECTION_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
                          self.frame.VALID_CONNECTION_COLOR)
 
         self.assertIn("Successfully connected to API",
@@ -47,8 +56,18 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.frame.create_api_obj = raise_connection_err
         self.frame.attempt_connect_to_api()
+
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
                          self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
@@ -61,18 +80,45 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.create_api_obj = raise_key_err
         self.frame.attempt_connect_to_api()
 
-        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
-
-        self.assertIn("Username or password is incorrect",
-                      self.frame.log_panel.GetValue())
-
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
                          self.frame.INVALID_CONNECTION_COLOR)
-
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
                          self.frame.INVALID_CONNECTION_COLOR)
 
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Username or password is incorrect",
+                      self.frame.log_panel.GetValue())
+
+    def test_key_err_invalid_client_id(self):
+
+        def raise_key_err():
+            raise KeyError("clientId does not exist")
+
+        self.frame.create_api_obj = raise_key_err
+        self.frame.attempt_connect_to_api()
+
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
 
 def load_test_suite():
 
@@ -84,6 +130,8 @@ def load_test_suite():
         TestSettingsFrame("test_invalid_connection"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_key_err_invalid_user_or_pass"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_key_err_invalid_client_id"))
 
     return gui_sf_test_suite
 
