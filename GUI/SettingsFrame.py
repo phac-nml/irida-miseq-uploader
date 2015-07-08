@@ -4,6 +4,8 @@ from os import path
 from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
+from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+
 from API.apiCalls import ApiCalls
 
 path_to_module = path.dirname(__file__)
@@ -34,6 +36,7 @@ class SettingsFrame(wx.Frame):
         self.conf_parser.read(self.config_file)
         self.config_dict = OrderedDict()
         self.load_curr_config()
+        self.prompt_dlg = None
 
         self.LONG_BOX_SIZE = (500, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
@@ -564,13 +567,14 @@ class SettingsFrame(wx.Frame):
 
             dlg_msg = ("You have unsaved changes:\n" + changes_str + "\n" +
                        "Save changes?")
-            prompt_msg = wx.MessageDialog(self, dlg_msg,
-                                          caption="Unsaved changes!",
-                                          style=wx.YES_NO | wx.YES_DEFAULT |
-                                          wx.STAY_ON_TOP |
-                                          wx.ICON_EXCLAMATION)
 
-            user_choice = prompt_msg.ShowModal()
+            self.prompt_dlg = GMD(self, message=dlg_msg,
+                                  caption="Unsaved changes!",
+                                  agwStyle=wx.OK | wx.YES_DEFAULT |
+                                  wx.STAY_ON_TOP | wx.ICON_EXCLAMATION)
+            self.prompt_dlg.Message = dlg_msg  # for test purposes only
+
+            user_choice = self.prompt_dlg.ShowModal()
             if user_choice == wx.ID_YES:
                 targ_section = "apiCalls"
                 self.write_config_data(targ_section, changes_dict)
@@ -583,7 +587,7 @@ class SettingsFrame(wx.Frame):
                 self.client_secret_box.SetValue(
                     self.config_dict["client_secret"])
 
-                prompt_msg.Destroy()
+                self.prompt_dlg.Destroy()
 
         if self.parent is None:  # if running SettingsFrame by itself for tests
             self.Destroy()
