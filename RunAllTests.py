@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--integration", action="store_true",
-                        help="Run the integration tests (takes a long time)")
+                        help="run the integration tests (takes a long time)")
     args = parser.parse_args()
 
     if args.integration:
