@@ -53,6 +53,26 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
 
+    def test_key_err_invalid_user_or_pass(self):
+
+        def raise_key_err():
+            raise KeyError("Bad credentials")
+
+        self.frame.create_api_obj = raise_key_err
+        self.frame.attempt_connect_to_api()
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Username or password is incorrect",
+                      self.frame.log_panel.GetValue())
+
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
 
 def load_test_suite():
 
@@ -62,6 +82,8 @@ def load_test_suite():
         TestSettingsFrame("test_valid_credentials"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_invalid_connection"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_key_err_invalid_user_or_pass"))
 
     return gui_sf_test_suite
 
