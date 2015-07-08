@@ -7,6 +7,7 @@ import Tests.integrationTests.test_ApiCalls_integration as apiCalls_integration
 
 import unittest
 import platform
+import argparse
 from os import system, path, listdir, getcwd
 
 """
@@ -58,8 +59,12 @@ def run_verify_PEP8():
 
 if __name__ == "__main__":
 
-    # run_integration_tests()
-    # disabled by default because it takes a long time to run...
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--integration", action="store_true",
+                        help="run the integration tests (takes a long time)")
+    args = parser.parse_args()
+    if args.integration:
+        run_integration_tests()
 
     run_unit_tests()
     run_verify_PEP8()
