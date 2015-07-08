@@ -4,6 +4,7 @@ import re
 import traceback
 import sys
 from os import path, listdir
+from requests.exceptions import ConnectionError
 
 from GUI.SettingsFrame import SettingsFrame
 
@@ -39,6 +40,19 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Successfully connected to API",
                       self.frame.log_panel.GetValue())
 
+    def test_invalid_connection(self):
+
+        def raise_connection_err():
+            raise ConnectionError()
+
+        self.frame.create_api_obj = raise_connection_err
+        self.frame.attempt_connect_to_api()
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertIn("Cannot connect to url",
+                      self.frame.log_panel.GetValue())
+
 
 def load_test_suite():
 
@@ -46,6 +60,8 @@ def load_test_suite():
 
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_valid_credentials"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_invalid_connection"))
 
     return gui_sf_test_suite
 
