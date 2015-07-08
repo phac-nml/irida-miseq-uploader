@@ -255,10 +255,11 @@ class SettingsFrame(wx.Frame):
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
         self.client_secret_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
 
-        self.log_color_print("Invalid credentials:\n",
-                             self.LOG_PNL_ERR_TXT_COLOR)
-
         if "Bad credentials" in str(e.message):
+
+            self.log_color_print("Invalid credentials:\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
             self.log_color_print("Username or password is incorrect.\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
@@ -269,10 +270,24 @@ class SettingsFrame(wx.Frame):
                 self.INVALID_CONNECTION_COLOR)
 
         elif "clientId does not exist" in str(e.message):
+
+            self.log_color_print("Invalid credentials:\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+            self.log_color_print("Client ID is incorrect.\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
             self.client_id_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
         elif "Bad client credentials" in str(e.message):
+
+            self.log_color_print("Invalid credentials:\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+            self.log_color_print("Client Secret is incorrect.\n",
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
             self.client_secret_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
