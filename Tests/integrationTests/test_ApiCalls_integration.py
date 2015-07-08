@@ -10,6 +10,8 @@ from apiCalls_integration_data_setup import SetupIridaData
 base_URL = "http://localhost:8080/api"
 username = "admin"
 password = "password1"
+client_id = ""
+client_secret = ""
 
 
 class TestApiIntegration(unittest.TestCase):
@@ -129,19 +131,24 @@ class TestApiIntegration(unittest.TestCase):
             self.assertEqual(sample[key], added_sample.get(key))
 
 
-api_integration_test_suite = unittest.TestSuite()
+def load_test_suite():
 
-api_integration_test_suite.addTest(
-    TestApiIntegration("test_connect_and_authenticate"))
-api_integration_test_suite.addTest(
-    TestApiIntegration("test_get_and_send_project"))
-api_integration_test_suite.addTest(
-    TestApiIntegration("test_get_and_send_samples"))
-# api_integration_test_suite.addTest(
-#    TestApiIntegration("test_get_sequence_files"))
+    api_integration_test_suite = unittest.TestSuite()
+
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_connect_and_authenticate"))
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_get_and_send_project"))
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_get_and_send_samples"))
+    # api_integration_test_suite.addTest(
+    #    TestApiIntegration("test_get_sequence_files"))
+
+    return api_integration_test_suite
 
 
 def irida_setup(setup):
+
     setup.install_irida()
     setup.reset_irida_db()
     setup.run_irida()
@@ -162,18 +169,33 @@ def data_setup(setup):
     return(setup.IRIDA_AUTH_CODE_ID, irida_secret, setup.IRIDA_PASSWORD)
 
 
-if __name__ == "__main__":
+def start_setup():
+
+    global base_URL
+    global username
+    global password
+    global client_id
+    global client_secret
 
     setup = SetupIridaData(
         base_URL[:base_URL.index("/api")], username, password)
     client_id, client_secret, password = data_setup(setup)
 
-    suite_list = []
+    return setup
 
-    suite_list.append(api_integration_test_suite)
-    full_suite = unittest.TestSuite(suite_list)
+
+def main():
+
+    setup_handler = start_setup()
+
+    test_suite = load_test_suite()
+    full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
 
-    setup.stop_irida()
+    setup_handler.stop_irida()
+
+if __name__ == "__main__":
+
+    main()

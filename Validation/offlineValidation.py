@@ -123,7 +123,8 @@ def validate_pair_files(file_list):
 
             else:
                 valid = False
-                v_res.add_error_msg("No pair sequence file found for:" + file +
+                v_res.add_error_msg("No pair sequence file found for: " +
+                                    file +
                                     "\nRequired matching sequence file: " +
                                     matching_pair_file)
                 break
@@ -133,7 +134,7 @@ def validate_pair_files(file_list):
             "The given file list has an odd number of files." +
             "\nRequires an even number of files in order for each " +
             "sequence file to have a pair.\n" +
-            "Given file list:\n" + "\n ".join(file_list))
+            "Given file list:\n " + "\n ".join(file_list))
 
     v_res.set_valid(valid)
     return v_res

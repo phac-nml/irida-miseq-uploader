@@ -2,6 +2,8 @@ import wx
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
+from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
                                  get_pair_files)
@@ -35,9 +37,6 @@ class MainFrame(wx.Frame):
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
-        self.base_URL = ""
-        self.username = ""
-        self.password = ""
 
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
         self.LONG_BOX_SIZE = (650, 32)  # choose directory
@@ -75,7 +74,7 @@ class MainFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.settings_button_sizer, proportion=0,
-            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=15)
+            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=20)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
@@ -128,10 +127,6 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
-        # clicking dir_box
-        self.dir_box.Bind(wx.EVT_LEFT_DOWN, self.open_dir_dlg)
-        # tabbing in to dir_box
-        self.dir_box.Bind(wx.EVT_SET_FOCUS, self.open_dir_dlg)
 
     def add_progress_bar(self):
 
@@ -182,7 +177,7 @@ class MainFrame(wx.Frame):
             self, id=-1,
             value="",
             size=self.LOG_PANEL_SIZE,
-            style=wx.TE_MULTILINE | wx.TE_READONLY)
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
@@ -225,11 +220,13 @@ class MainFrame(wx.Frame):
         """
 
         self.log_color_print(warn_msg + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-        warn_dlg = wx.MessageDialog(
+        self.warn_dlg = GMD(
             parent=self, message=warn_msg, caption="Warning!",
-            style=wx.OK | wx.ICON_WARNING)
-        warn_dlg.ShowModal()
-        warn_dlg.Destroy()
+            agwStyle=wx.OK | wx.ICON_EXCLAMATION)
+
+        self.warn_dlg.Message = warn_msg  # for testing
+        self.warn_dlg.ShowModal()
+        self.warn_dlg.Destroy()
 
     def log_color_print(self, msg, color=None):
 
@@ -340,30 +337,32 @@ class MainFrame(wx.Frame):
 
         self.browse_button.SetFocus()
 
-        self.dir_dlg = wx.DirDialog(
+        self.dir_dlg = MDD(
             self, "Select directory containing Samplesheet.csv",
-            defaultPath=path.join(self.browse_path, pardir),
-            style=wx.DD_DEFAULT_STYLE)
-
+            defaultPath=path.dirname(self.browse_path),
+            agwStyle=wx.lib.agw.multidirdialog.DD_DIR_MUST_EXIST)
+        # agwStyle to disable "Create new folder"
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
-            self.browse_path = self.dir_dlg.GetPath()
-            self.dir_box.SetValue(self.dir_dlg.GetPath())
+            self.browse_path = self.dir_dlg.GetPaths()[0].replace(
+                "Home directory", path.expanduser("~"))
+            self.dir_box.SetValue(self.browse_path)
 
             try:
-                res_list = self.find_sample_sheet(self.dir_dlg.GetPath(),
+
+                res_list = self.find_sample_sheet(self.browse_path,
                                                   "SampleSheet.csv")
                 if len(res_list) == 0:
-                    sub_dirs = [str(f) for f in listdir(self.dir_dlg.GetPath())
+                    sub_dirs = [str(f) for f in listdir(self.browse_path)
                                 if path.isdir(
-                                path.join(self.dir_dlg.GetPath(), f))]
+                                path.join(self.browse_path, f))]
 
                     err_msg = ("SampleSheet.csv file not found in the " +
                                "selected directory:\n" +
-                               self.dir_dlg.GetPath())
+                               self.browse_path)
                     if len(sub_dirs) > 0:
                         err_msg = (err_msg + " or its " +
-                                   "subdirectories: \n" + ", ".join(sub_dirs))
+                                   "subdirectories:\n" + ", ".join(sub_dirs))
 
                     raise SampleSheetError(err_msg)
 
@@ -371,10 +370,10 @@ class MainFrame(wx.Frame):
                     self.sample_sheet_files = res_list
 
                 for ss in self.sample_sheet_files:
-                    self.log_color_print("Working on: " + ss)
+                    self.log_color_print("Processing: " + ss)
                     try:
                         self.process_sample_sheet(ss)
-                    except (SampleSheetError, SequenceFileError), e:
+                    except (SampleSheetError, SequenceFileError):
                         self.log_color_print(
                             "Stopping the processing of SampleSheet.csv " +
                             "files due to failed validation of previous " +
@@ -408,7 +407,7 @@ class MainFrame(wx.Frame):
                 self.create_seq_run(sample_sheet_file)
 
                 self.upload_button.Enable()
-                self.log_color_print("Selected SampleSheet is valid\n",
+                self.log_color_print(sample_sheet_file + " is valid\n",
                                      self.LOG_PNL_OK_TXT_COLOR)
                 self.progress_label.Show()
                 self.progress_bar.Show()
@@ -420,7 +419,7 @@ class MainFrame(wx.Frame):
 
         else:
             self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
-            raise
+            raise SampleSheetError
 
     def find_sample_sheet(self, top_dir, ss_pattern):
 

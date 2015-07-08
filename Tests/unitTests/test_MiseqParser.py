@@ -218,32 +218,35 @@ class TestMiSeqParser(unittest.TestCase):
         self.assertEqual(correct_pair_list, pair_file_list)
 
 
-parser_test_suite = unittest.TestSuite()
+def load_test_suite():
 
-parser_test_suite.addTest(
-    TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
-parser_test_suite.addTest(TestMiSeqParser("test_get_csv_reader_valid_sheet"))
+    parser_test_suite = unittest.TestSuite()
 
-parser_test_suite.addTest(TestMiSeqParser("test_parse_metadata"))
-parser_test_suite.addTest(TestMiSeqParser("test_complete_parse_samples"))
-parser_test_suite.addTest(TestMiSeqParser("test_parse_samples"))
-parser_test_suite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_csv_reader_no_sample_sheet"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_csv_reader_valid_sheet"))
 
-parser_test_suite.addTest(
-    TestMiSeqParser("test_get_pair_files_invalid_dir_and_id"))
-parser_test_suite.addTest(
-    TestMiSeqParser("test_get_pair_files_invalid_dir_valid_id"))
-parser_test_suite.addTest(
-    TestMiSeqParser("test_get_pair_files_valid_dir_invalid_id"))
-parser_test_suite.addTest(
-    TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
+    parser_test_suite.addTest(TestMiSeqParser("test_parse_metadata"))
+    parser_test_suite.addTest(TestMiSeqParser("test_complete_parse_samples"))
+    parser_test_suite.addTest(TestMiSeqParser("test_parse_samples"))
+    parser_test_suite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
 
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_pair_files_invalid_dir_and_id"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_pair_files_invalid_dir_valid_id"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_pair_files_valid_dir_invalid_id"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
+
+    return parser_test_suite
 
 if __name__ == "__main__":
-    suite_list = []
 
-    suite_list.append(parser_test_suite)
-    full_suite = unittest.TestSuite(suite_list)
+    test_suite = load_test_suite()
+    full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
