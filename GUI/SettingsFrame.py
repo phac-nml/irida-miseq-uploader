@@ -570,8 +570,8 @@ class SettingsFrame(wx.Frame):
 
             self.prompt_dlg = GMD(self, message=dlg_msg,
                                   caption="Unsaved changes!",
-                                  agwStyle=wx.OK | wx.YES_DEFAULT |
-                                  wx.STAY_ON_TOP | wx.ICON_EXCLAMATION)
+                                  agwStyle=wx.YES_NO | wx.YES_DEFAULT |
+                                  wx.ICON_EXCLAMATION)
             self.prompt_dlg.Message = dlg_msg  # for test purposes only
 
             user_choice = self.prompt_dlg.ShowModal()
