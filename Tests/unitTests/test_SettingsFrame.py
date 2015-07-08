@@ -5,9 +5,23 @@ import traceback
 import sys
 from os import path, listdir
 from requests.exceptions import ConnectionError
-
+from collections import OrderedDict
 import GUI.SettingsFrame
-from mock import MagicMock
+from mock import MagicMock, patch
+
+
+POLL_INTERVAL = 100  # milliseconds
+MAX_WAIT_TIME = 5000  # milliseconds
+
+
+class Foo(object):
+
+    """
+    Class used to attach attributes
+    """
+
+    def __init__(self):
+        pass
 
 
 def push_button(targ_obj):
@@ -25,13 +39,84 @@ def dead_func(*args, **kwargs):
     pass
 
 
+def assert_boxes_have_neutral_color(self):
+
+    self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                     self.frame.NEUTRAL_BOX_COLOR)
+    self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                     self.frame.NEUTRAL_BOX_COLOR)
+    self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                     self.frame.NEUTRAL_BOX_COLOR)
+    self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                     self.frame.NEUTRAL_BOX_COLOR)
+    self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                     self.frame.NEUTRAL_BOX_COLOR)
+
+
+def poll_for_prompt_dlg(self, time_counter, handle_func):
+
+    time_counter["value"] += POLL_INTERVAL
+
+    if (self.frame.prompt_dlg is not None or
+            time_counter["value"] == MAX_WAIT_TIME):
+        self.frame.timer.Stop()
+
+        try:
+            handle_func(self)
+
+        except (AssertionError, AttributeError):
+            print traceback.format_exc()
+            sys.exit(1)
+
+
+def set_config_dict(self):
+
+    self.frame.config_dict = OrderedDict()
+    self.frame.config_dict["baseURL"] = "http://localhost:8080/api2"
+    self.frame.config_dict["username"] = "admin2"
+    self.frame.config_dict["password"] = "password2"
+    self.frame.config_dict["client_id"] = "testClient2"
+    self.frame.config_dict["client_secret"] = "testSecret2"
+
+
+def set_boxes(self):
+
+    self.frame.base_URL_box.SetValue(self.frame.config_dict["baseURL"])
+    self.frame.username_box.SetValue(self.frame.config_dict["username"])
+    self.frame.password_box.SetValue(self.frame.config_dict["password"])
+    self.frame.client_id_box.SetValue(self.frame.config_dict["client_id"])
+    self.frame.client_secret_box.SetValue(
+        self.frame.config_dict["client_secret"])
+
+
 class TestSettingsFrame(unittest.TestCase):
 
-    def setUp(self):
+    @patch("GUI.SettingsFrame.RawConfigParser")
+    def setUp(self, mock_confparser):
+
+        """
+        mock the built-in module RawConfigParser so that it doesn't actually
+            read from the config file
+
+        """
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
         self.app = wx.App(False)
+
+        foo = Foo()
+        setattr(foo, "read", lambda f: None)
+        setattr(foo, "get", lambda x, y: "")
+        mock_confparser.side_effect = [foo]
+        # RawConfigParser will now return foo when called
+        # foo.read takes one argument "f" and returns None
+        # foo.get takes two arguments "x", "y" and returns empty string
+        # this gives a self.config_dict with None for all the keys
+        # then we configure it with set_config_dict
+
         self.frame = GUI.SettingsFrame.SettingsFrame()
+        set_config_dict(self)
+        set_boxes(self)
+
         # self.frame.Show()
 
     def tearDown(self):
@@ -179,10 +264,23 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
 
-    def test_restore_default_settings(self):
+    @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
+    @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
+    @patch("GUI.SettingsFrame.SettingsFrame.load_curr_config")
+    def test_restore_default_settings(self, mock_lcc, mock_wcd, mock_connect):
 
-        self.frame.write_config_data = dead_func
-        self.frame.attempt_connect_to_api = dead_func
+        expected_dict = {
+            "username": GUI.SettingsFrame.DEFAULT_USERNAME,
+            "client_secret": GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
+            "password": GUI.SettingsFrame.DEFAULT_PASSWORD,
+            "baseURL": GUI.SettingsFrame.DEFAULT_BASE_URL,
+            "client_id": GUI.SettingsFrame.DEFAULT_CLIENT_ID
+        }
+
+        def _load_config(*args):
+            self.frame.config_dict = OrderedDict(expected_dict)
+
+        mock_lcc.side_effect = _load_config
 
         new_baseURL = "new_baseURL"
         new_username = "new_username"
@@ -219,16 +317,7 @@ class TestSettingsFrame(unittest.TestCase):
                          GUI.SettingsFrame.DEFAULT_CLIENT_SECRET)
 
         # boxes are white because we disable attempt_connect_to_api
-        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        assert_boxes_have_neutral_color(self)
 
         self.assertIn("Settings restored to default values",
                       self.frame.log_panel.GetValue())
@@ -244,7 +333,10 @@ class TestSettingsFrame(unittest.TestCase):
                       GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
                       self.frame.log_panel.GetValue())
 
-    def test_save_settings(self):
+    @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
+    @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
+    @patch("GUI.SettingsFrame.SettingsFrame.load_curr_config")
+    def test_save_settings(self, mock_lcc, mock_wcd, mock_connect_api):
 
         new_baseURL = "new_baseURL"
         new_username = "new_username"
@@ -252,24 +344,18 @@ class TestSettingsFrame(unittest.TestCase):
         new_client_id = "new_client_id"
         new_client_secret = "new_client_secret"
 
-        expected_dict = {"username": new_username,
-                         "client_secret": new_client_secret,
-                         "password": new_password,
-                         "baseURL": new_baseURL,
-                         "client_id": new_client_id}
+        expected_dict = {
+            "username": new_username,
+            "client_secret": new_client_secret,
+            "password": new_password,
+            "baseURL": new_baseURL,
+            "client_id": new_client_id
+        }
 
         def _load_config(*args):
-            self.frame.config_dict = expected_dict
+            self.frame.config_dict = OrderedDict(expected_dict)
 
-        self.frame.attempt_connect_to_api = dead_func
-
-        orig_lcc = GUI.SettingsFrame.SettingsFrame.load_curr_config
-        GUI.SettingsFrame.SettingsFrame.load_curr_config = _load_config
-
-        orig_wcd = GUI.SettingsFrame.SettingsFrame.write_config_data
-        GUI.SettingsFrame.SettingsFrame.write_config_data = MagicMock()
-        sf_wcd = GUI.SettingsFrame.SettingsFrame.write_config_data
-        # shorten for PEP8
+        mock_lcc.side_effect = _load_config
 
         self.frame.base_URL_box.SetValue(new_baseURL)
         self.frame.username_box.SetValue(new_username)
@@ -284,20 +370,8 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.client_secret_box.GetValue(),
                          new_client_secret)
 
-        self.frame.log_panel.Clear()
-        self.assertEqual(self.frame.log_panel.GetValue(), "")
         push_button(self.frame.save_btn)
-
-        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        assert_boxes_have_neutral_color(self)
 
         self.assertIn("Saving", self.frame.log_panel.GetValue())
         self.assertIn("baseURL = " + new_baseURL,
@@ -312,10 +386,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
 
         expected_targ_section = "apiCalls"
-        sf_wcd.assert_called_with(expected_targ_section, expected_dict)
-
-        GUI.SettingsFrame.SettingsFrame.load_curr_config = orig_lcc
-        GUI.SettingsFrame.SettingsFrame.write_config_data = orig_wcd
+        mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
     def test_save_settings_no_changes(self):
 
@@ -325,16 +396,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.log_panel.GetValue(), "")
         push_button(self.frame.save_btn)
 
-        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        assert_boxes_have_neutral_color(self)
 
         self.assertIn("No changes to save", self.frame.log_panel.GetValue())
 
@@ -361,8 +423,14 @@ def load_test_suite():
         TestSettingsFrame("test_restore_default_settings"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings"))
+
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings_no_changes"))
+
+    # gui_sf_test_suite.addTest(
+    #    TestSettingsFrame("test_close_with_unsaved_changes_save"))
+    # gui_sf_test_suite.addTest(
+    #    TestSettingsFrame("test_close_with_unsaved_changes_dont_save"))
 
     return gui_sf_test_suite
 
