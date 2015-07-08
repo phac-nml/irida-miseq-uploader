@@ -128,7 +128,9 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
-
+        self.assertIn("Client ID is incorrect",
+                      self.frame.log_panel.GetValue())
+        
     def test_key_err_invalid_client_secret(self):
 
         def raise_key_err():
@@ -150,6 +152,31 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.NEUTRAL_TXT_CTRL_COLOR)
 
         self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Client Secret is incorrect",
+                      self.frame.log_panel.GetValue())
+
+    def test_value_err(self):
+
+        def raise_val_err():
+            raise ValueError()
+
+        self.frame.create_api_obj = raise_val_err
+        self.frame.attempt_connect_to_api()
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.INVALID_CONNECTION_COLOR)
+
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
 
     def test_restore_default_settings(self):
@@ -298,8 +325,10 @@ def load_test_suite():
         TestSettingsFrame("test_key_err_invalid_client_id"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_key_err_invalid_client_secret"))
-    # test ValueError
-    # add more print info to log_panel at handle_key_error?
+
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_value_err"))
+
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_restore_default_settings"))
     gui_sf_test_suite.addTest(
