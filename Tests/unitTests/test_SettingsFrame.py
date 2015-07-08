@@ -70,13 +70,13 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.INVALID_CONNECTION_COLOR)
 
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
@@ -95,11 +95,11 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.INVALID_CONNECTION_COLOR)
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
@@ -118,13 +118,13 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.INVALID_CONNECTION_COLOR)
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
@@ -143,13 +143,13 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.INVALID_CONNECTION_COLOR)
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
@@ -168,13 +168,13 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.INVALID_CONNECTION_COLOR)
 
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
@@ -220,15 +220,15 @@ class TestSettingsFrame(unittest.TestCase):
 
         # boxes are white because we disable attempt_connect_to_api
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Settings restored to default values",
                       self.frame.log_panel.GetValue())
@@ -289,15 +289,15 @@ class TestSettingsFrame(unittest.TestCase):
         push_button(self.frame.save_btn)
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("Saving", self.frame.log_panel.GetValue())
         self.assertIn("baseURL = " + new_baseURL,
@@ -326,17 +326,18 @@ class TestSettingsFrame(unittest.TestCase):
         push_button(self.frame.save_btn)
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+                         self.frame.NEUTRAL_BOX_COLOR)
 
         self.assertIn("No changes to save", self.frame.log_panel.GetValue())
+
 
 def load_test_suite():
 

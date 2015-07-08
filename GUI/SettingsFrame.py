@@ -46,7 +46,7 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.NEUTRAL_TXT_CTRL_COLOR = wx.WHITE
+        self.NEUTRAL_BOX_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
 
@@ -187,11 +187,11 @@ class SettingsFrame(wx.Frame):
             self.base_URL_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
-            self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-            self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-            self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+            self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+            self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
             self.client_secret_box.SetBackgroundColour(
-                self.NEUTRAL_TXT_CTRL_COLOR)
+                self.NEUTRAL_BOX_COLOR)
 
         except:
             self.log_color_print("Unexpected error:" + "\n",
@@ -199,12 +199,12 @@ class SettingsFrame(wx.Frame):
             self.log_color_print(str(sys.exc_info())+"\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
-            self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-            self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-            self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-            self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+            self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+            self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+            self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
             self.client_secret_box.SetBackgroundColour(
-                self.NEUTRAL_TXT_CTRL_COLOR)
+                self.NEUTRAL_BOX_COLOR)
 
         self.Refresh()
 
@@ -231,10 +231,10 @@ class SettingsFrame(wx.Frame):
 
         self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
-        self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
 
     def handle_key_error(self, e):
 
@@ -249,11 +249,11 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
-        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
 
         if "Bad credentials" in str(e.message):
 
