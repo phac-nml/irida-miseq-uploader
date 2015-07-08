@@ -184,11 +184,27 @@ class SettingsFrame(wx.Frame):
             self.log_color_print("Value error message: " + str(e.message),
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
+            self.base_URL_box.SetBackgroundColour(
+                self.INVALID_CONNECTION_COLOR)
+
+            self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.client_secret_box.SetBackgroundColour(
+                self.NEUTRAL_TXT_CTRL_COLOR)
+
         except:
             self.log_color_print("Unexpected error:" + "\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
             self.log_color_print(str(sys.exc_info())+"\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
+
+            self.base_URL_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+            self.client_secret_box.SetBackgroundColour(
+                self.NEUTRAL_TXT_CTRL_COLOR)
 
         self.Refresh()
 
@@ -214,6 +230,11 @@ class SettingsFrame(wx.Frame):
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
         self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
+
+        self.username_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
+        self.client_secret_box.SetBackgroundColour(self.NEUTRAL_TXT_CTRL_COLOR)
 
     def handle_key_error(self, e):
 
