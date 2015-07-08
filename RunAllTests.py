@@ -16,35 +16,29 @@ selected tests.
 """
 
 
-def run_integration_tests():
+def load_integration_tests(suite_list):
 
     if platform.system() == "Linux":
-        print "Running integration tests"
-        apiCalls_integration.main()
+        print "Loading integration tests"
+        api_integ_ts = apiCalls_integration.load_test_suite()
+        suite_list.append(api_integ_ts)
 
 
-def run_unit_tests():
+def load_unit_tests(suite_list):
 
-    print "Running unit tests"
-
-    suiteList = []
+    print "Loading unit tests"
 
     iu_main_ts = test_IridaUploaderMain.load_test_suite()
-    suiteList.append(iu_main_ts)
+    suite_list.append(iu_main_ts)
 
     api_ts = test_ApiCalls.load_test_suite()
-    suiteList.append(api_ts)
+    suite_list.append(api_ts)
 
     miseq_ts = test_MiseqParser.load_test_suite()
-    suiteList.append(miseq_ts)
+    suite_list.append(miseq_ts)
 
     off_valid_ts = test_OfflineValidation.load_test_suite()
-    suiteList.append(off_valid_ts)
-
-    fullSuite = unittest.TestSuite(suiteList)
-
-    runner = unittest.TextTestRunner()
-    runner.run(fullSuite)
+    suite_list.append(off_valid_ts)
 
 
 def run_verify_PEP8():
@@ -59,12 +53,27 @@ def run_verify_PEP8():
 
 if __name__ == "__main__":
 
+    suite_list = []
+    setup_handler = None
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--integration", action="store_true",
                         help="run the integration tests (takes a long time)")
     args = parser.parse_args()
-    if args.integration:
-        run_integration_tests()
 
-    run_unit_tests()
+    if args.integration:
+        load_integration_tests(suite_list)
+
+        print "Starting setup"
+        setup_handler = apiCalls_integration.start_setup()
+
+    load_unit_tests(suite_list)
+
+    full_suite = unittest.TestSuite(suite_list)
+    runner = unittest.TextTestRunner()
+    runner.run(full_suite)
+
+    if setup_handler is not None:
+        setup_handler.stop_irida()
+
     run_verify_PEP8()

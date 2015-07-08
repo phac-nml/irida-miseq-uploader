@@ -169,7 +169,7 @@ def data_setup(setup):
     return(setup.IRIDA_AUTH_CODE_ID, irida_secret, setup.IRIDA_PASSWORD)
 
 
-def main():
+def start_setup():
 
     global base_URL
     global username
@@ -181,13 +181,21 @@ def main():
         base_URL[:base_URL.index("/api")], username, password)
     client_id, client_secret, password = data_setup(setup)
 
+    return setup
+
+
+def main():
+
+    setup_handler = start_setup()
+
     test_suite = load_test_suite()
     full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
 
-    setup.stop_irida()
+    setup_handler.stop_irida()
 
 if __name__ == "__main__":
+
     main()
