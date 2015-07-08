@@ -130,7 +130,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Client ID is incorrect",
                       self.frame.log_panel.GetValue())
-        
+
     def test_key_err_invalid_client_secret(self):
 
         def raise_key_err():
@@ -261,8 +261,12 @@ class TestSettingsFrame(unittest.TestCase):
         def _load_config(*args):
             self.frame.config_dict = expected_dict
 
+        self.frame.attempt_connect_to_api = dead_func
+
+        orig_lcc = GUI.SettingsFrame.SettingsFrame.load_curr_config
         GUI.SettingsFrame.SettingsFrame.load_curr_config = _load_config
 
+        orig_wcd = GUI.SettingsFrame.SettingsFrame.write_config_data
         GUI.SettingsFrame.SettingsFrame.write_config_data = MagicMock()
         sf_wcd = GUI.SettingsFrame.SettingsFrame.write_config_data
         # shorten for PEP8
@@ -310,6 +314,29 @@ class TestSettingsFrame(unittest.TestCase):
         expected_targ_section = "apiCalls"
         sf_wcd.assert_called_with(expected_targ_section, expected_dict)
 
+        GUI.SettingsFrame.SettingsFrame.load_curr_config = orig_lcc
+        GUI.SettingsFrame.SettingsFrame.write_config_data = orig_wcd
+
+    def test_save_settings_no_changes(self):
+
+        self.frame.attempt_connect_to_api = dead_func
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+        push_button(self.frame.save_btn)
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("No changes to save", self.frame.log_panel.GetValue())
 
 def load_test_suite():
 
@@ -333,8 +360,8 @@ def load_test_suite():
         TestSettingsFrame("test_restore_default_settings"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings"))
-    # gui_sf_test_suite.addTest(
-    #    TestSettingsFrame("test_save_settings_no_changes"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_save_settings_no_changes"))
 
     return gui_sf_test_suite
 
