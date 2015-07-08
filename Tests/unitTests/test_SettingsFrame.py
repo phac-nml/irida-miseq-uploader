@@ -6,8 +6,15 @@ import sys
 from os import path, listdir
 from requests.exceptions import ConnectionError
 
-from GUI.SettingsFrame import SettingsFrame
+import GUI.SettingsFrame
 
+
+def push_button(targ_obj):
+    """
+    helper function that sends the event wx.EVT_BUTTON to the given targ_obj
+    """
+    button_evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, targ_obj.GetId())
+    targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
 def dead_func(*args, **kwargs):
     """
@@ -22,7 +29,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
         self.app = wx.App(False)
-        self.frame = SettingsFrame()
+        self.frame = GUI.SettingsFrame.SettingsFrame()
         self.frame.Show()
 
     def tearDown(self):
@@ -143,6 +150,61 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
 
+    def test_restore_default_settings(self):
+
+        self.frame.write_config_data = dead_func
+
+        new_baseURL = "new_baseURL"
+        new_username = "new_username"
+        new_password = "new_password"
+        new_client_id = "new_client_id"
+        new_client_secret = "new_client_secret"
+
+        self.frame.base_URL_box.SetValue(new_baseURL)
+        self.frame.username_box.SetValue(new_username)
+        self.frame.password_box.SetValue(new_password)
+        self.frame.client_id_box.SetValue(new_client_id)
+        self.frame.client_secret_box.SetValue(new_client_secret)
+
+        self.assertEqual(self.frame.base_URL_box.GetValue(),
+                                 new_baseURL)
+        self.assertEqual(self.frame.username_box.GetValue(),
+                                 new_username)
+        self.assertEqual(self.frame.password_box.GetValue(),
+                                 new_password)
+        self.assertEqual(self.frame.client_id_box.GetValue(),
+                                 new_client_id)
+        self.assertEqual(self.frame.client_secret_box.GetValue(),
+                                 new_client_secret)
+
+        push_button(self.frame.default_btn)
+
+        self.assertEqual(self.frame.base_URL_box.GetValue(),
+                                 GUI.SettingsFrame.DEFAULT_BASE_URL)
+        self.assertEqual(self.frame.username_box.GetValue(),
+                                 GUI.SettingsFrame.DEFAULT_USERNAME)
+        self.assertEqual(self.frame.password_box.GetValue(),
+                                 GUI.SettingsFrame.DEFAULT_PASSWORD)
+        self.assertEqual(self.frame.client_id_box.GetValue(),
+                                 GUI.SettingsFrame.DEFAULT_CLIENT_ID)
+        self.assertEqual(self.frame.client_secret_box.GetValue(),
+                                 GUI.SettingsFrame.DEFAULT_CLIENT_SECRET)
+
+        self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
+                         self.frame.NEUTRAL_TXT_CTRL_COLOR)
+
+        self.assertIn("Settings restored to default values",
+                      self.frame.log_panel.GetValue())
+
+
 def load_test_suite():
 
     gui_sf_test_suite = unittest.TestSuite()
@@ -157,6 +219,10 @@ def load_test_suite():
         TestSettingsFrame("test_key_err_invalid_client_id"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_key_err_invalid_client_secret"))
+    # test ValueError
+
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_restore_default_settings"))
 
     return gui_sf_test_suite
 
