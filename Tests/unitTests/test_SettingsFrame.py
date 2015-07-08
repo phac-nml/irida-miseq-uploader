@@ -17,6 +17,7 @@ def push_button(targ_obj):
     button_evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, targ_obj.GetId())
     targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
+
 def dead_func(*args, **kwargs):
     """
     used to replace functions that don't need to be called
@@ -154,6 +155,7 @@ class TestSettingsFrame(unittest.TestCase):
     def test_restore_default_settings(self):
 
         self.frame.write_config_data = dead_func
+        self.frame.attempt_connect_to_api = dead_func
 
         new_baseURL = "new_baseURL"
         new_username = "new_username"
@@ -167,32 +169,29 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.client_id_box.SetValue(new_client_id)
         self.frame.client_secret_box.SetValue(new_client_secret)
 
-        self.assertEqual(self.frame.base_URL_box.GetValue(),
-                                 new_baseURL)
-        self.assertEqual(self.frame.username_box.GetValue(),
-                                 new_username)
-        self.assertEqual(self.frame.password_box.GetValue(),
-                                 new_password)
-        self.assertEqual(self.frame.client_id_box.GetValue(),
-                                 new_client_id)
+        self.assertEqual(self.frame.base_URL_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
         self.assertEqual(self.frame.client_secret_box.GetValue(),
-                                 new_client_secret)
+                         new_client_secret)
 
         self.frame.log_panel.Clear()
         self.assertEqual(self.frame.log_panel.GetValue(), "")
         push_button(self.frame.default_btn)
 
         self.assertEqual(self.frame.base_URL_box.GetValue(),
-                                 GUI.SettingsFrame.DEFAULT_BASE_URL)
+                         GUI.SettingsFrame.DEFAULT_BASE_URL)
         self.assertEqual(self.frame.username_box.GetValue(),
-                                 GUI.SettingsFrame.DEFAULT_USERNAME)
+                         GUI.SettingsFrame.DEFAULT_USERNAME)
         self.assertEqual(self.frame.password_box.GetValue(),
-                                 GUI.SettingsFrame.DEFAULT_PASSWORD)
+                         GUI.SettingsFrame.DEFAULT_PASSWORD)
         self.assertEqual(self.frame.client_id_box.GetValue(),
-                                 GUI.SettingsFrame.DEFAULT_CLIENT_ID)
+                         GUI.SettingsFrame.DEFAULT_CLIENT_ID)
         self.assertEqual(self.frame.client_secret_box.GetValue(),
-                                 GUI.SettingsFrame.DEFAULT_CLIENT_SECRET)
+                         GUI.SettingsFrame.DEFAULT_CLIENT_SECRET)
 
+        # boxes are white because we disable attempt_connect_to_api
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
                          self.frame.NEUTRAL_TXT_CTRL_COLOR)
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
@@ -205,22 +204,18 @@ class TestSettingsFrame(unittest.TestCase):
                          self.frame.NEUTRAL_TXT_CTRL_COLOR)
 
         self.assertIn("Settings restored to default values",
-                            self.frame.log_panel.GetValue())
-        self.assertIn("baseURL = " +
-                            GUI.SettingsFrame.DEFAULT_BASE_URL,
-                            self.frame.log_panel.GetValue())
-        self.assertIn("username = " +
-                            GUI.SettingsFrame.DEFAULT_USERNAME,
-                            self.frame.log_panel.GetValue())
-        self.assertIn("password = " +
-                            GUI.SettingsFrame.DEFAULT_PASSWORD,
-                            self.frame.log_panel.GetValue())
-        self.assertIn("client_id = " +
-                            GUI.SettingsFrame.DEFAULT_CLIENT_ID,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
+        self.assertIn("baseURL = " + GUI.SettingsFrame.DEFAULT_BASE_URL,
+                      self.frame.log_panel.GetValue())
+        self.assertIn("username = " + GUI.SettingsFrame.DEFAULT_USERNAME,
+                      self.frame.log_panel.GetValue())
+        self.assertIn("password = " + GUI.SettingsFrame.DEFAULT_PASSWORD,
+                      self.frame.log_panel.GetValue())
+        self.assertIn("client_id = " + GUI.SettingsFrame.DEFAULT_CLIENT_ID,
+                      self.frame.log_panel.GetValue())
         self.assertIn("client_secret = " +
-                            GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
-                            self.frame.log_panel.GetValue())
+                      GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
+                      self.frame.log_panel.GetValue())
 
     def test_save_settings(self):
 
@@ -231,10 +226,10 @@ class TestSettingsFrame(unittest.TestCase):
         new_client_secret = "new_client_secret"
 
         expected_dict = {"username": new_username,
-                                   "client_secret": new_client_secret,
-                                   "password": new_password,
-                                    "baseURL": new_baseURL,
-                                    "client_id": new_client_id}
+                         "client_secret": new_client_secret,
+                         "password": new_password,
+                         "baseURL": new_baseURL,
+                         "client_id": new_client_id}
 
         def _load_config(*args):
             self.frame.config_dict = expected_dict
@@ -243,7 +238,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         GUI.SettingsFrame.SettingsFrame.write_config_data = MagicMock()
         sf_wcd = GUI.SettingsFrame.SettingsFrame.write_config_data
-        #shorten for PEP8
+        # shorten for PEP8
 
         self.frame.base_URL_box.SetValue(new_baseURL)
         self.frame.username_box.SetValue(new_username)
@@ -251,16 +246,12 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.client_id_box.SetValue(new_client_id)
         self.frame.client_secret_box.SetValue(new_client_secret)
 
-        self.assertEqual(self.frame.base_URL_box.GetValue(),
-                                 new_baseURL)
-        self.assertEqual(self.frame.username_box.GetValue(),
-                                 new_username)
-        self.assertEqual(self.frame.password_box.GetValue(),
-                                 new_password)
-        self.assertEqual(self.frame.client_id_box.GetValue(),
-                                 new_client_id)
+        self.assertEqual(self.frame.base_URL_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
         self.assertEqual(self.frame.client_secret_box.GetValue(),
-                                 new_client_secret)
+                         new_client_secret)
 
         self.frame.log_panel.Clear()
         self.assertEqual(self.frame.log_panel.GetValue(), "")
@@ -279,15 +270,15 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Saving", self.frame.log_panel.GetValue())
         self.assertIn("baseURL = " + new_baseURL,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
         self.assertIn("username = " + new_username,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
         self.assertIn("password = " + new_password,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
         self.assertIn("client_id = " + new_client_id,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
         self.assertIn("client_secret = " + new_client_secret,
-                            self.frame.log_panel.GetValue())
+                      self.frame.log_panel.GetValue())
 
         expected_targ_section = "apiCalls"
         sf_wcd.assert_called_with(expected_targ_section, expected_dict)
@@ -313,7 +304,7 @@ def load_test_suite():
         TestSettingsFrame("test_restore_default_settings"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings"))
-    #gui_sf_test_suite.addTest(
+    # gui_sf_test_suite.addTest(
     #    TestSettingsFrame("test_save_settings_no_changes"))
 
     return gui_sf_test_suite
