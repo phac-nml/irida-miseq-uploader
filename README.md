@@ -16,7 +16,9 @@ pip:
 
 wxpython:
 
-    http://www.wxpython.org/download.php
+    http://sourceforge.net/projects/wxpython/files/wxPython/2.8.12.1/
+    Download wxPython2.8-win64-unicode-2.8.12.1-py27.exe for Windows 64 bit
+    or wxPython2.8-win32-unicode-2.8.12.1-py27.exe for Windows 32 bit
 
 ### virtualenv usage  
 
@@ -42,3 +44,11 @@ Remember that wxPython must be already installed using:
 Deactivate when finished:
 
     $ deactivate
+
+### Running Tests  
+
+Run unit tests and PEP8 verification with:
+
+    $ python RunAllTests.py
+
+You can comment out test_suites inside RunAllTests.py to not have them run

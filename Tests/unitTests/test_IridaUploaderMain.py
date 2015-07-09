@@ -8,7 +8,7 @@ from os import path, listdir
 from GUI.iridaUploaderMain import MainFrame
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))
-POLL_INTERVAL = 1  # milliseconds. set to larger num (e.g 1000) to "see" tests
+POLL_INTERVAL = 100  # milliseconds
 MAX_WAIT_TIME = 5000  # milliseconds
 
 
@@ -62,7 +62,7 @@ def poll_for_warn_dlg(self, time_counter2, handle_func):
 
     time_counter2["value"] += POLL_INTERVAL
 
-    if (self.frame.warn_dlg is not None or
+    if (hasattr(self.frame, "warn_dlg") or
             time_counter2["value"] == MAX_WAIT_TIME):
         self.frame.timer2.Stop()
 
@@ -391,33 +391,36 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.assertFalse(self.frame.settings_frame.IsShown())
 
 
-gui_test_suite = unittest.TestSuite()
+def load_test_suite():
 
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_valid"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
-gui_test_suite.addTest(
-    TestIridaUploaderMain("test_open_settings"))
+    gui_test_suite = unittest.TestSuite()
+
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_valid"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
+    gui_test_suite.addTest(
+        TestIridaUploaderMain("test_open_settings"))
+
+    return gui_test_suite
+
 
 if __name__ == "__main__":
 
-    suite_list = []
-
-    suite_list.append(gui_test_suite)
-    full_suite = unittest.TestSuite(suite_list)
+    test_suite = load_test_suite()
+    full_suite = unittest.TestSuite([test_suite])
 
     runner = unittest.TextTestRunner()
     runner.run(full_suite)
