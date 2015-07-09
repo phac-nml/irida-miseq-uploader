@@ -32,13 +32,6 @@ def push_button(targ_obj):
     targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
 
-def dead_func(*args, **kwargs):
-    """
-    used to replace functions that don't need to be called
-    """
-    pass
-
-
 def assert_boxes_have_neutral_color(self):
 
     self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
@@ -69,27 +62,26 @@ def poll_for_prompt_dlg(self, time_counter, handle_func):
             sys.exit(1)
 
 
-def set_config_dict(self):
-
-    self.frame.config_dict = OrderedDict()
-    self.frame.config_dict["baseURL"] = "http://localhost:8080/api2"
-    self.frame.config_dict["username"] = "admin2"
-    self.frame.config_dict["password"] = "password2"
-    self.frame.config_dict["client_id"] = "testClient2"
-    self.frame.config_dict["client_secret"] = "testSecret2"
-
-
-def set_boxes(self):
-
-    self.frame.base_URL_box.SetValue(self.frame.config_dict["baseURL"])
-    self.frame.username_box.SetValue(self.frame.config_dict["username"])
-    self.frame.password_box.SetValue(self.frame.config_dict["password"])
-    self.frame.client_id_box.SetValue(self.frame.config_dict["client_id"])
-    self.frame.client_secret_box.SetValue(
-        self.frame.config_dict["client_secret"])
-
-
 class TestSettingsFrame(unittest.TestCase):
+
+    def set_config_dict(self):
+
+        self.frame.config_dict = OrderedDict()
+        self.frame.config_dict["baseURL"] = "http://localhost:8080/api2"
+        self.frame.config_dict["username"] = "admin2"
+        self.frame.config_dict["password"] = "password2"
+        self.frame.config_dict["client_id"] = "testClient2"
+        self.frame.config_dict["client_secret"] = "testSecret2"
+
+
+    def set_boxes(self):
+
+        self.frame.base_URL_box.SetValue(self.frame.config_dict["baseURL"])
+        self.frame.username_box.SetValue(self.frame.config_dict["username"])
+        self.frame.password_box.SetValue(self.frame.config_dict["password"])
+        self.frame.client_id_box.SetValue(self.frame.config_dict["client_id"])
+        self.frame.client_secret_box.SetValue(
+            self.frame.config_dict["client_secret"])
 
     @patch("GUI.SettingsFrame.RawConfigParser")
     def setUp(self, mock_confparser):
@@ -97,7 +89,6 @@ class TestSettingsFrame(unittest.TestCase):
         """
         mock the built-in module RawConfigParser so that it doesn't actually
             read from the config file
-
         """
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
@@ -110,12 +101,12 @@ class TestSettingsFrame(unittest.TestCase):
         # RawConfigParser will now return foo when called
         # foo.read takes one argument "f" and returns None
         # foo.get takes two arguments "x", "y" and returns empty string
-        # this gives a self.config_dict with None for all the keys
-        # then we configure it with set_config_dict
+        # this gives a self.config_dict with empty string for all the keys
+        # then we configure it with set_config_dict & update boxes w/ set_boxes
 
         self.frame = GUI.SettingsFrame.SettingsFrame()
-        set_config_dict(self)
-        set_boxes(self)
+        self.set_config_dict()
+        self.set_boxes()
 
         # self.frame.Show()
 
@@ -124,9 +115,9 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.Destroy()
         self.app.Destroy()
 
-    def test_valid_credentials(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_valid_credentials(self, mock_apicalls):
 
-        self.frame.create_api_obj = dead_func
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
@@ -143,12 +134,10 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Successfully connected to API",
                       self.frame.log_panel.GetValue())
 
-    def test_invalid_connection(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_invalid_connection(self, mock_apicalls):
 
-        def raise_connection_err():
-            raise ConnectionError()
-
-        self.frame.create_api_obj = raise_connection_err
+        mock_apicalls.side_effect = [ConnectionError()]
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
@@ -166,12 +155,10 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
 
-    def test_key_err_invalid_user_or_pass(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_key_err_invalid_user_or_pass(self, mock_apicalls):
 
-        def raise_key_err():
-            raise KeyError("Bad credentials")
-
-        self.frame.create_api_obj = raise_key_err
+        mock_apicalls.side_effect = [KeyError("Bad credentials")]
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.username_box.GetBackgroundColour(),
@@ -191,12 +178,10 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Username or password is incorrect",
                       self.frame.log_panel.GetValue())
 
-    def test_key_err_invalid_client_id(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_key_err_invalid_client_id(self, mock_apicalls):
 
-        def raise_key_err():
-            raise KeyError("clientId does not exist")
-
-        self.frame.create_api_obj = raise_key_err
+        mock_apicalls.side_effect = [KeyError("clientId does not exist")]
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
@@ -216,12 +201,10 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Client ID is incorrect",
                       self.frame.log_panel.GetValue())
 
-    def test_key_err_invalid_client_secret(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_key_err_invalid_client_secret(self, mock_apicalls):
 
-        def raise_key_err():
-            raise KeyError("Bad client credentials")
-
-        self.frame.create_api_obj = raise_key_err
+        mock_apicalls.side_effect = [KeyError("Bad client credentials")]
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
@@ -241,12 +224,10 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Client Secret is incorrect",
                       self.frame.log_panel.GetValue())
 
-    def test_value_err(self):
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_value_err(self, mock_apicalls):
 
-        def raise_val_err():
-            raise ValueError()
-
-        self.frame.create_api_obj = raise_val_err
+        mock_apicalls.side_effect = [ValueError()]
         self.frame.attempt_connect_to_api()
 
         self.assertEqual(self.frame.base_URL_box.GetBackgroundColour(),
@@ -267,7 +248,8 @@ class TestSettingsFrame(unittest.TestCase):
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
     @patch("GUI.SettingsFrame.SettingsFrame.load_curr_config")
-    def test_restore_default_settings(self, mock_lcc, mock_wcd, mock_connect):
+    def test_restore_default_settings(self, mock_lcc, mock_wcd,
+                                      mock_connect_api):
 
         expected_dict = {
             "username": GUI.SettingsFrame.DEFAULT_USERNAME,
@@ -388,9 +370,8 @@ class TestSettingsFrame(unittest.TestCase):
         expected_targ_section = "apiCalls"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
-    def test_save_settings_no_changes(self):
-
-        self.frame.attempt_connect_to_api = dead_func
+    @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
+    def test_save_settings_no_changes(self, mock_connect_api):
 
         self.frame.log_panel.Clear()
         self.assertEqual(self.frame.log_panel.GetValue(), "")
@@ -465,6 +446,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         expected_targ_section = "apiCalls"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
+
 
 def load_test_suite():
 
