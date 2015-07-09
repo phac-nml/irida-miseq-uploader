@@ -474,6 +474,7 @@ class SettingsFrame(wx.Frame):
         self.warn_img = wx.Image(img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         self.icon_ph.SetBitmap(self.warn_img)
+        self.icon_ph.SetLabel("warning")  # for tests
         self.icon_ph.Show()
 
         self.Layout()
@@ -491,6 +492,7 @@ class SettingsFrame(wx.Frame):
         self.suc_img = wx.Image(img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         self.icon_ph.SetBitmap(self.suc_img)
+        self.icon_ph.SetLabel("success")  # for tests
         self.icon_ph.Show()
 
         self.Layout()
