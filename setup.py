@@ -2,7 +2,7 @@ import sys
 import site
 import platform
 from distutils.core import setup
-from shutil import move, copy2
+from shutil import move, copy2, copytree
 from os import path
 
 
@@ -27,6 +27,9 @@ if platform.system() == "Windows":
     dest = path.join(site.USER_BASE, "python" + py_version, "site-packages")
     copy2("./config.conf", dest)
 
+    img_dest = path.join(dest,"GUI","images")
+    copytree("./GUI/images", img_dest)
+
 else:
     ver_info = sys.version_info
     py_version = str(ver_info.major) + "." + str(ver_info.minor)
@@ -34,3 +37,6 @@ else:
     dest = path.join(site.USER_BASE, "lib", "python" + py_version,
                      "site-packages")
     copy2("./config.conf", dest)
+
+    img_dest = path.join(dest,"GUI","images")
+    copytree("./GUI/images", img_dest)
