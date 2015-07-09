@@ -155,6 +155,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_user_or_pass(self, mock_apicalls):
@@ -178,6 +179,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Username or password is incorrect",
                       self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_id(self, mock_apicalls):
@@ -201,6 +203,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Client ID is incorrect",
                       self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_secret(self, mock_apicalls):
@@ -224,6 +227,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Client Secret is incorrect",
                       self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_value_err(self, mock_apicalls):
@@ -245,6 +249,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
@@ -307,7 +312,8 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("username = " + GUI.SettingsFrame.DEFAULT_USERNAME,
                       self.frame.log_panel.GetValue())
-        self.assertIn("password = " + GUI.SettingsFrame.DEFAULT_PASSWORD,
+        self.assertIn("password = " +
+                      len(GUI.SettingsFrame.DEFAULT_PASSWORD) * "*",
                       self.frame.log_panel.GetValue())
         self.assertIn("client_id = " + GUI.SettingsFrame.DEFAULT_CLIENT_ID,
                       self.frame.log_panel.GetValue())
@@ -379,7 +385,7 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("username = " + new_username,
                       self.frame.log_panel.GetValue())
-        self.assertIn("password = " + new_password,
+        self.assertIn("password = " + len(new_password) * "*",
                       self.frame.log_panel.GetValue())
         self.assertIn("client_id = " + new_client_id,
                       self.frame.log_panel.GetValue())
