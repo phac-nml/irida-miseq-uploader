@@ -297,7 +297,7 @@ class SettingsFrame(wx.Frame):
         self.handle_showing_server_msg(e)
         self.show_warning_icon()
 
-    def handle_val_error(self):
+    def handle_val_error(self, e):
 
         self.log_color_print("Cannot connect to url:\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
@@ -315,7 +315,7 @@ class SettingsFrame(wx.Frame):
 
         self.show_warning_icon()
 
-    def handle_unexpected_error(self):
+    def handle_unexpected_error(self, e):
 
         self.log_color_print("Unexpected error:" + "\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
@@ -463,12 +463,15 @@ class SettingsFrame(wx.Frame):
         self.icons_sizer.Add(self.icon_ph)
 
     def show_warning_icon(self):
+
         """
         Creates a warning image icon and inserts it to self.icon_ph
         warning image icon must fit in self.ICON_WIDTH * self.ICON_HEIGHT
-        """
 
-        self.warn_img = wx.Image("images/Warning.png",
+        no return value
+        """
+        img_path = path.join(path_to_module, "images", "Warning.png")
+        self.warn_img = wx.Image(img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         self.icon_ph.SetBitmap(self.warn_img)
         self.icon_ph.Show()
@@ -478,7 +481,14 @@ class SettingsFrame(wx.Frame):
 
     def show_success_icon(self):
 
-        self.suc_img = wx.Image("images/Success.png",
+        """
+        Creates a success image icon and inserts it to self.icon_ph
+        success image icon must fit in self.ICON_WIDTH * self.ICON_HEIGHT
+
+        no return value
+        """
+        img_path = path.join(path_to_module, "images", "Success.png")
+        self.suc_img = wx.Image(img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         self.icon_ph.SetBitmap(self.suc_img)
         self.icon_ph.Show()
