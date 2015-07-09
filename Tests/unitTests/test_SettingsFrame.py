@@ -25,9 +25,11 @@ class Foo(object):
 
 
 def push_button(targ_obj):
+
     """
     helper function that sends the event wx.EVT_BUTTON to the given targ_obj
     """
+
     button_evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, targ_obj.GetId())
     targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
@@ -72,7 +74,6 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.config_dict["password"] = "password2"
         self.frame.config_dict["client_id"] = "testClient2"
         self.frame.config_dict["client_secret"] = "testSecret2"
-
 
     def set_boxes(self):
 
@@ -285,8 +286,10 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.frame.log_panel.Clear()
         self.assertEqual(self.frame.log_panel.GetValue(), "")
+
         push_button(self.frame.default_btn)
 
+        # assert box values update to show default settings
         self.assertEqual(self.frame.base_URL_box.GetValue(),
                          GUI.SettingsFrame.DEFAULT_BASE_URL)
         self.assertEqual(self.frame.username_box.GetValue(),
@@ -297,9 +300,6 @@ class TestSettingsFrame(unittest.TestCase):
                          GUI.SettingsFrame.DEFAULT_CLIENT_ID)
         self.assertEqual(self.frame.client_secret_box.GetValue(),
                          GUI.SettingsFrame.DEFAULT_CLIENT_SECRET)
-
-        # boxes are white because we disable attempt_connect_to_api
-        assert_boxes_have_neutral_color(self)
 
         self.assertIn("Settings restored to default values",
                       self.frame.log_panel.GetValue())
@@ -314,6 +314,15 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("client_secret = " +
                       GUI.SettingsFrame.DEFAULT_CLIENT_SECRET,
                       self.frame.log_panel.GetValue())
+
+        # boxes are white because we mock attempt_connect_to_api
+        assert_boxes_have_neutral_color(self)
+
+        self.assertTrue(mock_lcc.called)
+        self.assertTrue(mock_connect_api.called)
+
+        expected_targ_section = "apiCalls"
+        mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
@@ -352,8 +361,18 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.client_secret_box.GetValue(),
                          new_client_secret)
 
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
         push_button(self.frame.save_btn)
-        assert_boxes_have_neutral_color(self)
+
+        # assert box values remain the same after clicking save
+        self.assertEqual(self.frame.base_URL_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
+        self.assertEqual(self.frame.client_secret_box.GetValue(),
+                         new_client_secret)
 
         self.assertIn("Saving", self.frame.log_panel.GetValue())
         self.assertIn("baseURL = " + new_baseURL,
@@ -367,6 +386,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("client_secret = " + new_client_secret,
                       self.frame.log_panel.GetValue())
 
+        assert_boxes_have_neutral_color(self)
+
+        self.assertTrue(mock_lcc.called)
+        self.assertTrue(mock_connect_api.called)
+
         expected_targ_section = "apiCalls"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
@@ -375,17 +399,17 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.frame.log_panel.Clear()
         self.assertEqual(self.frame.log_panel.GetValue(), "")
-        push_button(self.frame.save_btn)
 
-        assert_boxes_have_neutral_color(self)
+        push_button(self.frame.save_btn)
 
         self.assertIn("No changes to save", self.frame.log_panel.GetValue())
 
-    @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
+        assert_boxes_have_neutral_color(self)
+
+        self.assertTrue(mock_connect_api.called)
+
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
-    @patch("GUI.SettingsFrame.SettingsFrame.load_curr_config")
-    def test_close_with_unsaved_changes_save(self, mock_lcc, mock_wcd,
-                                             mock_connect_api):
+    def test_close_with_unsaved_changes_save(self, mock_wcd):
 
         new_baseURL = "new_baseURL"
         new_username = "new_username"
@@ -398,11 +422,6 @@ class TestSettingsFrame(unittest.TestCase):
                          "password": new_password,
                          "baseURL": new_baseURL,
                          "client_id": new_client_id}
-
-        def _load_config(*args):
-            self.frame.config_dict = OrderedDict(expected_dict)
-
-        mock_lcc.side_effect = _load_config
 
         def handle_prompt_dlg(self):
 
@@ -442,10 +461,81 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.timer.Start(POLL_INTERVAL)
 
         push_button(self.frame.close_btn)
+
         assert_boxes_have_neutral_color(self)
 
         expected_targ_section = "apiCalls"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
+
+    @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
+    def test_close_with_unsaved_changes_dont_save(self, mock_wcd):
+
+        new_baseURL = "new_baseURL"
+        new_username = "new_username"
+        new_password = "new_password"
+        new_client_id = "new_client_id"
+        new_client_secret = "new_client_secret"
+
+        expected_dict = {"username": new_username,
+                         "client_secret": new_client_secret,
+                         "password": new_password,
+                         "baseURL": new_baseURL,
+                         "client_id": new_client_id}
+
+        def handle_prompt_dlg(self):
+
+            self.assertTrue(self.frame.prompt_dlg.IsShown())
+
+            expected_txt = "You have unsaved changes"
+            self.assertIn(expected_txt,
+                          self.frame.prompt_dlg.Message)
+
+            self.frame.prompt_dlg.EndModal(wx.ID_NO)  # no don't save changes
+            self.assertFalse(self.frame.prompt_dlg.IsShown())
+
+        self.frame.base_URL_box.SetValue(new_baseURL)
+        self.frame.username_box.SetValue(new_username)
+        self.frame.password_box.SetValue(new_password)
+        self.frame.client_id_box.SetValue(new_client_id)
+        self.frame.client_secret_box.SetValue(new_client_secret)
+
+        self.assertEqual(self.frame.base_URL_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
+        self.assertEqual(self.frame.client_secret_box.GetValue(),
+                         new_client_secret)
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
+        handle_func = handle_prompt_dlg
+        time_counter = {"value": 0}
+        self.frame.timer = wx.Timer(self.frame)
+        self.frame.Bind(wx.EVT_TIMER,
+                        lambda evt: poll_for_prompt_dlg(self,
+                                                        time_counter,
+                                                        handle_func),
+                        self.frame.timer)
+        self.frame.timer.Start(POLL_INTERVAL)
+
+        push_button(self.frame.close_btn)
+
+        assert_boxes_have_neutral_color(self)
+
+        # reset boxes back to their original values - discard changes
+        self.assertEqual(self.frame.base_URL_box.GetValue(),
+                         self.frame.config_dict["baseURL"])
+        self.assertEqual(self.frame.username_box.GetValue(),
+                         self.frame.config_dict["username"])
+        self.assertEqual(self.frame.password_box.GetValue(),
+                         self.frame.config_dict["password"])
+        self.assertEqual(self.frame.client_id_box.GetValue(),
+                         self.frame.config_dict["client_id"])
+        self.assertEqual(self.frame.client_secret_box.GetValue(),
+                         self.frame.config_dict["client_secret"])
+
+        self.assertFalse(mock_wcd.called)
 
 
 def load_test_suite():
@@ -476,8 +566,8 @@ def load_test_suite():
 
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_close_with_unsaved_changes_save"))
-    # gui_sf_test_suite.addTest(
-    #    TestSettingsFrame("test_close_with_unsaved_changes_dont_save"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_close_with_unsaved_changes_dont_save"))
 
     return gui_sf_test_suite
 
