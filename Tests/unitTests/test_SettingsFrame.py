@@ -23,6 +23,16 @@ class Foo(object):
     def __init__(self):
         pass
 
+def click_checkbox(targ_obj):
+
+    """
+    helper function that sends the event wx.EVT_CHECKBOX to the given targ_obj
+    """
+
+    targ_obj.SetValue(True)
+    checkbox_evt = wx.PyCommandEvent(wx.EVT_CHECKBOX.typeId,
+                                     targ_obj.GetId())
+    targ_obj.GetEventHandler().ProcessEvent(checkbox_evt)
 
 def push_button(targ_obj):
 
@@ -543,6 +553,73 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertFalse(mock_wcd.called)
 
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_debug_invalid_connection(self,mock_apicalls):
+
+        # click the checkbox - it is now checked
+        click_checkbox(self.frame.debug_checkbox)
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
+        mock_apicalls.side_effect = [ConnectionError()]
+        self.frame.attempt_connect_to_api()
+
+        self.assertIn("Cannot connect to url",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Message from server", self.frame.log_panel.GetValue())
+
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_debug_invalid_user_or_pass(self, mock_apicalls):
+
+        click_checkbox(self.frame.debug_checkbox)
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
+        mock_apicalls.side_effect = [KeyError("Bad credentials")]
+        self.frame.attempt_connect_to_api()
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Username or password is incorrect",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Message from server", self.frame.log_panel.GetValue())
+
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_debug_invalid_client_id(self, mock_apicalls):
+
+        click_checkbox(self.frame.debug_checkbox)
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
+        mock_apicalls.side_effect = [KeyError("clientId does not exist")]
+        self.frame.attempt_connect_to_api()
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Client ID is incorrect",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Message from server", self.frame.log_panel.GetValue())
+
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_debug_invalid_client_secret(self, mock_apicalls):
+
+        click_checkbox(self.frame.debug_checkbox)
+
+        self.frame.log_panel.Clear()
+        self.assertEqual(self.frame.log_panel.GetValue(), "")
+
+        mock_apicalls.side_effect = [KeyError("Bad client credentials")]
+        self.frame.attempt_connect_to_api()
+
+        self.assertIn("Invalid credentials",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Client Secret is incorrect",
+                      self.frame.log_panel.GetValue())
+        self.assertIn("Message from server", self.frame.log_panel.GetValue())
+
 
 def load_test_suite():
 
@@ -569,11 +646,19 @@ def load_test_suite():
 
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings_no_changes"))
-
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_close_with_unsaved_changes_save"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_close_with_unsaved_changes_dont_save"))
+
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_debug_invalid_connection"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_debug_invalid_user_or_pass"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_debug_invalid_client_id"))
+    gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_debug_invalid_client_secret"))
 
     return gui_sf_test_suite
 
