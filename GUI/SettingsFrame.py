@@ -488,7 +488,13 @@ class SettingsFrame(wx.Frame):
         """
 
         for key in self.config_dict.keys():
-            msg = key + " = " + self.config_dict[key] + "\n"
+
+            if key == "password":
+                msg = "{key} = {asterisks} \n".\
+                    format(key=key, asterisks=len(self.config_dict[key])*"*")
+            else:
+                msg = "{key} = {key_value} \n".\
+                    format(key=key, key_value=self.config_dict[key])
 
             if key in changes_dict:
                 self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR)
