@@ -23,6 +23,7 @@ class Foo(object):
     def __init__(self):
         pass
 
+
 def click_checkbox(targ_obj):
 
     """
@@ -33,6 +34,7 @@ def click_checkbox(targ_obj):
     checkbox_evt = wx.PyCommandEvent(wx.EVT_CHECKBOX.typeId,
                                      targ_obj.GetId())
     targ_obj.GetEventHandler().ProcessEvent(checkbox_evt)
+
 
 def push_button(targ_obj):
 
@@ -165,7 +167,8 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
-        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",
+                         self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_user_or_pass(self, mock_apicalls):
@@ -189,7 +192,8 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Username or password is incorrect",
                       self.frame.log_panel.GetValue())
-        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",
+                         self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_id(self, mock_apicalls):
@@ -213,7 +217,8 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Client ID is incorrect",
                       self.frame.log_panel.GetValue())
-        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",
+                         self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_secret(self, mock_apicalls):
@@ -237,7 +242,8 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
         self.assertIn("Client Secret is incorrect",
                       self.frame.log_panel.GetValue())
-        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",
+                         self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_value_err(self, mock_apicalls):
@@ -259,7 +265,8 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Cannot connect to url",
                       self.frame.log_panel.GetValue())
-        self.assertNotIn("Message from server",self.frame.log_panel.GetValue())
+        self.assertNotIn("Message from server",
+                         self.frame.log_panel.GetValue())
 
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
@@ -377,9 +384,6 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.client_secret_box.GetValue(),
                          new_client_secret)
 
-        self.frame.log_panel.Clear()
-        self.assertEqual(self.frame.log_panel.GetValue(), "")
-
         push_button(self.frame.save_btn)
 
         # assert box values remain the same after clicking save
@@ -402,6 +406,13 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("client_secret = " + new_client_secret,
                       self.frame.log_panel.GetValue())
 
+        # assert that previous info on log panel was cleared
+        expected_num_lines = len(self.frame.config_dict.keys()) + 2
+        # 1 line for "Saving"
+        # 1 line for "\n" at end of message
+        self.assertEqual(self.frame.log_panel.GetNumberOfLines(),
+                         expected_num_lines)
+
         assert_boxes_have_neutral_color(self)
 
         self.assertTrue(mock_lcc.called)
@@ -420,13 +431,19 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("No changes to save", self.frame.log_panel.GetValue())
 
+        # assert that previous info on log panel was cleared
+        expected_num_lines = 2
+        # 1 line for "No changes..."
+        # 1 line for "\n" at end of message
+        self.assertEqual(self.frame.log_panel.GetNumberOfLines(),
+                         expected_num_lines)
+
         assert_boxes_have_neutral_color(self)
 
         self.assertTrue(mock_connect_api.called)
 
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
     def test_close_with_unsaved_changes_save(self, mock_wcd):
-
         new_baseURL = "new_baseURL"
         new_username = "new_username"
         new_password = "new_password"
@@ -554,7 +571,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertFalse(mock_wcd.called)
 
     @patch("GUI.SettingsFrame.ApiCalls")
-    def test_debug_invalid_connection(self,mock_apicalls):
+    def test_debug_invalid_connection(self, mock_apicalls):
 
         # click the checkbox - it is now checked
         click_checkbox(self.frame.debug_checkbox)
@@ -641,11 +658,12 @@ def load_test_suite():
 
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_restore_default_settings"))
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_save_settings"))
 
     gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_save_settings"))
+    gui_sf_test_suite.addTest(
         TestSettingsFrame("test_save_settings_no_changes"))
+
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_close_with_unsaved_changes_save"))
     gui_sf_test_suite.addTest(
