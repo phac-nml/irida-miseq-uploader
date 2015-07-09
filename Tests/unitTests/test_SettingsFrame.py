@@ -463,6 +463,8 @@ class TestSettingsFrame(unittest.TestCase):
         push_button(self.frame.close_btn)
         assert_boxes_have_neutral_color(self)
 
+        expected_targ_section = "apiCalls"
+        mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
 def load_test_suite():
 
