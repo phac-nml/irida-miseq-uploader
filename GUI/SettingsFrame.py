@@ -37,14 +37,15 @@ class SettingsFrame(wx.Frame):
         self.config_dict = OrderedDict()
         self.load_curr_config()
         self.prompt_dlg = None
+        self.show_debug_msg = False
 
         self.LONG_BOX_SIZE = (500, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
-        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 50
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
+        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 30
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
@@ -66,7 +67,10 @@ class SettingsFrame(wx.Frame):
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.debug_log_container = wx.BoxSizer(wx.VERTICAL)
+
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -76,6 +80,7 @@ class SettingsFrame(wx.Frame):
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
+        self.add_debug_checkbox()
         self.add_log_panel_section()
         self.add_default_btn()
         self.add_save_btn()
@@ -114,8 +119,11 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
+        self.debug_log_container.Add(self.debug_sizer)
+        self.debug_log_container.Add(self.log_panel_sizer)
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+            self.debug_log_container, proportion=0,
+            flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
@@ -229,8 +237,7 @@ class SettingsFrame(wx.Frame):
         self.log_color_print("Cannot connect to url:\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
-            self.log_color_print("Message from server: " + str(e.message),
-                                 self.LOG_PNL_ERR_TXT_COLOR)
+            self.handle_showing_server_msg(e)
 
         self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
@@ -297,8 +304,7 @@ class SettingsFrame(wx.Frame):
         elif "No client credentials were provided" in str(e.message):
             self.handle_URL_error(e, msg_printed=True)
 
-        self.log_color_print("Message from server: " + str(e.message),
-                             self.LOG_PNL_ERR_TXT_COLOR)
+        self.handle_showing_server_msg(e)
 
     def add_URL_section(self):
 
@@ -401,6 +407,33 @@ class SettingsFrame(wx.Frame):
 
         self.client_secret_sizer.Add(self.client_secret_label)
         self.client_secret_sizer.Add(self.client_secret_box)
+
+    def add_debug_checkbox(self):
+
+        """
+        Adds checkbox for debugging option which will display messages from
+        the server in to the log panel
+
+        no return value
+        """
+
+        self.debug_checkbox = wx.CheckBox(parent=self, id=-1,
+                                          label="Show messages from server")
+        self.debug_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_debug_checkbox)
+        self.debug_sizer.Add(self.debug_checkbox)
+
+    def handle_debug_checkbox(self, evt):
+
+        """
+        Funtion bound to self.debug_checkbox being clicked
+
+        no return value
+        """
+
+        if self.debug_checkbox.IsChecked():
+            self.show_debug_msg = True
+        else:
+            self.show_debug_msg = False
 
     def add_log_panel_section(self):
 
@@ -675,6 +708,12 @@ class SettingsFrame(wx.Frame):
 
         with open(self.config_file, 'wb') as configfile:
             self.conf_parser.write(configfile)
+
+    def handle_showing_server_msg(self, err):
+
+        if self.show_debug_msg:
+            self.log_color_print("Message from server: " + str(err.message),
+                                 self.LOG_PNL_ERR_TXT_COLOR)
 
 
 if __name__ == "__main__":
