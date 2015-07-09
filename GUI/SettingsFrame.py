@@ -53,6 +53,7 @@ class SettingsFrame(wx.Frame):
         self.NEUTRAL_BOX_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (204, 0, 0)
+        self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -68,8 +69,10 @@ class SettingsFrame(wx.Frame):
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.icons_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.debug_icons_container = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_log_container = wx.BoxSizer(wx.VERTICAL)
+        self.debug_log_icons_ctner = wx.BoxSizer(wx.VERTICAL)
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -81,6 +84,7 @@ class SettingsFrame(wx.Frame):
         self.add_client_id_section()
         self.add_client_secret_section()
         self.add_debug_checkbox()
+        self.add_icons()
         self.add_log_panel_section()
         self.add_default_btn()
         self.add_save_btn()
@@ -119,10 +123,15 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
-        self.debug_log_container.Add(self.debug_sizer)
-        self.debug_log_container.Add(self.log_panel_sizer)
+        self.debug_icons_container.Add(self.debug_sizer, 2, flag=wx.ALIGN_LEFT)
+        self.debug_icons_container.AddStretchSpacer(3)
+        self.debug_icons_container.Add(self.icons_sizer, 0,
+                                       flag=wx.ALIGN_RIGHT)
+
+        self.debug_log_icons_ctner.Add(self.debug_icons_container)
+        self.debug_log_icons_ctner.Add(self.log_panel_sizer)
         self.top_sizer.Add(
-            self.debug_log_container, proportion=0,
+            self.debug_log_icons_ctner, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
@@ -182,6 +191,7 @@ class SettingsFrame(wx.Frame):
 
             self.log_color_print("\nSuccessfully connected to API.\n",
                                  self.LOG_PNL_OK_TXT_COLOR)
+            self.show_success_icon()
 
         except ConnectionError, e:
             self.handle_URL_error(e)
@@ -190,32 +200,10 @@ class SettingsFrame(wx.Frame):
             self.handle_key_error(e)
 
         except ValueError, e:
-            self.log_color_print("Cannot connect to url:\n",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_color_print("Value error message: " + str(e.message),
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-
-            self.base_URL_box.SetBackgroundColour(
-                self.INVALID_CONNECTION_COLOR)
-
-            self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.client_secret_box.SetBackgroundColour(
-                self.NEUTRAL_BOX_COLOR)
+            self.handle_val_error(e)
 
         except:
-            self.log_color_print("Unexpected error:" + "\n",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-            self.log_color_print(str(sys.exc_info())+"\n",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-
-            self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-            self.client_secret_box.SetBackgroundColour(
-                self.NEUTRAL_BOX_COLOR)
+            self.handle_unexpected_error(e)
 
         self.Refresh()
 
@@ -234,7 +222,8 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.log_color_print("Cannot connect to url:\n",
+        self.log_color_print("Cannot connect to url: {url}\n".format(
+                             url=self.base_URL_box.GetValue()),
                              self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
             self.handle_showing_server_msg(e)
@@ -245,6 +234,7 @@ class SettingsFrame(wx.Frame):
         self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.show_warning_icon()
 
     def handle_key_error(self, e):
 
@@ -305,6 +295,40 @@ class SettingsFrame(wx.Frame):
             self.handle_URL_error(e, msg_printed=True)
 
         self.handle_showing_server_msg(e)
+        self.show_warning_icon()
+
+    def handle_val_error(self):
+
+        self.log_color_print("Cannot connect to url:\n",
+                             self.LOG_PNL_ERR_TXT_COLOR)
+        self.log_color_print("Value error message: " + str(e.message),
+                             self.LOG_PNL_ERR_TXT_COLOR)
+
+        self.base_URL_box.SetBackgroundColour(
+            self.INVALID_CONNECTION_COLOR)
+
+        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_secret_box.SetBackgroundColour(
+            self.NEUTRAL_BOX_COLOR)
+
+        self.show_warning_icon()
+
+    def handle_unexpected_error(self):
+
+        self.log_color_print("Unexpected error:" + "\n",
+                             self.LOG_PNL_ERR_TXT_COLOR)
+        self.log_color_print(str(sys.exc_info())+"\n",
+                             self.LOG_PNL_ERR_TXT_COLOR)
+
+        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
+        self.client_secret_box.SetBackgroundColour(
+            self.NEUTRAL_BOX_COLOR)
+        self.show_warning_icon()
 
     def add_URL_section(self):
 
@@ -421,6 +445,46 @@ class SettingsFrame(wx.Frame):
                                           label="Show messages from server")
         self.debug_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_debug_checkbox)
         self.debug_sizer.Add(self.debug_checkbox)
+
+    def add_icons(self):
+
+        """
+        Adds place holder StatiCbitmap and hide it.
+        Will be used by show_warning_icon and show_success_icon when
+        they are going to display an icon
+
+        no return value
+        """
+
+        self.icon_ph = wx.StaticBitmap(self,
+                                       bitmap=wx.EmptyBitmap(self.ICON_WIDTH,
+                                                             self.ICON_HEIGHT))
+        self.icon_ph.Hide()
+        self.icons_sizer.Add(self.icon_ph)
+
+    def show_warning_icon(self):
+        """
+        Creates a warning image icon and inserts it to self.icon_ph
+        warning image icon must fit in self.ICON_WIDTH * self.ICON_HEIGHT
+        """
+
+        self.warn_img = wx.Image("images/Warning.png",
+                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.icon_ph.SetBitmap(self.warn_img)
+        self.icon_ph.Show()
+
+        self.Layout()
+        self.Refresh()
+
+    def show_success_icon(self):
+
+        self.suc_img = wx.Image("images/Success.png",
+                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.icon_ph.SetBitmap(self.suc_img)
+        self.icon_ph.Show()
+
+        self.Layout()
+        self.Refresh()
 
     def handle_debug_checkbox(self, evt):
 
