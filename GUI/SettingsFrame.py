@@ -24,7 +24,7 @@ class SettingsFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (600, 500)
+        self.WINDOW_SIZE = (700, 500)
         wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
                           title="Settings",
                           size=self.WINDOW_SIZE,
@@ -39,7 +39,7 @@ class SettingsFrame(wx.Frame):
         self.prompt_dlg = None
         self.show_debug_msg = False
 
-        self.LONG_BOX_SIZE = (500, 32)  # url
+        self.LONG_BOX_SIZE = (400, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.LABEL_TEXT_HEIGHT = 32
@@ -69,10 +69,8 @@ class SettingsFrame(wx.Frame):
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.icons_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_icons_container = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_log_icons_ctner = wx.BoxSizer(wx.VERTICAL)
+        self.debug_log_ctner = wx.BoxSizer(wx.VERTICAL)
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -83,8 +81,8 @@ class SettingsFrame(wx.Frame):
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
-        self.add_debug_checkbox()
         self.add_icons()
+        self.add_debug_checkbox()
         self.add_log_panel_section()
         self.add_default_btn()
         self.add_save_btn()
@@ -115,7 +113,7 @@ class SettingsFrame(wx.Frame):
 
         spacer_size = (self.WINDOW_SIZE[0] -
                        self.credentials_container.GetMinSize()[0] -
-                       (self.SIZER_BORDER*2))
+                       ((self.SIZER_BORDER + self.ICON_WIDTH)*2))
         self.credentials_container.InsertSpacer(1, (spacer_size, -1))
 
         self.top_sizer.Add(
@@ -123,15 +121,11 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
-        self.debug_icons_container.Add(self.debug_sizer, 2, flag=wx.ALIGN_LEFT)
-        self.debug_icons_container.AddStretchSpacer(3)
-        self.debug_icons_container.Add(self.icons_sizer, 0,
-                                       flag=wx.ALIGN_RIGHT)
+        self.debug_log_ctner.Add(self.debug_sizer)
+        self.debug_log_ctner.Add(self.log_panel_sizer)
 
-        self.debug_log_icons_ctner.Add(self.debug_icons_container)
-        self.debug_log_icons_ctner.Add(self.log_panel_sizer)
         self.top_sizer.Add(
-            self.debug_log_icons_ctner, proportion=0,
+            self.debug_log_ctner, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
@@ -191,7 +185,12 @@ class SettingsFrame(wx.Frame):
 
             self.log_color_print("\nSuccessfully connected to API.\n",
                                  self.LOG_PNL_OK_TXT_COLOR)
-            self.show_success_icon()
+
+            self.show_success_icon(self.base_URL_icon)
+            self.show_success_icon(self.username_icon)
+            self.show_success_icon(self.password_icon)
+            self.show_success_icon(self.client_id_icon)
+            self.show_success_icon(self.client_secret_icon)
 
         except ConnectionError, e:
             self.handle_URL_error(e)
@@ -203,7 +202,7 @@ class SettingsFrame(wx.Frame):
             self.handle_val_error(e)
 
         except:
-            self.handle_unexpected_error(e)
+            self.handle_unexpected_error()
 
         self.Refresh()
 
@@ -234,7 +233,12 @@ class SettingsFrame(wx.Frame):
         self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.show_warning_icon()
+
+        self.show_warning_icon(self.base_URL_icon)
+        self.hide_icon(self.username_icon)
+        self.hide_icon(self.password_icon)
+        self.hide_icon(self.client_id_icon)
+        self.hide_icon(self.client_secret_icon)
 
     def handle_key_error(self, e):
 
@@ -269,6 +273,13 @@ class SettingsFrame(wx.Frame):
             self.password_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
+            self.show_warning_icon(self.username_icon)
+            self.show_warning_icon(self.password_icon)
+
+            self.hide_icon(self.base_URL_icon)
+            self.hide_icon(self.client_id_icon)
+            self.hide_icon(self.client_secret_icon)
+
         elif "clientId does not exist" in str(e.message):
 
             self.log_color_print("Invalid credentials:\n",
@@ -279,6 +290,13 @@ class SettingsFrame(wx.Frame):
 
             self.client_id_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
+
+            self.show_warning_icon(self.client_id_icon)
+
+            self.hide_icon(self.base_URL_icon)
+            self.hide_icon(self.username_icon)
+            self.hide_icon(self.password_icon)
+            self.hide_icon(self.client_secret_icon)
 
         elif "Bad client credentials" in str(e.message):
 
@@ -291,11 +309,17 @@ class SettingsFrame(wx.Frame):
             self.client_secret_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
+            self.show_warning_icon(self.client_secret_icon)
+
+            self.hide_icon(self.base_URL_icon)
+            self.hide_icon(self.username_icon)
+            self.hide_icon(self.password_icon)
+            self.hide_icon(self.client_id_icon)
+
         elif "No client credentials were provided" in str(e.message):
             self.handle_URL_error(e, msg_printed=True)
 
         self.handle_showing_server_msg(e)
-        self.show_warning_icon()
 
     def handle_val_error(self, e):
 
@@ -313,9 +337,13 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
 
-        self.show_warning_icon()
+        self.show_warning_icon(self.base_URL_icon)
+        self.hide_icon(self.username_icon)
+        self.hide_icon(self.password_icon)
+        self.hide_icon(self.client_id_icon)
+        self.hide_icon(self.client_secret_icon)
 
-    def handle_unexpected_error(self, e):
+    def handle_unexpected_error(self):
 
         self.log_color_print("Unexpected error:" + "\n",
                              self.LOG_PNL_ERR_TXT_COLOR)
@@ -328,7 +356,12 @@ class SettingsFrame(wx.Frame):
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
-        self.show_warning_icon()
+
+        self.hide_icon(self.base_URL_icon)
+        self.hide_icon(self.password_icon)
+        self.hide_icon(self.username_icon)
+        self.hide_icon(self.client_id_icon)
+        self.hide_icon(self.client_secret_icon)
 
     def add_URL_section(self):
 
@@ -449,52 +482,96 @@ class SettingsFrame(wx.Frame):
     def add_icons(self):
 
         """
-        Adds place holder StatiCbitmap and hide it.
+        Adds place holder StaticBitmap for each field and and hide it.
         Will be used by show_warning_icon and show_success_icon when
         they are going to display an icon
 
         no return value
         """
 
-        self.icon_ph = wx.StaticBitmap(self,
-                                       bitmap=wx.EmptyBitmap(self.ICON_WIDTH,
-                                                             self.ICON_HEIGHT))
-        self.icon_ph.Hide()
-        self.icons_sizer.Add(self.icon_ph)
+        self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
 
-    def show_warning_icon(self):
+        # success icon made by OCHA @ "http://www.unocha.org". CC BY 3.0
+        suc_img_path = path.join(path_to_module, "images", "Success.png")
+        self.suc_img = wx.Image(suc_img_path,
+                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+
+        # warning icon made by Freepik @ "http://www.freepik.com". CC BY 3.0
+        warn_img_path = path.join(path_to_module, "images", "Warning.png")
+        self.warn_img = wx.Image(warn_img_path,
+                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+
+        self.base_URL_icon.Hide()
+        self.username_icon.Hide()
+        self.password_icon.Hide()
+        self.client_id_icon.Hide()
+        self.client_secret_icon.Hide()
+
+        self.url_sizer.Add(self.base_URL_icon, flag=wx.TOP,
+                           border=self.SIZER_BORDER)
+        self.username_sizer.Add(self.username_icon)
+        self.password_sizer.Add(self.password_icon)
+        self.client_id_sizer.Add(self.client_id_icon)
+        self.client_secret_sizer.Add(self.client_secret_icon)
+
+    def show_warning_icon(self, targ):
 
         """
-        Creates a warning image icon and inserts it to self.icon_ph
-        warning image icon must fit in self.ICON_WIDTH * self.ICON_HEIGHT
+        inserts warning icon (self.warn_img) in to targ icon placeholder
+
+        arguments:
+            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
 
         no return value
         """
-        img_path = path.join(path_to_module, "images", "Warning.png")
-        self.warn_img = wx.Image(img_path,
-                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        self.icon_ph.SetBitmap(self.warn_img)
-        self.icon_ph.SetLabel("warning")  # for tests
-        self.icon_ph.Show()
+
+        targ.SetBitmap(self.warn_img)
+        targ.SetLabel("warning")  # for tests
+        targ.Show()
 
         self.Layout()
         self.Refresh()
 
-    def show_success_icon(self):
+    def show_success_icon(self, targ):
 
         """
-        Creates a success image icon and inserts it to self.icon_ph
-        success image icon must fit in self.ICON_WIDTH * self.ICON_HEIGHT
+        inserts success icon (self.suc_img) in to targ icon place holder
+
+        arguments:
+            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
 
         no return value
         """
-        img_path = path.join(path_to_module, "images", "Success.png")
-        self.suc_img = wx.Image(img_path,
-                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        self.icon_ph.SetBitmap(self.suc_img)
-        self.icon_ph.SetLabel("success")  # for tests
-        self.icon_ph.Show()
 
+        targ.SetBitmap(self.suc_img)
+        targ.SetLabel("success")  # for tests
+        targ.Show()
+
+        self.Layout()
+        self.Refresh()
+
+    def hide_icon(self, targ):
+
+        """
+        hide icon for given targ
+
+        arguments:
+            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+
+        no return value
+        """
+
+        targ.Hide()
+        targ.SetLabel("hidden")  # for tests
         self.Layout()
         self.Refresh()
 
@@ -542,9 +619,9 @@ class SettingsFrame(wx.Frame):
 
         self.default_btn = wx.Button(self, label="Restore to default")
         self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, 1,
+        self.buttons_sizer.Add(self.default_btn, 3,
                                flag=wx.ALIGN_LEFT | wx.LEFT, border=5)
-        self.buttons_sizer.AddStretchSpacer(2)
+        self.buttons_sizer.AddStretchSpacer(8)
 
     def restore_default_settings(self, evt):
 
