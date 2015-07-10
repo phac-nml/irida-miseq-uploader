@@ -67,8 +67,12 @@ class SettingsFrame(wx.Frame):
         self.password_ctner = wx.BoxSizer(wx.HORIZONTAL)
 
         self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
-        self.client_id_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.client_id_ctner = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.client_secret_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.client_secret_ctner = wx.BoxSizer(wx.HORIZONTAL)
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -106,10 +110,10 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.id_secret_container.Add(
-            self.client_id_sizer, proportion=0,
+            self.client_id_ctner, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
         self.id_secret_container.Add(
-            self.client_secret_sizer, proportion=0,
+            self.client_secret_ctner, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.credentials_container.Add(self.user_pass_container)
@@ -239,10 +243,6 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
 
         self.show_warning_icon(self.base_URL_icon)
-        self.hide_icon(self.username_icon)
-        self.hide_icon(self.password_icon)
-        self.hide_icon(self.client_id_icon)
-        self.hide_icon(self.client_secret_icon)
 
     def handle_key_error(self, e):
 
@@ -265,9 +265,13 @@ class SettingsFrame(wx.Frame):
 
         self.username_err_label.Hide()
         self.password_err_label.Hide()
+        self.client_id_err_label.Hide()
+        self.client_secret_err_label.Hide()
 
         if "Bad credentials" in str(e.message):
 
+            self.username_err_label.Show()
+            self.password_err_label.Show()
             self.username_err_label.SetLabel("Invalid credentials")
             self.password_err_label.SetLabel("Invalid credentials")
 
@@ -288,6 +292,9 @@ class SettingsFrame(wx.Frame):
 
         elif "clientId does not exist" in str(e.message):
 
+            self.client_id_err_label.Show()
+            self.client_id_err_label.SetLabel("Client ID is incorrect")
+
             self.log_color_print("Invalid credentials:\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
@@ -297,9 +304,13 @@ class SettingsFrame(wx.Frame):
             self.client_id_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
-            self.show_warning_icon(self.client_id_icon)
+            self.show_warning_icon(self.client_id_icon,
+                                   "Client ID is incorrect")
 
         elif "Bad client credentials" in str(e.message):
+
+            self.client_secret_err_label.Show()
+            self.client_secret_err_label.SetLabel("Client Secret is incorrect")
 
             self.log_color_print("Invalid credentials:\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
@@ -310,7 +321,8 @@ class SettingsFrame(wx.Frame):
             self.client_secret_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
-            self.show_warning_icon(self.client_secret_icon)
+            self.show_warning_icon(self.client_secret_icon,
+                                   "Client Secret is incorrect")
 
         elif "No client credentials were provided" in str(e.message):
             self.handle_URL_error(e, msg_printed=True)
@@ -335,6 +347,11 @@ class SettingsFrame(wx.Frame):
 
         self.show_warning_icon(self.base_URL_icon)
 
+        self.username_err_label.Hide()
+        self.password_err_label.Hide()
+        self.client_id_err_label.Hide()
+        self.client_secret_err_label.Hide()
+
     def handle_unexpected_error(self):
 
         self.log_color_print("Unexpected error:" + "\n",
@@ -348,6 +365,17 @@ class SettingsFrame(wx.Frame):
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
+
+        self.username_err_label.Hide()
+        self.password_err_label.Hide()
+        self.client_id_err_label.Hide()
+        self.client_secret_err_label.Hide()
+
+        self.hide_icon(self.base_URL_icon)
+        self.hide_icon(self.password_icon)
+        self.hide_icon(self.username_icon)
+        self.hide_icon(self.client_id_icon)
+        self.hide_icon(self.client_secret_icon)
 
     def add_URL_section(self):
 
@@ -388,6 +416,7 @@ class SettingsFrame(wx.Frame):
             label="Username")
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
@@ -397,7 +426,7 @@ class SettingsFrame(wx.Frame):
         self.username_box_err_sizer.Add(self.username_err_label)
         self.username_ctner.Add(self.username_box_err_sizer)
 
-        self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
+
 
     def add_password_section(self):
 
@@ -411,7 +440,9 @@ class SettingsFrame(wx.Frame):
             self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Password")
+
         self.password_err_label = wx.StaticText(self, id=-1, label="")
+        self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
@@ -422,7 +453,7 @@ class SettingsFrame(wx.Frame):
         self.password_box_err_sizer.Add(self.password_err_label)
         self.password_ctner.Add(self.password_box_err_sizer)
 
-        self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
+
 
     def add_client_id_section(self):
 
@@ -437,11 +468,17 @@ class SettingsFrame(wx.Frame):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Client ID")
 
+        self.client_id_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_id_err_label.SetForegroundColour(
+            self.LOG_PNL_ERR_TXT_COLOR)
+
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
 
-        self.client_id_sizer.Add(self.client_id_label)
-        self.client_id_sizer.Add(self.client_id_box)
+        self.client_id_ctner.Add(self.client_id_label)
+        self.client_id_box_err_sizer.Add(self.client_id_box)
+        self.client_id_box_err_sizer.Add(self.client_id_err_label)
+        self.client_id_ctner.Add(self.client_id_box_err_sizer)
 
     def add_client_secret_section(self):
 
@@ -456,11 +493,17 @@ class SettingsFrame(wx.Frame):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Client Secret")
 
+        self.client_secret_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_secret_err_label.SetForegroundColour(
+            self.LOG_PNL_ERR_TXT_COLOR)
+
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
 
-        self.client_secret_sizer.Add(self.client_secret_label)
-        self.client_secret_sizer.Add(self.client_secret_box)
+        self.client_secret_ctner.Add(self.client_secret_label)
+        self.client_secret_box_err_sizer.Add(self.client_secret_box)
+        self.client_secret_box_err_sizer.Add(self.client_secret_err_label)
+        self.client_secret_ctner.Add(self.client_secret_box_err_sizer)
 
     def add_debug_checkbox(self):
 
@@ -517,8 +560,8 @@ class SettingsFrame(wx.Frame):
                            border=self.SIZER_BORDER)
         self.username_ctner.Add(self.username_icon)
         self.password_ctner.Add(self.password_icon)
-        self.client_id_sizer.Add(self.client_id_icon)
-        self.client_secret_sizer.Add(self.client_secret_icon)
+        self.client_id_ctner.Add(self.client_id_icon)
+        self.client_secret_ctner.Add(self.client_secret_icon)
 
     def show_warning_icon(self, targs, tooltip=""):
 
@@ -704,6 +747,8 @@ class SettingsFrame(wx.Frame):
                 self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR)
             else:
                 self.log_panel.AppendText(msg)
+
+        self.log_panel.AppendText("\n")
 
     def add_save_btn(self):
 
