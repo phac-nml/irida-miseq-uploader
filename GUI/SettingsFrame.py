@@ -263,6 +263,9 @@ class SettingsFrame(wx.Frame):
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
 
+        self.username_err_label.Hide()
+        self.password_err_label.Hide()
+
         if "Bad credentials" in str(e.message):
 
             self.username_err_label.SetLabel("Invalid credentials")
@@ -280,14 +283,8 @@ class SettingsFrame(wx.Frame):
             self.password_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
-            self.show_warning_icon(self.username_icon,
+            self.show_warning_icon([self.username_icon, self.password_icon],
                                    "Username or password is incorrect")
-            self.show_warning_icon(self.password_icon,
-                                   "Username or password is incorrect")
-
-            self.hide_icon(self.base_URL_icon)
-            self.hide_icon(self.client_id_icon)
-            self.hide_icon(self.client_secret_icon)
 
         elif "clientId does not exist" in str(e.message):
 
@@ -302,11 +299,6 @@ class SettingsFrame(wx.Frame):
 
             self.show_warning_icon(self.client_id_icon)
 
-            self.hide_icon(self.base_URL_icon)
-            self.hide_icon(self.username_icon)
-            self.hide_icon(self.password_icon)
-            self.hide_icon(self.client_secret_icon)
-
         elif "Bad client credentials" in str(e.message):
 
             self.log_color_print("Invalid credentials:\n",
@@ -319,11 +311,6 @@ class SettingsFrame(wx.Frame):
                 self.INVALID_CONNECTION_COLOR)
 
             self.show_warning_icon(self.client_secret_icon)
-
-            self.hide_icon(self.base_URL_icon)
-            self.hide_icon(self.username_icon)
-            self.hide_icon(self.password_icon)
-            self.hide_icon(self.client_id_icon)
 
         elif "No client credentials were provided" in str(e.message):
             self.handle_URL_error(e, msg_printed=True)
@@ -347,10 +334,6 @@ class SettingsFrame(wx.Frame):
             self.NEUTRAL_BOX_COLOR)
 
         self.show_warning_icon(self.base_URL_icon)
-        self.hide_icon(self.username_icon)
-        self.hide_icon(self.password_icon)
-        self.hide_icon(self.client_id_icon)
-        self.hide_icon(self.client_secret_icon)
 
     def handle_unexpected_error(self):
 
@@ -365,12 +348,6 @@ class SettingsFrame(wx.Frame):
         self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
-
-        self.hide_icon(self.base_URL_icon)
-        self.hide_icon(self.password_icon)
-        self.hide_icon(self.username_icon)
-        self.hide_icon(self.client_id_icon)
-        self.hide_icon(self.client_secret_icon)
 
     def add_URL_section(self):
 
@@ -543,22 +520,39 @@ class SettingsFrame(wx.Frame):
         self.client_id_sizer.Add(self.client_id_icon)
         self.client_secret_sizer.Add(self.client_secret_icon)
 
-    def show_warning_icon(self, targ, tooltip=""):
+    def show_warning_icon(self, targs, tooltip=""):
 
         """
-        inserts warning icon (self.warn_img) in to targ icon placeholder
-
+        inserts warning icon (self.warn_img) in to targs icon placeholder
+        hide all other icons that aren't in targs
         arguments:
-            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            targs -- the icon place holder(s) to be shown
+                     (e.g self.base_URL_icon)
+                     either a list if more than one or a single object.
             tooltip -- message to be used as a tooltip
 
         no return value
         """
 
-        targ.SetBitmap(self.warn_img)
-        targ.SetToolTipString(tooltip)
-        targ.SetLabel("warning")  # for tests
-        targ.Show()
+        def insert_warn_icon(t):
+
+            t.SetBitmap(self.warn_img)
+            if len(tooltip) > 0:
+                t.SetToolTipString(tooltip)
+            t.SetLabel("warning")  # for tests
+            t.Show()
+
+        self.hide_icon(self.base_URL_icon)
+        self.hide_icon(self.password_icon)
+        self.hide_icon(self.username_icon)
+        self.hide_icon(self.client_id_icon)
+        self.hide_icon(self.client_secret_icon)
+
+        if type(targs) == list:
+            for targ in targs:
+                insert_warn_icon(targ)
+        else:
+            insert_warn_icon(targs)
 
         self.Layout()
         self.Refresh()
@@ -569,7 +563,7 @@ class SettingsFrame(wx.Frame):
         inserts success icon (self.suc_img) in to targ icon place holder
 
         arguments:
-            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            targ -- the icon place holder to be shown (e.g self.base_URL_icon)
             tooltip -- message to be used as a tooltip
 
         no return value
