@@ -202,7 +202,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
-        self.assertIn("Username or password is incorrect",
+        self.assertIn("Username and/or password is incorrect",
                       self.frame.log_panel.GetValue())
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
@@ -460,9 +460,9 @@ class TestSettingsFrame(unittest.TestCase):
                       self.frame.log_panel.GetValue())
 
         # assert that previous info on log panel was cleared
-        expected_num_lines = len(self.frame.config_dict.keys()) + 2
+        expected_num_lines = len(self.frame.config_dict.keys()) + 3
         # 1 line for "Saving"
-        # 1 line for "\n" at end of message
+        # 2 lines for "\n" at end of message
         self.assertEqual(self.frame.log_panel.GetNumberOfLines(),
                          expected_num_lines)
 
@@ -652,7 +652,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         self.assertIn("Invalid credentials",
                       self.frame.log_panel.GetValue())
-        self.assertIn("Username or password is incorrect",
+        self.assertIn("Username and/or password is incorrect",
                       self.frame.log_panel.GetValue())
         self.assertIn("Message from server", self.frame.log_panel.GetValue())
 
@@ -733,7 +733,6 @@ def load_test_suite():
         TestSettingsFrame("test_debug_invalid_client_id"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_debug_invalid_client_secret"))
-
 
     return gui_sf_test_suite
 
