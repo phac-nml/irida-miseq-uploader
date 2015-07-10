@@ -147,7 +147,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertIn("Successfully connected to API",
                       self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "success")
+        self.assertEqual(self.frame.base_URL_icon.Label, "success")
+        self.assertEqual(self.frame.username_icon.Label, "success")
+        self.assertEqual(self.frame.password_icon.Label, "success")
+        self.assertEqual(self.frame.client_id_icon.Label, "success")
+        self.assertEqual(self.frame.client_secret_icon.Label, "success")
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_invalid_connection(self, mock_apicalls):
@@ -172,7 +176,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "warning")
+        self.assertEqual(self.frame.base_URL_icon.Label, "warning")
+        self.assertEqual(self.frame.username_icon.Label, "hidden")
+        self.assertEqual(self.frame.password_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_user_or_pass(self, mock_apicalls):
@@ -199,7 +207,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "warning")
+        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
+        self.assertEqual(self.frame.username_icon.Label, "warning")
+        self.assertEqual(self.frame.password_icon.Label, "warning")
+        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_id(self, mock_apicalls):
@@ -226,7 +238,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "warning")
+        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
+        self.assertEqual(self.frame.username_icon.Label, "hidden")
+        self.assertEqual(self.frame.password_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_id_icon.Label, "warning")
+        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_secret(self, mock_apicalls):
@@ -253,7 +269,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "warning")
+        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
+        self.assertEqual(self.frame.username_icon.Label, "hidden")
+        self.assertEqual(self.frame.password_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_secret_icon.Label, "warning")
 
     @patch("GUI.SettingsFrame.ApiCalls")
     def test_value_err(self, mock_apicalls):
@@ -278,7 +298,11 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertNotIn("Message from server",
                          self.frame.log_panel.GetValue())
 
-        self.assertEqual(self.frame.icon_ph.Label, "warning")
+        self.assertEqual(self.frame.base_URL_icon.Label, "warning")
+        self.assertEqual(self.frame.username_icon.Label, "hidden")
+        self.assertEqual(self.frame.password_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
 
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
