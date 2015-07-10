@@ -59,8 +59,12 @@ class SettingsFrame(wx.Frame):
         self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
-        self.username_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.password_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.username_ctner = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.password_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.password_ctner = wx.BoxSizer(wx.HORIZONTAL)
 
         self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
         self.client_id_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -95,10 +99,10 @@ class SettingsFrame(wx.Frame):
                            border=self.SIZER_BORDER)
 
         self.user_pass_container.Add(
-            self.username_sizer, proportion=0,
+            self.username_ctner, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
         self.user_pass_container.Add(
-            self.password_sizer, proportion=0,
+            self.password_ctner, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.id_secret_container.Add(
@@ -261,6 +265,9 @@ class SettingsFrame(wx.Frame):
 
         if "Bad credentials" in str(e.message):
 
+            self.username_err_label.SetLabel("Invalid credentials")
+            self.password_err_label.SetLabel("Invalid credentials")
+
             self.log_color_print("Invalid credentials:\n",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
@@ -273,8 +280,10 @@ class SettingsFrame(wx.Frame):
             self.password_box.SetBackgroundColour(
                 self.INVALID_CONNECTION_COLOR)
 
-            self.show_warning_icon(self.username_icon)
-            self.show_warning_icon(self.password_icon)
+            self.show_warning_icon(self.username_icon,
+                                   "Username or password is incorrect")
+            self.show_warning_icon(self.password_icon,
+                                   "Username or password is incorrect")
 
             self.hide_icon(self.base_URL_icon)
             self.hide_icon(self.client_id_icon)
@@ -391,7 +400,7 @@ class SettingsFrame(wx.Frame):
     def add_username_section(self):
 
         """
-        Adds username text label and text box in to panel
+        Adds username text label, error text label and text box in to panel
 
         no return value
         """
@@ -401,11 +410,17 @@ class SettingsFrame(wx.Frame):
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Username")
 
+        self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
+
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
 
-        self.username_sizer.Add(self.username_label)
-        self.username_sizer.Add(self.username_box)
+        self.username_ctner.Add(self.username_label)
+        self.username_box_err_sizer.Add(self.username_box)
+        self.username_box_err_sizer.Add(self.username_err_label)
+        self.username_ctner.Add(self.username_box_err_sizer)
+
+        self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
     def add_password_section(self):
 
@@ -419,13 +434,18 @@ class SettingsFrame(wx.Frame):
             self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Password")
+        self.password_err_label = wx.StaticText(self, id=-1, label="")
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
 
-        self.password_sizer.Add(self.password_label)
-        self.password_sizer.Add(self.password_box)
+        self.password_ctner.Add(self.password_label)
+        self.password_box_err_sizer.Add(self.password_box)
+        self.password_box_err_sizer.Add(self.password_err_label)
+        self.password_ctner.Add(self.password_box_err_sizer)
+
+        self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
     def add_client_id_section(self):
 
@@ -518,41 +538,45 @@ class SettingsFrame(wx.Frame):
 
         self.url_sizer.Add(self.base_URL_icon, flag=wx.TOP,
                            border=self.SIZER_BORDER)
-        self.username_sizer.Add(self.username_icon)
-        self.password_sizer.Add(self.password_icon)
+        self.username_ctner.Add(self.username_icon)
+        self.password_ctner.Add(self.password_icon)
         self.client_id_sizer.Add(self.client_id_icon)
         self.client_secret_sizer.Add(self.client_secret_icon)
 
-    def show_warning_icon(self, targ):
+    def show_warning_icon(self, targ, tooltip=""):
 
         """
         inserts warning icon (self.warn_img) in to targ icon placeholder
 
         arguments:
             targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            tooltip -- message to be used as a tooltip
 
         no return value
         """
 
         targ.SetBitmap(self.warn_img)
+        targ.SetToolTipString(tooltip)
         targ.SetLabel("warning")  # for tests
         targ.Show()
 
         self.Layout()
         self.Refresh()
 
-    def show_success_icon(self, targ):
+    def show_success_icon(self, targ, tooltip=""):
 
         """
         inserts success icon (self.suc_img) in to targ icon place holder
 
         arguments:
             targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            tooltip -- message to be used as a tooltip
 
         no return value
         """
 
         targ.SetBitmap(self.suc_img)
+        targ.SetToolTipString(tooltip)
         targ.SetLabel("success")  # for tests
         targ.Show()
 
