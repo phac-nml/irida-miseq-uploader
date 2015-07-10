@@ -52,7 +52,7 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.NEUTRAL_BOX_COLOR = wx.WHITE
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
-        self.INVALID_CONNECTION_COLOR = (204, 0, 0)
+        self.INVALID_CONNECTION_COLOR = (244, 66, 54)
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -209,6 +209,8 @@ class SettingsFrame(wx.Frame):
             self.show_success_icon(self.client_id_icon)
             self.show_success_icon(self.client_secret_icon)
 
+            self.Refresh()
+
         except ConnectionError, e:
             self.handle_URL_error(e)
 
@@ -220,8 +222,6 @@ class SettingsFrame(wx.Frame):
 
         except:
             self.handle_unexpected_error()
-
-        self.Refresh()
 
     def handle_URL_error(self, e, msg_printed=False):
 
@@ -270,7 +270,6 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.reset_display()
         credentials_err = False
 
         if "Bad credentials" in str(e.message):
@@ -325,6 +324,15 @@ class SettingsFrame(wx.Frame):
 
     def handle_val_error(self, e):
 
+        """
+        value error can be raised by enterring malformed url
+
+        argument:
+            e -- the ValueError object
+
+        no return value
+        """
+
         err_description = ("Cannot connect to url: {url}\n".format(
                            url=self.base_URL_box.GetValue()))
 
@@ -341,6 +349,23 @@ class SettingsFrame(wx.Frame):
                                 icon_tooltip)
 
     def handle_unexpected_error(self):
+        """
+        for handling unexpected raised errors
+        since there is no restriction on saving, it is possible that user input
+        can cause an unknown error to be raised which will cause the program to
+        crash.
+        and because attempt_connect_to_api is always called when the
+        program starts, that same unkown error will be continually raised
+        until the credentials enterred are updated - which is not possible
+        using the program because of the crashing so the only way that it can
+        be changed is by editing to config file itself.
+
+        catching all exceptions like this allows the program to be still
+        opened even if the credentials enterred in a previous session raises an
+        unkown error
+
+        no return value
+        """
 
         err_log_msgs = ["Unexpected error:", str(sys.exc_info())]
         self.display_gui_errors(err_log_msgs=err_log_msgs)
@@ -348,6 +373,21 @@ class SettingsFrame(wx.Frame):
     def display_gui_errors(self, err_labels=[], err_boxes=[], err_log_msgs=[],
                            err_description="", err_icons=[],
                            icon_tooltip=""):
+        """
+        update gui to display errors
+
+        arguments:
+            err_labels -- list of label text objects to have their label set
+                          to err_description
+            err_boxes -- list of textbox objects to have their background set
+                         to self.INVALID_CONNECTION_COLOR
+            err_log_msgs -- list of string messages to display to the log_panel
+            err_description -- description of error to be used for err_labels
+            err_icons -- list of icons to be changed to show warning icon
+            icon_tooltip -- string message for the warning icons when hovered
+
+        no return value
+        """
 
         self.reset_display()
 
@@ -367,6 +407,14 @@ class SettingsFrame(wx.Frame):
                                    tooltip=icon_tooltip)
 
     def reset_display(self):
+
+        """
+        set gui objects (box, label, icons) to initial state
+        set all box background color to self.NEUTRAL_BOX_COLOR
+        hide all error labels
+        hide all icons
+        """
+
 
         self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
