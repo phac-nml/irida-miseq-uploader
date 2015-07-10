@@ -56,33 +56,36 @@ class SettingsFrame(wx.Frame):
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.url_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.url_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.url_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
 
         self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.username_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.username_ctner = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.password_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.password_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.password_ctner = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
 
         self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.client_id_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_id_ctner = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.client_secret_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.client_secret_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_secret_ctner = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
         self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_log_ctner = wx.BoxSizer(wx.VERTICAL)
+        self.debug_log_container = wx.BoxSizer(wx.VERTICAL)
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -102,22 +105,22 @@ class SettingsFrame(wx.Frame):
 
         self.SetSizer(self.top_sizer)
 
-        self.top_sizer.Add(self.url_sizer, proportion=0,
+        self.top_sizer.Add(self.url_container, proportion=0,
                            flag=wx.ALL | wx.ALIGN_CENTER,
                            border=self.SIZER_BORDER)
 
         self.user_pass_container.Add(
-            self.username_ctner, proportion=0,
+            self.username_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
         self.user_pass_container.Add(
-            self.password_ctner, proportion=0,
+            self.password_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.id_secret_container.Add(
-            self.client_id_ctner, proportion=0,
+            self.client_id_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
         self.id_secret_container.Add(
-            self.client_secret_ctner, proportion=0,
+            self.client_secret_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.credentials_container.Add(self.user_pass_container)
@@ -133,11 +136,11 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
-        self.debug_log_ctner.Add(self.debug_sizer)
-        self.debug_log_ctner.Add(self.log_panel_sizer)
+        self.debug_log_container.Add(self.debug_sizer)
+        self.debug_log_container.Add(self.log_panel_sizer)
 
         self.top_sizer.Add(
-            self.debug_log_ctner, proportion=0,
+            self.debug_log_container, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
@@ -197,7 +200,7 @@ class SettingsFrame(wx.Frame):
             self.client_secret_box.SetBackgroundColour(
                                                 self.VALID_CONNECTION_COLOR)
 
-            self.log_color_print("\nSuccessfully connected to API.\n",
+            self.log_color_print("\nSuccessfully connected to API.",
                                  self.LOG_PNL_OK_TXT_COLOR)
 
             self.show_success_icon(self.base_URL_icon)
@@ -235,17 +238,24 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.reset_display()
-
-        self.log_color_print("Cannot connect to url: {url}\n".format(
-                             url=self.base_URL_box.GetValue()),
-                             self.LOG_PNL_ERR_TXT_COLOR)
         if msg_printed is False:
             self.handle_showing_server_msg(e)
 
-        self.base_URL_box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
+        err_description = ("Cannot connect to url: {url}\n".format(
+                           url=self.base_URL_box.GetValue()))
 
-        self.show_warning_icon(self.base_URL_icon)
+        err_log_msgs = [err_description]
+
+        err_labels = [self.url_err_label]
+        err_boxes = [self.base_URL_box]
+        err_icons = [self.base_URL_icon]
+        icon_tooltip = (err_description +
+                        ("\nCheck for typos and if the IRIDA " +
+                         "web server is running."))
+
+        self.display_gui_errors(err_labels, err_boxes, err_log_msgs,
+                                err_description, err_icons,
+                                icon_tooltip)
 
     def handle_key_error(self, e):
 
@@ -271,7 +281,8 @@ class SettingsFrame(wx.Frame):
             err_boxes = [self.username_box, self.password_box]
 
             err_icons = [self.username_icon, self.password_icon]
-            icon_tooltip = ("The username and/or password you provided " +
+            icon_tooltip = (
+                "The username and/or password you provided " +
                 "is incorrect. We can't let you know which one is incorrect " +
                 "for security reasons.")
 
@@ -303,22 +314,9 @@ class SettingsFrame(wx.Frame):
         #
 
         if credentials_err:
-
-            for label in err_labels:
-                label.Show()
-                label.SetLabel(err_description)
-
-            for box in err_boxes:
-                box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
-
-            self.log_color_print("Invalid credentials:",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-
-            self.log_color_print(err_description,
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-            for icon in err_icons:
-                self.show_warning_icon(icon,
-                                       tooltip=icon_tooltip)
+            err_log_msgs = ["Invalid credentials:", err_description]
+            self.display_gui_errors(err_labels, err_boxes, err_log_msgs,
+                                    err_description, err_icons, icon_tooltip)
 
         else:
             self.handle_URL_error(e, msg_printed=True)
@@ -327,26 +325,46 @@ class SettingsFrame(wx.Frame):
 
     def handle_val_error(self, e):
 
-        self.reset_display()
+        err_description = ("Cannot connect to url: {url}\n".format(
+                           url=self.base_URL_box.GetValue()))
 
-        self.log_color_print("Cannot connect to url:\n",
-                             self.LOG_PNL_ERR_TXT_COLOR)
-        self.log_color_print("Value error message: " + str(e.message),
-                             self.LOG_PNL_ERR_TXT_COLOR)
+        err_log_msgs = [err_description,
+                        "Value error message: " + str(e.message)]
 
-        self.base_URL_box.SetBackgroundColour(
-            self.INVALID_CONNECTION_COLOR)
+        err_labels = [self.url_err_label]
+        err_boxes = [self.base_URL_box]
+        err_icons = [self.base_URL_icon]
+        icon_tooltip = err_description
 
-        self.show_warning_icon(self.base_URL_icon)
+        self.display_gui_errors(err_labels, err_boxes, err_log_msgs,
+                                err_description, err_icons,
+                                icon_tooltip)
 
     def handle_unexpected_error(self):
 
+        err_log_msgs = ["Unexpected error:", str(sys.exc_info())]
+        self.display_gui_errors(err_log_msgs=err_log_msgs)
+
+    def display_gui_errors(self, err_labels=[], err_boxes=[], err_log_msgs=[],
+                           err_description="", err_icons=[],
+                           icon_tooltip=""):
+
         self.reset_display()
 
-        self.log_color_print("Unexpected error:" + "\n",
-                             self.LOG_PNL_ERR_TXT_COLOR)
-        self.log_color_print(str(sys.exc_info())+"\n",
-                             self.LOG_PNL_ERR_TXT_COLOR)
+        for label in err_labels:
+            label.Show()
+            label.SetLabel(err_description)
+
+        for box in err_boxes:
+            box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
+
+        for log_msg in err_log_msgs:
+            self.log_color_print(log_msg,
+                                 self.LOG_PNL_ERR_TXT_COLOR)
+
+        for icon in err_icons:
+            self.show_warning_icon(icon,
+                                   tooltip=icon_tooltip)
 
     def reset_display(self):
 
@@ -357,6 +375,7 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
 
+        self.url_err_label.Hide()
         self.username_err_label.Hide()
         self.password_err_label.Hide()
         self.client_id_err_label.Hide()
@@ -378,20 +397,29 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.base_URL_label = wx.StaticText(
+        self.base_url_label = wx.StaticText(
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Base URL")
+
+        self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
+
         self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
-        self.url_sizer.Add(self.base_URL_label, 0, wx.ALL, 5)
-        self.url_sizer.Add(self.base_URL_box, 0, wx.ALL, 5)
-
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
-        self.base_URL_label.SetToolTipString(tip)
+        self.base_url_label.SetToolTipString(tip)
+
+        self.url_container.Add(self.base_url_label, flag=wx.TOP, border=5)
+        self.url_box_icon_sizer.Add(self.base_URL_box, flag=wx.TOP, border=5)
+        self.url_box_icon_sizer.Add(self.base_URL_icon, 0, flag=wx.LEFT |
+                                    wx.BOTTOM | wx.TOP, border=5)
+        self.url_box_err_sizer.Add(self.url_box_icon_sizer)
+        self.url_box_err_sizer.Add(self.url_err_label)
+        self.url_container.Add(self.url_box_err_sizer)
 
     def add_username_section(self):
 
@@ -412,13 +440,13 @@ class SettingsFrame(wx.Frame):
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
 
-        self.username_ctner.Add(self.username_label)
+        self.username_container.Add(self.username_label)
         self.username_box_icon_sizer.Add(self.username_box)
         self.username_box_icon_sizer.Add(self.username_icon,
                                          flag=wx.LEFT | wx.BOTTOM, border=5)
         self.username_box_err_sizer.Add(self.username_box_icon_sizer)
         self.username_box_err_sizer.Add(self.username_err_label)
-        self.username_ctner.Add(self.username_box_err_sizer)
+        self.username_container.Add(self.username_box_err_sizer)
 
     def add_password_section(self):
 
@@ -440,13 +468,13 @@ class SettingsFrame(wx.Frame):
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
 
-        self.password_ctner.Add(self.password_label)
+        self.password_container.Add(self.password_label)
         self.password_box_icon_sizer.Add(self.password_box)
         self.password_box_icon_sizer.Add(self.password_icon,
                                          flag=wx.LEFT | wx.BOTTOM, border=5)
         self.password_box_err_sizer.Add(self.password_box_icon_sizer)
         self.password_box_err_sizer.Add(self.password_err_label)
-        self.password_ctner.Add(self.password_box_err_sizer)
+        self.password_container.Add(self.password_box_err_sizer)
 
     def add_client_id_section(self):
 
@@ -468,14 +496,14 @@ class SettingsFrame(wx.Frame):
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
 
-        self.client_id_ctner.Add(self.client_id_label)
+        self.client_id_container.Add(self.client_id_label)
         self.client_id_box_icon_sizer.Add(self.client_id_box)
         self.client_id_box_icon_sizer.Add(self.client_id_icon,
-                                              flag=wx.LEFT | wx.BOTTOM,
-                                              border=5)
+                                          flag=wx.LEFT | wx.BOTTOM,
+                                          border=5)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
         self.client_id_box_err_sizer.Add(self.client_id_err_label)
-        self.client_id_ctner.Add(self.client_id_box_err_sizer)
+        self.client_id_container.Add(self.client_id_box_err_sizer)
 
     def add_client_secret_section(self):
 
@@ -497,14 +525,14 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
 
-        self.client_secret_ctner.Add(self.client_secret_label)
+        self.client_secret_container.Add(self.client_secret_label)
         self.client_secret_box_icon_sizer.Add(self.client_secret_box)
         self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
                                               flag=wx.LEFT | wx.BOTTOM,
                                               border=5)
         self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
         self.client_secret_box_err_sizer.Add(self.client_secret_err_label)
-        self.client_secret_ctner.Add(self.client_secret_box_err_sizer)
+        self.client_secret_container.Add(self.client_secret_box_err_sizer)
 
     def add_debug_checkbox(self):
 
@@ -557,8 +585,8 @@ class SettingsFrame(wx.Frame):
         self.client_id_icon.Hide()
         self.client_secret_icon.Hide()
 
-        self.url_sizer.Add(self.base_URL_icon, flag=wx.TOP,
-                           border=self.SIZER_BORDER)
+        self.url_container.Add(self.base_URL_icon, flag=wx.TOP,
+                               border=self.SIZER_BORDER)
 
     def show_warning_icon(self, targ, tooltip=""):
 
@@ -651,6 +679,7 @@ class SettingsFrame(wx.Frame):
 
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
+        self.log_panel.AppendText("\n")
         self.log_panel_sizer.Add(self.log_panel)
 
     def add_default_btn(self):
@@ -727,7 +756,8 @@ class SettingsFrame(wx.Frame):
                     format(key=key, key_value=self.config_dict[key])
 
             if key in changes_dict:
-                self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR)
+                self.log_color_print(msg, self.LOG_PNL_UPDATED_TXT_COLOR,
+                                     add_new_line=False)
             else:
                 self.log_panel.AppendText(msg)
 
@@ -767,7 +797,7 @@ class SettingsFrame(wx.Frame):
             self.print_config_to_log_panel(changes_dict)
 
         else:
-            self.log_color_print("No changes to save.\n",
+            self.log_color_print("No changes to save.",
                                  self.LOG_PNL_ERR_TXT_COLOR)
 
         self.attempt_connect_to_api()
@@ -833,7 +863,7 @@ class SettingsFrame(wx.Frame):
         else:
             self.Hide()  # running attached to iridaUploaderMain
 
-    def log_color_print(self, msg, color):
+    def log_color_print(self, msg, color, add_new_line=True):
 
         """
         print colored text to the log_panel
@@ -852,7 +882,8 @@ class SettingsFrame(wx.Frame):
 
         self.log_panel.AppendText(msg)
         self.log_panel.SetStyle(start_color, end_color, text_attrib)
-        self.log_panel.AppendText("\n")
+        if add_new_line:
+            self.log_panel.AppendText("\n")
 
     def get_changes_dict(self):
 
