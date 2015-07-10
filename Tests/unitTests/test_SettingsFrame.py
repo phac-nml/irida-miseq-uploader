@@ -304,6 +304,23 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.client_id_icon.Label, "hidden")
         self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
 
+    @patch("GUI.SettingsFrame.ApiCalls")
+    def test_unexpected_err(self, mock_apicalls):
+
+        mock_apicalls.side_effect = [SyntaxError()]
+        self.frame.attempt_connect_to_api()
+
+        assert_boxes_have_neutral_color(self)
+
+        self.assertIn("Unexpected error",
+                      self.frame.log_panel.GetValue())
+
+        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
+        self.assertEqual(self.frame.username_icon.Label, "hidden")
+        self.assertEqual(self.frame.password_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
+        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+
     @patch("GUI.SettingsFrame.SettingsFrame.attempt_connect_to_api")
     @patch("GUI.SettingsFrame.SettingsFrame.write_config_data")
     @patch("GUI.SettingsFrame.SettingsFrame.load_curr_config")
@@ -693,6 +710,9 @@ def load_test_suite():
         TestSettingsFrame("test_value_err"))
 
     gui_sf_test_suite.addTest(
+        TestSettingsFrame("test_unexpected_err"))
+
+    gui_sf_test_suite.addTest(
         TestSettingsFrame("test_restore_default_settings"))
 
     gui_sf_test_suite.addTest(
@@ -713,6 +733,7 @@ def load_test_suite():
         TestSettingsFrame("test_debug_invalid_client_id"))
     gui_sf_test_suite.addTest(
         TestSettingsFrame("test_debug_invalid_client_secret"))
+
 
     return gui_sf_test_suite
 
