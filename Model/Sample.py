@@ -35,5 +35,8 @@ class Sample:
     def set_seq_file(self, seq_file):
         self.seq_file = seq_file
 
+    def pop(self, key):
+        return self.sample_dict.pop(key)
+
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)
