@@ -133,7 +133,7 @@ class SettingsFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
-            flag=wx.ALL, border=self.SIZER_BORDER)
+            flag=wx.ALL | wx.ALIGN_CENTER, border=self.SIZER_BORDER)
 
         self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
         self.debug_log_container.Add(self.debug_sizer)
@@ -880,7 +880,11 @@ class SettingsFrame(wx.Frame):
         if len(changes_dict) > 0:
             changes_str = ""
             for item in changes_dict.items():
-                changes_str += " = ".join(item) + "\n"
+                if item[0] == "password":
+                    changes_str += ("password = {asterisk_str}".format(
+                                    asterisk_str=len(item[1]) * "*") + "\n")
+                else:
+                    changes_str += " = ".join(item) + "\n"
 
             dlg_msg = ("You have unsaved changes:\n" + changes_str + "\n" +
                        "Save changes?")
