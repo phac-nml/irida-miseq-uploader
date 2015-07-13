@@ -516,6 +516,10 @@ class TestSettingsFrame(unittest.TestCase):
             expected_txt = "You have unsaved changes"
             self.assertIn(expected_txt,
                           self.frame.prompt_dlg.Message)
+            expected_pw_hidden = "password = {asterisks}".format(
+                asterisks=len(new_password) * "*")
+            self.assertIn(expected_pw_hidden,
+                          self.frame.prompt_dlg.Message)
 
             self.frame.prompt_dlg.EndModal(wx.ID_YES)  # yes save changes
             self.assertFalse(self.frame.prompt_dlg.IsShown())
@@ -574,6 +578,10 @@ class TestSettingsFrame(unittest.TestCase):
 
             expected_txt = "You have unsaved changes"
             self.assertIn(expected_txt,
+                          self.frame.prompt_dlg.Message)
+            expected_pw_hidden = "password = {asterisks}".format(
+                asterisks=len(new_password) * "*")
+            self.assertIn(expected_pw_hidden,
                           self.frame.prompt_dlg.Message)
 
             self.frame.prompt_dlg.EndModal(wx.ID_NO)  # no don't save changes
