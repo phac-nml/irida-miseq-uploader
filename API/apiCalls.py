@@ -366,20 +366,27 @@ class ApiCalls:
 
         return json_res
 
-    def send_samples(self, project, samples_list):
+    def send_samples(self, samples_list):
         """
         post request to send sample(s) to the given project
 
         arguments:
-            project -- a Project object used to get project ID
             samples_list -- list containing Sample object(s) to send
 
         returns a dictionary containing the result of post request.
         """
 
         json_res = None
-        project_id = project.get_id()
+
+        proj_id_set = set([sample.pop("sampleProject")
+                           for sample in samples_list])
+        if len(proj_id_set) != 1:
+            raise SampleError("The samples in given samples list do not all " +
+                              "have the same project id. Found project ids: " +
+                              str(proj_id_set))
+
         try:
+            project_id = proj_id_set.pop()
             proj_URL = self.get_link(self.base_URL, "projects")
             url = self.get_link(proj_URL, "project/samples",
                                 targ_dict={
@@ -414,7 +421,7 @@ class ApiCalls:
 if __name__ == "__main__":
     base_URL = "http://localhost:8080/api"
     username = "admin"
-    password = "password1"
+    password = "Password1"
 
     path_to_module = path.dirname(__file__)
     if len(path_to_module) == 0:
@@ -442,10 +449,11 @@ if __name__ == "__main__":
     s_list = api.get_samples(proj_targ)
     print "#Sample count:", len(s_list)
 
-    s = Sample({"sequencerSampleId": "09-9999", "sampleName": "09-9999"})
+    s = Sample({"sequencerSampleId": "09-9999", "sampleName": "09-9999",
+                "sampleProject": "1"})
     # raises error on second run because ID won't be unique anymore for same
     # proj_targ
-    print api.send_samples(proj_targ, [s])
+    print api.send_samples([s])
 
     s_list = api.get_samples(proj_targ)
     print "#Sample count:", len(s_list)
