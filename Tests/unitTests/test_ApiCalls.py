@@ -902,12 +902,11 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "1"
         }
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
         sample = API.apiCalls.Sample(sample_dict)
-        json_res = api.send_samples(proj, [sample])
+        json_res = api.send_samples([sample])
 
         self.assertEqual(json_res, json_dict)
 
@@ -926,13 +925,13 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = MagicMock(side_effect=[StopIteration])
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "-1")
-        sample = API.apiCalls.Sample({})
+        proj_id = "-1"
+        sample = API.apiCalls.Sample({"sampleProject": proj_id})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            api.send_samples(proj, [sample])
+            api.send_samples([sample])
 
-        self.assertTrue(proj.get_id() + " doesn't exist"
+        self.assertTrue(proj_id + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -960,11 +959,10 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
-        sample = API.apiCalls.Sample({})
+        sample = API.apiCalls.Sample({"sampleProject": "1"})
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.send_samples(proj, [sample])
+            api.send_samples([sample])
 
         self.assertTrue(str(session_response.status_code) + " " +
                         session_response.text in str(err.exception))

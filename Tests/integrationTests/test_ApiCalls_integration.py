@@ -108,12 +108,14 @@ class TestApiIntegration(unittest.TestCase):
         sample_dict = {
             "sampleName": "integration_testSample",
             "description": "integration_testSample description",
-            "sequencerSampleId": "99-9999"
+            "sequencerSampleId": "99-9999",
+            "sampleProject": proj.get_id()
             # sequencer sample ID must have at least 3 characters
         }
 
         sample = Sample(sample_dict)
-        server_response = api.send_samples(proj, [sample])
+        server_response = api.send_samples([sample])
+        #  sampleProject key already gets removed by `pop` in send_samples
         self.assertEqual(sample_dict["sampleName"],
                          server_response["resource"]["sampleName"])
         self.assertEqual(sample_dict["description"],
