@@ -4,7 +4,6 @@ import httplib
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
-from ConfigParser import RawConfigParser
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -16,6 +15,7 @@ from Model.Sample import Sample
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
+from Exceptions.SequenceFileError import SequenceFileError
 from Validation.offlineValidation import validate_URL_form
 
 
@@ -28,9 +28,7 @@ class ApiCalls:
 
         arguments:
             client_id -- client_id for creating access token.
-                Found in iridaUploader/config.conf
             client_secret -- client_secret for creating access token.
-                Found in iridaUploader/config.conf
             base_URL -- url of the IRIDA server
             username -- username for server
             password -- password for given username
@@ -369,98 +367,121 @@ class ApiCalls:
     def send_samples(self, samples_list):
         """
         post request to send sample(s) to the given project
+        the project that the sample will be sent to is in its dictionary's
+        "sampleProject" key
 
         arguments:
             samples_list -- list containing Sample object(s) to send
 
-        returns a dictionary containing the result of post request.
+        returns a list containing dictionaries of the result of post request.
         """
 
-        json_res = None
-
-        proj_id_set = set([sample.pop("sampleProject")
-                           for sample in samples_list])
-        if len(proj_id_set) != 1:
-            raise SampleError("The samples in given samples list do not all " +
-                              "have the same project id. Found project ids: " +
-                              str(proj_id_set))
-
-        try:
-            project_id = proj_id_set.pop()
-            proj_URL = self.get_link(self.base_URL, "projects")
-            url = self.get_link(proj_URL, "project/samples",
-                                targ_dict={
-                                    "key": "identifier",
-                                    "value": project_id
-                                })
-
-        except StopIteration:
-            raise ProjectError("The given project ID: " +
-                               project_id + " doesn't exist")
-
-        headers = {
-            "headers": {
-                "Content-Type": "application/json"
-            }
-        }
+        json_res_list = []
 
         for sample in samples_list:
+
+            try:
+                project_id = sample["sampleProject"]
+                proj_URL = self.get_link(self.base_URL, "projects")
+                url = self.get_link(proj_URL, "project/samples",
+                                    targ_dict={
+                                        "key": "identifier",
+                                        "value": project_id
+                                    })
+
+            except StopIteration:
+                raise ProjectError("The given project ID: " +
+                                   project_id + " doesn't exist")
+
+            headers = {
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            }
+
+            proj_holder = sample.pop("sampleProject")
+            # API doesn't accept sampleProject key. Temporarily remove when
+            # sending to api and then re-add after it has been sent.
             json_obj = json.dumps(sample.get_dict())
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
                 json_res = json.loads(response.text)
+                json_res_list.append(json_res)
             else:
-                raise SampleError("Error: " +
-                                  str(response.status_code) + " " +
-                                  response.text)
+                raise SampleError("Error {status_code}: {err_msg}.\n\
+                                  Sample data: {sample_data}".format(
+                                  status_code=str(response.status_code),
+                                  err_msg=response.text,
+                                  sample_data=str(sample)))
 
-        return json_res
+            sample["sampleProject"] = proj_holder
 
+        return json_res_list
 
-if __name__ == "__main__":
-    base_URL = "http://localhost:8080/api"
-    username = "admin"
-    password = "Password1"
+    def send_sequence_file(self, samples_list):
+        """
+        send pair sequence files found in each sample in samples_list
+        the pair files to be sent is in sample.get_pair_files()
 
-    path_to_module = path.dirname(__file__)
-    if len(path_to_module) == 0:
-        path_to_module = "."
+        arguments:
+            samples_list -- list containing Sample object(s)
 
-    conf_Parser = RawConfigParser()
-    conf_Parser.read(path_to_module + "/../config.conf")
-    client_id = conf_Parser.get("apiCalls", "client_id")
-    client_secret = conf_Parser.get("apiCalls", "client_secret")
+        returns a list containing dictionaries of the result of post request.
+        """
 
-    api = ApiCalls(client_id, client_secret, base_URL, username, password)
+        json_res_list = []
 
-    proj_list = api.get_projects()
-    print "#Project count:", len(proj_list)
+        for sample in samples_list:
 
-    p = Project("projectX", proj_description="orange")
-    print api.send_project(p)
+            try:
+                project_id = sample["sampleProject"]
+                proj_URL = self.get_link(self.base_URL, "projects")
+                samples_url = self.get_link(proj_URL, "project/samples",
+                                            targ_dict={
+                                                "key": "identifier",
+                                                "value": project_id
+                                            })
+            except StopIteration:
+                raise ProjectError("The given project ID: " +
+                                   project_id + " doesn't exist")
 
-    proj_list = api.get_projects()
-    print "#Project count:", len(proj_list)
+            try:
+                sample_id = sample["sequencerSampleId"]
+                seq_url = self.get_link(samples_url, "sample/sequenceFiles",
+                                        targ_dict={
+                                            "key": "sequencerSampleId",
+                                            "value": sample_id
+                                        })
+            except StopIteration:
+                raise SampleError("The given sample ID: " +
+                                  sample_id + " doesn't exist")
 
-    print "#" * 20
+            url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
-    proj_targ = proj_list[0]
-    s_list = api.get_samples(proj_targ)
-    print "#Sample count:", len(s_list)
+            files = {
+                    "file1": open(sample.get_pair_files()[0], "rb"),
+                    "parameters1": ("", "{\"parameters1\": \"p1\"}",
+                                    "application/json"),
+                    "file2": open(sample.get_pair_files()[1], "rb"),
+                    "parameters2": ("", "{\"parameters2\": \"p2\"}",
+                                    "application/json")
+            }
 
-    s = Sample({"sequencerSampleId": "09-9999", "sampleName": "09-9999",
-                "sampleProject": "1"})
-    # raises error on second run because ID won't be unique anymore for same
-    # proj_targ
-    print api.send_samples([s])
+            # https://github.com/kennethreitz/requests/issues/1495
+            # content-type for parameters: ('filename', 'data', 'Content-Type)
 
-    s_list = api.get_samples(proj_targ)
-    print "#Sample count:", len(s_list)
+            response = self.session.post(url, files=files)
+            # print "Headers:", response.request.headers
+            # print "Body:", response.request.body
+            if response.status_code == httplib.CREATED:
+                json_res = json.loads(response.text)
+                json_res_list.append(json_res)
+            else:
+                raise SequenceFileError("Error {status_code}: {err_msg}.\n\
+                                        Upload data: {ud}".format(
+                                        status_code=str(response.status_code),
+                                        err_msg=response.text),
+                                        ud=str(files))
 
-    print "#" * 20
-
-    proj_targ = proj_list[3]
-    s_list = api.get_samples(proj_targ)
-    seq_files = api.get_sequence_files(proj_targ, s_list[len(s_list) - 1])
-    print seq_files
+        return json_res_list
