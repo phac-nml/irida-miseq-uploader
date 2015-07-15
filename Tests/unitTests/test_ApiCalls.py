@@ -881,7 +881,7 @@ class TestApiCalls(unittest.TestCase):
                 "sequencerSampleId": "03-3333",
                 "description": "The 53rd sample",
                 "sampleName": "03-3333",
-                "identifier": "1"
+                "sampleProject": "1"
             }
         }
 
@@ -906,8 +906,11 @@ class TestApiCalls(unittest.TestCase):
         }
 
         sample = API.apiCalls.Sample(sample_dict)
-        json_res = api.send_samples([sample])
+        json_res_list = api.send_samples([sample])
 
+        self.assertEqual(len(json_res_list), 1)
+
+        json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -964,7 +967,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
 
-        self.assertTrue(str(session_response.status_code) + " " +
+        self.assertTrue(str(session_response.status_code) + ": " +
                         session_response.text in str(err.exception))
 
 

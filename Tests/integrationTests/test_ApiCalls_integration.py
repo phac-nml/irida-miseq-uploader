@@ -114,8 +114,11 @@ class TestApiIntegration(unittest.TestCase):
         }
 
         sample = Sample(sample_dict)
-        server_response = api.send_samples([sample])
-        #  sampleProject key already gets removed by `pop` in send_samples
+        server_response_list = api.send_samples([sample])
+        self.assertEqual(len(server_response_list), 1)
+
+        server_response = server_response_list[0]
+
         self.assertEqual(sample_dict["sampleName"],
                          server_response["resource"]["sampleName"])
         self.assertEqual(sample_dict["description"],
