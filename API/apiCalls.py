@@ -276,19 +276,19 @@ class ApiCalls:
 
         return sample_list
 
-    def get_sequence_files(self, project, sample):
+    def get_sequence_files(self, sample):
         """
         API call to api/projects/project_id/sample_id/sequenceFiles
 
         arguments:
-            project -- a Project object used to get project_id
+
             sample -- a Sample object used to get sample_id
 
 
         returns list of sequencefile dictionary for given sample_id
         """
 
-        project_id = project.get_id()
+        project_id = sample["sampleProject"]
         sample_id = sample.get_id()
 
         try:
@@ -419,7 +419,7 @@ class ApiCalls:
 
         return json_res_list
 
-    def send_sequence_file(self, samples_list):
+    def send_pair_sequence_files(self, samples_list):
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
