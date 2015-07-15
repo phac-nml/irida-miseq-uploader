@@ -23,6 +23,9 @@ class Sample:
             ret_val = self.sample_dict[key]
         return ret_val
 
+    def __setitem__(self, key, value):
+        self.sample_dict[key] = value
+
     def get(self, key):
         return self.__getitem__(key)
 
