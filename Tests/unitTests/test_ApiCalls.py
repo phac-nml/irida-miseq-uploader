@@ -8,6 +8,7 @@ from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
+from Model.SequenceFile import SequenceFile
 
 import API.apiCalls
 
@@ -970,11 +971,71 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(str(session_response.status_code) + ": " +
                         session_response.text in str(err.exception))
 
+    @patch("__builtin__.open")
+    @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_):
+
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        json_dict = {
+            "resource": [
+                {
+                    "file": "03-3333_S1_L001_R1_001.fastq.gz"
+                },
+                {
+                    "file": "03-3333_S1_L001_R2_001.fastq.gz"
+                }
+            ]
+        }
+
+        json_obj = json.dumps(json_dict)
+
+        session_response = Foo()
+        setattr(session_response, "status_code", httplib.CREATED)
+        setattr(session_response, "text", json_obj)
+
+        session_post = MagicMock(side_effect=[session_response])
+        session = Foo()
+        setattr(session, "post", session_post)
+
+        api.get_link = lambda x, y, targ_dict="": None
+        api.session = session
+
+        sample_dict = {
+            "sequencerSampleId": "03-3333",
+            "description": "The 53rd sample",
+            "sampleName": "03-3333",
+            "sampleProject": "1"
+        }
+
+        sample = API.apiCalls.Sample(sample_dict)
+        pair_files = ["03-3333_S1_L001_R1_001.fastq.gz",
+                      "03-3333_S1_L001_R2_001.fastq.gz"]
+        seq_file = SequenceFile({}, pair_files)
+        sample.set_seq_file(seq_file)
+        json_res_list = api.send_pair_sequence_files([sample])
+
+        self.assertEqual(len(json_res_list), 1)
+
+        json_res = json_res_list[0]
+        self.assertEqual(json_res, json_dict["resource"])
+
+        mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
+        mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
+
 
 def load_test_suite():
 
     api_test_suite = unittest.TestSuite()
-
+    
     api_test_suite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
     api_test_suite.addTest(
         TestApiCalls("test_validate_URL_existence_url_raise_err"))
@@ -1018,6 +1079,15 @@ def load_test_suite():
     api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_proj_id"))
     api_test_suite.addTest(
         TestApiCalls("test_send_samples_invalid_server_res"))
+
+    api_test_suite.addTest(TestApiCalls("test_send_pair_sequence_files_valid"))
+    #api_test_suite.addTest(
+    #    TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
+    #api_test_suite.addTest(
+    #    TestApiCalls("test_send_pair_sequence_files_invalid_sample_id"))
+    #api_test_suite.addTest(
+    #    TestApiCalls("test_send_pair_sequence_files_invalid_server_res"))
+
 
     return api_test_suite
 
