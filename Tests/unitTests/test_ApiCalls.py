@@ -709,12 +709,11 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "1"
         }
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
         sample = API.apiCalls.Sample(sample_dict)
-        seqRes = api.get_sequence_files(proj, sample)
+        seqRes = api.get_sequence_files(sample)
 
         self.assertEqual(len(seqRes), 1)
         self.assertEqual(seq_dict.items(), seqRes[0].items())
@@ -733,13 +732,12 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = MagicMock(side_effect=[StopIteration])
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "999")
-        sample = API.apiCalls.Sample({})
+        sample = API.apiCalls.Sample({"sampleProject": "999"})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            seqRes = api.get_sequence_files(proj, sample)
+            seqRes = api.get_sequence_files(sample)
 
-        self.assertTrue(proj.get_id() + " doesn't exist"
+        self.assertTrue(sample["sampleProject"] + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -760,13 +758,13 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "999"
         }
-        proj = API.apiCalls.Project("project1", "projectDescription", "999")
+
         sample = API.apiCalls.Sample(sample_dict)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.get_sequence_files(proj, sample)
+            api.get_sequence_files(sample)
 
         self.assertTrue(sample.get_id() + " doesn't exist"
                         in str(err.exception))
@@ -1026,7 +1024,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(len(json_res_list), 1)
 
         json_res = json_res_list[0]
-        self.assertEqual(json_res, json_dict["resource"])
+        self.assertEqual(json_res, json_dict)
 
         mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
         mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
@@ -1035,7 +1033,7 @@ class TestApiCalls(unittest.TestCase):
 def load_test_suite():
 
     api_test_suite = unittest.TestSuite()
-    
+
     api_test_suite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))
     api_test_suite.addTest(
         TestApiCalls("test_validate_URL_existence_url_raise_err"))
