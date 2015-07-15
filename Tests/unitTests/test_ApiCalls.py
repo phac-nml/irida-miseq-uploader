@@ -1029,6 +1029,30 @@ class TestApiCalls(unittest.TestCase):
         mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
         mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
 
+    @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_pair_sequence_files_invalid_proj_id(self, mock_cs):
+
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        api.get_link = MagicMock(side_effect=[StopIteration])
+
+        proj_id = "-1"
+        sample = API.apiCalls.Sample({"sampleProject": proj_id})
+
+        with self.assertRaises(API.apiCalls.ProjectError) as err:
+            api.send_pair_sequence_files([sample])
+
+        self.assertTrue(proj_id + " doesn't exist"
+                        in str(err.exception))
+
 
 def load_test_suite():
 
@@ -1079,13 +1103,12 @@ def load_test_suite():
         TestApiCalls("test_send_samples_invalid_server_res"))
 
     api_test_suite.addTest(TestApiCalls("test_send_pair_sequence_files_valid"))
-    #api_test_suite.addTest(
-    #    TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
+    api_test_suite.addTest(
+        TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
     #api_test_suite.addTest(
     #    TestApiCalls("test_send_pair_sequence_files_invalid_sample_id"))
     #api_test_suite.addTest(
     #    TestApiCalls("test_send_pair_sequence_files_invalid_server_res"))
-
 
     return api_test_suite
 
