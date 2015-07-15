@@ -1,3 +1,4 @@
+import re
 from os import walk, path
 from fnmatch import filter as fnfilter
 from csv import reader
@@ -87,10 +88,11 @@ def complete_parse_samples(sample_sheet_file):
 
     sample_list = parse_samples(sample_sheet_file)
     data_dir = path.dirname(sample_sheet_file)
+    fastq_files = get_all_fastq_files(data_dir)
     for sample in sample_list:
 
         properties_dict = parse_out_sequence_file(sample)
-        pf_list = get_pair_files(data_dir, sample.get_id())
+        pf_list = get_pair_files(fastq_files, sample.get_id())
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
@@ -214,23 +216,49 @@ def get_csv_reader(sample_sheet_file):
     return csv_reader
 
 
-def get_pair_files(data_dir, sample_id):
+def get_all_fastq_files(data_dir):
+    """
+    recursively go down data_dir and get all fastq files
+
+    arguments:
+            data_dir -- the directory that has SampleSheet.csv in it
+
+    return list containing path for fastq files
+    """
+
+    pattern = "*.fastq.*"
+    fastq_file_list = recursive_find(data_dir, pattern)
+    fastq_file_list.sort()
+
+    return fastq_file_list
+
+
+def get_pair_files(fastq_file_list, sample_id):
 
     """
     find the pair sequence files for the given sample_id
     raises an error if no sequence pair files found
 
     arguments:
-            data_dir -- the directory that has SampleSheet.csv in it
+            fastq_file_list -- list containing path for fastq files
             sample_id -- ID of the sample for the pair files
 
 
-    returns a list containing the path of the pair files starting from data_dir
+    returns a list containing the path of the pair files
     """
 
-    pattern = sample_id + "*.fastq.gz"
-    pair_file_list = recursive_find(data_dir, pattern)
-    pair_file_list.sort()
+    pair_file_list = []
+
+    pattern = re.escape(sample_id) + "(.+)_R(\\d+)_\\S+\\.fastq.*$"
+    # from https://irida.corefacility.ca/gitlab/irida/irida-tools/blob/
+    # development/src/main/java/ca/corefacility/bioinformatics/
+    # irida/iridatools/sequencer/miseq/MiSeqRunUploader.java#L44
+
+    for fastq_file in fastq_file_list:
+        match = re.search(pattern, fastq_file)
+        if match is not None:
+            pair_file_list.append(fastq_file)
+            pair_file_list.sort()
 
     return pair_file_list
 
