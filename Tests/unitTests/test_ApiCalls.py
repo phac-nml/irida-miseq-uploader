@@ -1135,7 +1135,7 @@ def load_test_suite():
         TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
     api_test_suite.addTest(
         TestApiCalls("test_send_pair_sequence_files_invalid_sample_id"))
-    #api_test_suite.addTest(
+    # api_test_suite.addTest(
     #    TestApiCalls("test_send_pair_sequence_files_invalid_server_res"))
 
     return api_test_suite
