@@ -1,5 +1,6 @@
 import json
 
+
 class SampleJsonEncoder(json.JSONEncoder):
 
     def encode(self, obj):
