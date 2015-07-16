@@ -12,6 +12,7 @@ from requests.exceptions import HTTPError as request_HTTPError
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
 from Model.Sample import Sample
+from Model.SampleJsonEncoder import SampleJsonEncoder
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
@@ -399,24 +400,18 @@ class ApiCalls:
                 }
             }
 
-            proj_holder = sample.pop("sampleProject")
-            # API doesn't accept sampleProject key. Temporarily remove when
-            # sending to api and then re-add after it has been sent.
-            json_obj = json.dumps(sample.get_dict())
+            json_obj = json.dumps(sample.get_dict(), cls=SampleJsonEncoder)
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
             else:
-                raise SampleError("Error {status_code}: {err_msg}.\n\
-                                  Sample data: {sample_data}".format(
+                raise SampleError(("Error {status_code}: {err_msg}.\n" +
+                                  "Sample data: {sample_data}").format(
                                   status_code=str(response.status_code),
                                   err_msg=response.text,
                                   sample_data=str(sample)))
-
-            sample["sampleProject"] = proj_holder
-
         return json_res_list
 
     def send_pair_sequence_files(self, samples_list):
