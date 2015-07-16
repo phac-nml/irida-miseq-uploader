@@ -289,7 +289,7 @@ class ApiCalls:
         returns list of sequencefile dictionary for given sample_id
         """
 
-        project_id = sample["sampleProject"]
+        project_id = sample.get_project_id()
         sample_id = sample.get_id()
 
         try:
@@ -382,7 +382,7 @@ class ApiCalls:
         for sample in samples_list:
 
             try:
-                project_id = sample["sampleProject"]
+                project_id = sample.get_project_id()
                 proj_URL = self.get_link(self.base_URL, "projects")
                 url = self.get_link(proj_URL, "project/samples",
                                     targ_dict={
@@ -430,7 +430,7 @@ class ApiCalls:
         for sample in samples_list:
 
             try:
-                project_id = sample["sampleProject"]
+                project_id = sample.get_project_id()
                 proj_URL = self.get_link(self.base_URL, "projects")
                 samples_url = self.get_link(proj_URL, "project/samples",
                                             targ_dict={
