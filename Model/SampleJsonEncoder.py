@@ -1,11 +1,13 @@
 import json
-from copy import deepcopy
 
 class SampleJsonEncoder(json.JSONEncoder):
 
     def encode(self, obj):
 
-        new_obj = deepcopy(obj)
-        new_obj.pop("sampleProject")
+        item = obj.pop("sampleProject")
 
-        return json.JSONEncoder.encode(self, new_obj)
+        res = json.JSONEncoder.encode(self, obj)
+
+        obj["sampleProject"] = item
+
+        return res
