@@ -14,6 +14,9 @@ class Sample:
     def get_id(self):
         return self.get("sequencerSampleId")
 
+    def get_project_id(self):
+        return self.get("sampleProject")
+
     def get_dict(self):
         return self.sample_dict
 
