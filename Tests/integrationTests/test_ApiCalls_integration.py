@@ -1,9 +1,11 @@
 import unittest
+import ntpath
 from os import path
 
 from API.apiCalls import ApiCalls
 from Model.Project import Project
 from Model.Sample import Sample
+from Parsers.miseqParser import complete_parse_samples
 
 from apiCalls_integration_data_setup import SetupIridaData
 
@@ -132,8 +134,59 @@ class TestApiIntegration(unittest.TestCase):
         self.assertTrue(len(sample_list) == 1)
 
         added_sample = sample_list[0]
+        sample.pop("sampleProject")  # remove it because it's not sent to API
+        # but it's still used to identify proj id
         for key in sample_dict.keys():
-            self.assertEqual(sample[key], added_sample.get(key))
+            self.assertEqual(sample[key], added_sample[key])
+
+    def test_get_and_send_sequence_files(self):
+
+        api = ApiCalls(
+            client_id=client_id,
+            client_secret=client_secret,
+            base_URL=base_URL,
+            username=username,
+            password=password
+        )
+
+        sample_sheet_file = "./fake_ngs_data/SampleSheet.csv"
+        samples_list = complete_parse_samples(sample_sheet_file)
+
+        # check that the sample with id 99-9999 (from SampleSheet.csv)
+        # has no sequence files
+        seq_file_list = []
+        for sample in samples_list:
+            res = api.get_sequence_files(sample)
+            if len(res) > 0:
+                seq_file_list.append(res)
+        self.assertEqual(len(seq_file_list), 0)
+
+        serv_res_list = api.send_pair_sequence_files(samples_list)[0]
+
+        # check that the sample with id 99-9999 (from SampleSheet.csv)
+        # has the one pair that we just uploaded.
+        seq_file_list = []
+        for sample in samples_list:
+            res = api.get_sequence_files(sample)
+            if len(res) > 0:
+                seq_file_list.append(res)
+
+        self.assertEqual(len(seq_file_list), 1)
+
+        filename_list = [serv_resp["resource"]["object"]["fileName"]
+                         for serv_resp in
+                         serv_res_list["resource"]["resources"]]
+        self.assertEqual(len(filename_list), 2)
+
+        # check that the pair files in each sample are found
+        # in the server response
+        for sample in samples_list:
+            self.assertIn(ntpath.basename(sample.get_pair_files()[0]),
+                          filename_list)
+            self.assertIn(ntpath.basename(sample.get_pair_files()[1]),
+                          filename_list)
+
+        self.assertEqual(len(serv_res_list), len(samples_list))
 
 
 def load_test_suite():
@@ -146,8 +199,8 @@ def load_test_suite():
         TestApiIntegration("test_get_and_send_project"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_samples"))
-    # api_integration_test_suite.addTest(
-    #    TestApiIntegration("test_get_sequence_files"))
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_get_and_send_sequence_files"))
 
     return api_integration_test_suite
 
