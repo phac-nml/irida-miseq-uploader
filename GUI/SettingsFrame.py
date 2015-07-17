@@ -173,11 +173,14 @@ class SettingsFrame(wx.Frame):
 
     def create_api_obj(self):
 
-        ApiCalls(self.config_dict["client_id"],
-                 self.config_dict["client_secret"],
-                 self.config_dict["baseURL"],
-                 self.config_dict["username"],
-                 self.config_dict["password"])
+        api = ApiCalls(self.config_dict["client_id"],
+                       self.config_dict["client_secret"],
+                       self.config_dict["baseURL"],
+                       self.config_dict["username"],
+                       self.config_dict["password"])
+
+        if self.parent is not None:
+            self.parent.api = api
 
     def attempt_connect_to_api(self):
 
@@ -414,7 +417,6 @@ class SettingsFrame(wx.Frame):
         hide all error labels
         hide all icons
         """
-
 
         self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)

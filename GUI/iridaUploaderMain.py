@@ -5,12 +5,14 @@ from fnmatch import filter as fnfilter
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 
-from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
-                                 get_pair_files)
+from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list)
+from Validation.onlineValidation import project_exists, sample_exists
+from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame
@@ -37,6 +39,7 @@ class MainFrame(wx.Frame):
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.p_bar_percent = 0
+        self.api = None
 
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
         self.LONG_BOX_SIZE = (650, 32)  # choose directory
@@ -276,17 +279,24 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        print("Server URL: " + self.base_URL + "\n" + "User: " +
-              self.username + "\n" + "Password: " +
-              self.password.strip())
-        self.p_bar_percent += 1
-        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
-        self.progress_bar.SetValue(self.p_bar_percent)
-
+        api = self.api
+        import threading
+        workers = []
         for sr in self.seq_run_list:
-            print sr.get_workflow()
-            pprint([sr.get_pair_files(sample.get_id())
-                    for sample in sr.get_sample_list()])
+            for sample in sr.get_sample_list():
+
+                if project_exists(api, sample.get("sampleProject")) is False:
+                    raise ProjectError("Project ID: {id} doesn't exist".format(
+                                        id=sample.get("sampleProject")))
+
+                if sample_exists(api, sample) is False:
+                    api.send_samples(sr.get_sample_list())
+
+            # api.send_pair_sequence_files(sr.get_sample_list(), self)
+            t = threading.Thread(target=api.send_pair_sequence_files,
+                                 args=(sr.get_sample_list(), self))
+            workers.append(t)
+            t.start()
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
