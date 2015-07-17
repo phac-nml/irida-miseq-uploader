@@ -294,7 +294,7 @@ class ApiCalls:
         returns list of sequencefile dictionary for given sample_id
         """
 
-        project_id = sample["sampleProject"]
+        project_id = sample.get_project_id()
         sample_id = sample.get_id()
 
         try:
@@ -387,7 +387,7 @@ class ApiCalls:
         for sample in samples_list:
 
             try:
-                project_id = sample["sampleProject"]
+                project_id = sample.get_project_id()
                 proj_URL = self.get_link(self.base_URL, "projects")
                 url = self.get_link(proj_URL, "project/samples",
                                     targ_dict={
@@ -405,24 +405,18 @@ class ApiCalls:
                 }
             }
 
-            proj_holder = sample.pop("sampleProject")
-            # API doesn't accept sampleProject key. Temporarily remove when
-            # sending to api and then re-add after it has been sent.
-            json_obj = json.dumps(sample.get_dict())
+            json_obj = json.dumps(sample, cls=Sample.JsonEncoder)
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
             else:
-                raise SampleError("Error {status_code}: {err_msg}.\n\
-                                  Sample data: {sample_data}".format(
+                raise SampleError(("Error {status_code}: {err_msg}.\n" +
+                                  "Sample data: {sample_data}").format(
                                   status_code=str(response.status_code),
                                   err_msg=response.text,
                                   sample_data=str(sample)))
-
-            sample["sampleProject"] = proj_holder
-
         return json_res_list
 
     def send_pair_sequence_files(self, samples_list, gui_main=None):
@@ -454,7 +448,7 @@ class ApiCalls:
         for sample in samples_list:
 
             try:
-                project_id = sample["sampleProject"]
+                project_id = sample.get_project_id()
                 proj_URL = self.get_link(self.base_URL, "projects")
                 samples_url = self.get_link(proj_URL, "project/samples",
                                             targ_dict={
@@ -466,7 +460,7 @@ class ApiCalls:
                                    project_id + " doesn't exist")
 
             try:
-                sample_id = sample["sequencerSampleId"]
+                sample_id = sample.get_id()
                 seq_url = self.get_link(samples_url, "sample/sequenceFiles",
                                         targ_dict={
                                             "key": "sequencerSampleId",

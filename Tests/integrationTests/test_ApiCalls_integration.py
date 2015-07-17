@@ -16,6 +16,11 @@ client_id = ""
 client_secret = ""
 
 
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
+
+
 class TestApiIntegration(unittest.TestCase):
 
     def setUp(self):
@@ -149,7 +154,8 @@ class TestApiIntegration(unittest.TestCase):
             password=password
         )
 
-        sample_sheet_file = "./fake_ngs_data/SampleSheet.csv"
+        sample_sheet_file = path.join(path_to_module, "fake_ngs_data",
+                                      "SampleSheet.csv")
         samples_list = complete_parse_samples(sample_sheet_file)
 
         # check that the sample with id 99-9999 (from SampleSheet.csv)

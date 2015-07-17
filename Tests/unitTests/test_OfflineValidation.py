@@ -1,7 +1,8 @@
 import unittest
 from os import path
 
-from Parsers.miseqParser import parse_samples, get_pair_files
+from Parsers.miseqParser import (parse_samples, get_pair_files,
+                                 get_all_fastq_files)
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list,
@@ -69,9 +70,10 @@ class TestOfflineValidation(unittest.TestCase):
     def test_validate_pair_files_valid(self):
 
         data_dir = path.join(path_to_module, "fake_ngs_data")
+        fastq_files = get_all_fastq_files(data_dir)
 
         sample_id = "01-1111"
-        pf_list1 = get_pair_files(data_dir, sample_id)
+        pf_list1 = get_pair_files(fastq_files, sample_id)
 
         self.assertEqual(len(pf_list1), 2)
         v_res1 = validate_pair_files(pf_list1)
@@ -81,7 +83,7 @@ class TestOfflineValidation(unittest.TestCase):
         self.assertTrue("No error messages" in v_res1.get_errors())
 
         sample_id = "02-2222"
-        pf_list2 = get_pair_files(data_dir, sample_id)
+        pf_list2 = get_pair_files(fastq_files, sample_id)
 
         self.assertEqual(len(pf_list2), 2)
         v_res2 = validate_pair_files(pf_list2)
@@ -101,9 +103,10 @@ class TestOfflineValidation(unittest.TestCase):
     def test_validate_pair_files_invalid_odd_length(self):
 
         data_dir = path.join(path_to_module, "testSeqPairFiles", "oddLength")
+        fastq_files = get_all_fastq_files(data_dir)
 
         sample_id = "01-1111"
-        pf_list = get_pair_files(data_dir, sample_id)
+        pf_list = get_pair_files(fastq_files, sample_id)
 
         self.assertEqual(len(pf_list), 1)
         v_res = validate_pair_files(pf_list)
@@ -117,9 +120,10 @@ class TestOfflineValidation(unittest.TestCase):
     def test_validate_pair_files_invalid_no_pair(self):
 
         data_dir = path.join(path_to_module, "testSeqPairFiles", "noPair")
+        fastq_files = get_all_fastq_files(data_dir)
 
         sample_id = "01-1111"
-        pf_list1 = get_pair_files(data_dir, sample_id)
+        pf_list1 = get_pair_files(fastq_files, sample_id)
         # 01-1111_S1_L001_R1_001.fastq.gz, 01-1111_S1_L001_R9_001.fastq.gz
 
         self.assertEqual(len(pf_list1), 2)
@@ -130,7 +134,7 @@ class TestOfflineValidation(unittest.TestCase):
         self.assertTrue("No pair sequence file found" in v_res1.get_errors())
 
         sample_id = "02-2222"
-        pf_list2 = get_pair_files(data_dir, sample_id)
+        pf_list2 = get_pair_files(fastq_files, sample_id)
         # 02-2222_S1_L001_R2_001.fastq.gz, 02-2222_S1_L001_R8_001.fastq.gz
 
         self.assertEqual(len(pf_list2), 2)
@@ -154,8 +158,10 @@ class TestOfflineValidation(unittest.TestCase):
         data_dir = path.join(
             path_to_module, "testSeqPairFiles", "invalidSeqFiles")
 
+        fastq_files = get_all_fastq_files(data_dir)
+
         sample_id = "01-1111"
-        pf_list1 = get_pair_files(data_dir, sample_id)
+        pf_list1 = get_pair_files(fastq_files, sample_id)
         # 01-1111_S1_L001_R0_001.fastq.gz, 01-1111_S1_L001_R3_001.fastq.gz
 
         self.assertEqual(len(pf_list1), 2)
@@ -168,7 +174,7 @@ class TestOfflineValidation(unittest.TestCase):
             in v_res1.get_errors())
 
         sample_id = "02-2222"
-        pf_list2 = get_pair_files(data_dir, sample_id)
+        pf_list2 = get_pair_files(fastq_files, sample_id)
         # 02-2222_S1_L001_R5_001.fastq.gz, 02-2222_S1_L001_R4_001.fastq.gz
 
         self.assertEqual(len(pf_list2), 2)
