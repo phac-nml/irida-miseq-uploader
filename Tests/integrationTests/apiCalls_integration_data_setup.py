@@ -29,13 +29,15 @@ class SetupIridaData:
 
         self.TIMEOUT = 600  # seconds
 
+        db_name = "irida_uploader_test"
+
         self.IRIDA_DB_RESET = 'echo '\
-            '"drop database if exists irida_test;'\
-            'create database irida_test;'\
+            '"drop database if exists ' + db_name + ';'\
+            'create database ' + db_name + ';'\
             '"| mysql -u test -ptest'
 
         self.IRIDA_CMD = ['mvn', 'clean', 'jetty:run',
-                          '-Djdbc.url=jdbc:mysql://localhost:3306/irida_test',
+                          '-Djdbc.url=jdbc:mysql://localhost:3306/' + db_name,
                           '-Djdbc.username=test', '-Djdbc.password=test',
                           '-Dliquibase.update.database.schema=true',
                           '-Dhibernate.hbm2ddl.auto=',
