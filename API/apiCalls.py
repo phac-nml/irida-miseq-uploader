@@ -8,6 +8,7 @@ from urlparse import urljoin
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
+from requests_toolbelt.multipart import encoder
 
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
@@ -245,7 +246,7 @@ class ApiCalls:
 
         return project_list
 
-    def get_samples(self, project):
+    def get_samples(self, project=None, sample=None):
         """
         API call to api/projects/project_id/samples
 
@@ -256,7 +257,12 @@ class ApiCalls:
             each sample is a Sample object.
         """
 
-        project_id = project.get_id()
+        if sample is not None:
+            project_id = sample["sampleProject"]
+        elif project is not None:
+            project_id = project.get_id()
+        else:
+            raise Exception("Missing project or sample object.")
 
         try:
             proj_URL = self.get_link(self.base_URL, "projects")
@@ -419,7 +425,7 @@ class ApiCalls:
 
         return json_res_list
 
-    def send_pair_sequence_files(self, samples_list):
+    def send_pair_sequence_files(self, samples_list, gui_main=None):
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
@@ -429,6 +435,19 @@ class ApiCalls:
 
         returns a list containing dictionaries of the result of post request.
         """
+        def callback(monitor):
+
+            monitor.upload_pct = ((monitor.bytes_read * 1.0) /
+                                  (monitor.len * 1.0))
+            monitor.upload_pct = round(monitor.upload_pct, 2)
+            if monitor.prev_pct != monitor.upload_pct:
+                print "{pct}%".format(pct=monitor.upload_pct)
+                gui_main.progress_bar.SetValue(monitor.upload_pct * 100)
+                gui_main.progress_label.SetLabel(str(monitor.upload_pct*100) +
+                                                 "%")
+                gui_main.Refresh()
+
+            monitor.prev_pct = monitor.upload_pct
 
         json_res_list = []
 
@@ -459,29 +478,40 @@ class ApiCalls:
 
             url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
-            files = {
-                    "file1": open(sample.get_pair_files()[0], "rb"),
+            files = ({
+                    "file1": (sample.get_pair_files()[0],
+                              open(sample.get_pair_files()[0], "rb")),
                     "parameters1": ("", "{\"parameters1\": \"p1\"}",
                                     "application/json"),
-                    "file2": open(sample.get_pair_files()[1], "rb"),
+                    "file2": (sample.get_pair_files()[0],
+                              open(sample.get_pair_files()[1], "rb")),
                     "parameters2": ("", "{\"parameters2\": \"p2\"}",
                                     "application/json")
-            }
+            })
 
+            e = encoder.MultipartEncoder(
+                fields=files)
+            monitor = encoder.MultipartEncoderMonitor(e, callback)
+            headers = {"Content-Type": monitor.content_type}
+            monitor.total_file_size = path.getsize(
+                sample.get_pair_files()[0]) + path.getsize(
+                sample.get_pair_files()[1])
+            monitor.upload_pct = 0.0
+            monitor.prev_pct = 0.0
             # https://github.com/kennethreitz/requests/issues/1495
             # content-type for parameters: ('filename', 'data', 'Content-Type)
 
-            response = self.session.post(url, files=files)
+            response = self.session.post(url, data=monitor, headers=headers)
             # print "Headers:", response.request.headers
             # print "Body:", response.request.body
             if response.status_code == httplib.CREATED:
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
             else:
-                raise SequenceFileError("Error {status_code}: {err_msg}.\n\
-                                        Upload data: {ud}".format(
-                                        status_code=str(response.status_code),
-                                        err_msg=response.text),
-                                        ud=str(files))
+                raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
+                                         "Upload data: {ud}").format(
+                                         status_code=str(response.status_code),
+                                         err_msg=response.text,
+                                         ud=str(files)))
 
         return json_res_list
