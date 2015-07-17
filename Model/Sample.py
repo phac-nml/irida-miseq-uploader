@@ -50,12 +50,12 @@ class Sample:
 
     class JsonEncoder(json.JSONEncoder):
 
-        def encode(self, obj):
+        def default(self, obj):
 
-            item = obj.pop("sampleProject")
-
-            res = json.JSONEncoder.encode(self, obj)
-
-            obj["sampleProject"] = item
-
-            return res
+            if isinstance(obj, Sample):
+                sample_dict = dict(obj.get_dict())
+                # get sample dict and make a copy of it
+                sample_dict.pop("sampleProject")
+                return sample_dict
+            else:
+                return json.JSONEncoder.default(self, obj)

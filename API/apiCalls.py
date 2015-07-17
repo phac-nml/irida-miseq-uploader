@@ -399,7 +399,7 @@ class ApiCalls:
                 }
             }
 
-            json_obj = json.dumps(sample.get_dict(), cls=Sample.JsonEncoder)
+            json_obj = json.dumps(sample, cls=Sample.JsonEncoder)
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
