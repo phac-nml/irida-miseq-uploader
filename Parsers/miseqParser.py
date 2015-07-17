@@ -42,7 +42,8 @@ def parse_metadata(sample_sheet_file):
         'IEMFileVersion': 'iemfileversion',
         'Date': 'date',
         'Experiment Name': 'experimentName',
-        'Chemistry': 'chemistry'
+        'Chemistry': 'chemistry',
+        'Project Name': 'projectName'
     }
 
     for line in csv_reader:
