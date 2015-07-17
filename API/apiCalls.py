@@ -436,10 +436,11 @@ class ApiCalls:
             monitor.upload_pct = round(monitor.upload_pct, 2)
             if monitor.prev_pct != monitor.upload_pct:
                 print "{pct}%".format(pct=monitor.upload_pct)
-                gui_main.progress_bar.SetValue(monitor.upload_pct * 100)
-                gui_main.progress_label.SetLabel(str(monitor.upload_pct*100) +
-                                                 "%")
-                gui_main.Refresh()
+                if gui_main is not None:
+                    gui_main.progress_bar.SetValue(monitor.upload_pct * 100)
+                    gui_main.progress_label.SetLabel(
+                        str(monitor.upload_pct*100) + "%")
+                    gui_main.Refresh()
 
             monitor.prev_pct = monitor.upload_pct
 
