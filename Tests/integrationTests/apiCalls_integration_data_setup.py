@@ -35,7 +35,7 @@ class SetupIridaData:
             '"drop database if exists ' + db_name + ';'\
             'create database ' + db_name + ';'\
             '"| mysql -u test -ptest'
-
+        
         self.IRIDA_CMD = ['mvn', 'clean', 'jetty:run',
                           '-Djdbc.url=jdbc:mysql://localhost:3306/' + db_name,
                           '-Djdbc.username=test', '-Djdbc.password=test',
