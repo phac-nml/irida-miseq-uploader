@@ -12,7 +12,6 @@ from requests.exceptions import HTTPError as request_HTTPError
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
 from Model.Sample import Sample
-from Model.SampleJsonEncoder import SampleJsonEncoder
 from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
@@ -400,7 +399,7 @@ class ApiCalls:
                 }
             }
 
-            json_obj = json.dumps(sample.get_dict(), cls=SampleJsonEncoder)
+            json_obj = json.dumps(sample.get_dict(), cls=Sample.JsonEncoder)
             response = self.session.post(url, json_obj, **headers)
 
             if response.status_code == httplib.CREATED:  # 201
