@@ -139,8 +139,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertTrue(len(sample_list) == 1)
 
         added_sample = sample_list[0]
-        sample.pop("sampleProject")  # remove it because it's not sent to API
-        # but it's still used to identify proj id
+        del sample_dict["sampleProject"]
         for key in sample_dict.keys():
             self.assertEqual(sample[key], added_sample[key])
 
