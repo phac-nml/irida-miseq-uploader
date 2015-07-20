@@ -35,7 +35,7 @@ class SetupIridaData:
         self.IRIDA_DB_RESET = 'echo '\
             '"drop database if exists ' + db_name + ';'\
             'create database ' + db_name + ';'\
-            '"| mysql -u test -ptest'
+            '"| mysql -u test -pt'
 
         self.IRIDA_CMD = ['mvn', 'clean', 'jetty:run',
                           '-Djdbc.url=jdbc:mysql://localhost:3306/' + db_name,
@@ -70,6 +70,7 @@ class SetupIridaData:
         proc_res = db_reset_proc.wait()
 
         if proc_res == 1:  # failed to execute
+            print "Unable to execute:\n {cmd}".format(cmd=self.IRIDA_DB_RESET)
             sys.exit(1)
 
     def run_irida(self):
