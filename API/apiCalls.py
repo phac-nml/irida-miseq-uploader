@@ -4,6 +4,8 @@ import httplib
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
+import wx
+from wx.lib.pubsub import Publisher
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -419,7 +421,7 @@ class ApiCalls:
                                   sample_data=str(sample)))
         return json_res_list
 
-    def send_pair_sequence_files(self, samples_list, gui_main=None):
+    def send_pair_sequence_files(self, samples_list):
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
@@ -435,12 +437,7 @@ class ApiCalls:
                                   (monitor.len * 1.0))
             monitor.upload_pct = round(monitor.upload_pct, 2)
             if monitor.prev_pct != monitor.upload_pct:
-                print "{pct}%".format(pct=monitor.upload_pct)
-                if gui_main is not None:
-                    gui_main.progress_bar.SetValue(monitor.upload_pct * 100)
-                    gui_main.progress_label.SetLabel(
-                        str(monitor.upload_pct*100) + "%")
-                    gui_main.Refresh()
+                wx.CallAfter(Publisher().sendMessage, "update_progress_bar", (monitor.upload_pct*100))
 
             monitor.prev_pct = monitor.upload_pct
 

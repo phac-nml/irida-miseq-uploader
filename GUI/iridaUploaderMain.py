@@ -2,8 +2,10 @@ import wx
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
+from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
+from wx.lib.pubsub import Publisher
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -91,6 +93,8 @@ class MainFrame(wx.Frame):
 
         self.SetSizer(self.top_sizer)
         self.Layout()
+
+        Publisher.subscribe(self.update_progress_bar, "update_progress_bar")
 
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
@@ -278,25 +282,31 @@ class MainFrame(wx.Frame):
 
         no return value
         """
+        event.GetEventObject().Disable()
+        #disable upload button to prevent accidental double-click
 
         api = self.api
-        import threading
-        workers = []
         for sr in self.seq_run_list:
-            for sample in sr.get_sample_list():
 
-                if project_exists(api, sample.get("sampleProject")) is False:
+            for sample in sr.get_sample_list():
+                if project_exists(api, sample.get_project_id()) is False:
                     raise ProjectError("Project ID: {id} doesn't exist".format(
                                         id=sample.get("sampleProject")))
 
                 if sample_exists(api, sample) is False:
                     api.send_samples(sr.get_sample_list())
 
-            # api.send_pair_sequence_files(sr.get_sample_list(), self)
-            t = threading.Thread(target=api.send_pair_sequence_files,
-                                 args=(sr.get_sample_list(), self))
-            workers.append(t)
-            t.start()
+            thread = Thread(target=api.send_pair_sequence_files,
+                            args=(sr.get_sample_list(),))
+            thread.start()
+
+        event.GetEventObject().Enable()
+
+    def update_progress_bar(self, upload_pct):
+
+        self.progress_bar.SetValue(upload_pct.data)
+        self.progress_label.SetLabel(str(upload_pct.data) + "%")
+        self.Refresh()
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
