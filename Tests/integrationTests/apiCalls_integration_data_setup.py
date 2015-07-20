@@ -64,7 +64,6 @@ class SetupIridaData:
         if proc_res == 1:  # failed to execute
             sys.exit(1)
 
-
     def reset_irida_db(self):
         db_reset_proc = subprocess.Popen(self.IRIDA_DB_RESET, shell=True)
         proc_res = db_reset_proc.wait()
