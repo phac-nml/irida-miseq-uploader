@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from urllib2 import urlopen, URLError
 from os import path
 from time import time, sleep
+import sys
 import subprocess
 import httplib
 
@@ -29,13 +30,15 @@ class SetupIridaData:
 
         self.TIMEOUT = 600  # seconds
 
+        db_name = "irida_uploader_test"
+
         self.IRIDA_DB_RESET = 'echo '\
-            '"drop database if exists irida_test;'\
-            'create database irida_test;'\
+            '"drop database if exists ' + db_name + ';'\
+            'create database ' + db_name + ';'\
             '"| mysql -u test -ptest'
 
         self.IRIDA_CMD = ['mvn', 'clean', 'jetty:run',
-                          '-Djdbc.url=jdbc:mysql://localhost:3306/irida_test',
+                          '-Djdbc.url=jdbc:mysql://localhost:3306/' + db_name,
                           '-Djdbc.username=test', '-Djdbc.password=test',
                           '-Dliquibase.update.database.schema=true',
                           '-Dhibernate.hbm2ddl.auto=',
@@ -57,11 +60,17 @@ class SetupIridaData:
     def install_irida(self):
         install_proc = subprocess.Popen(
             [self.INSTALL_IRIDA_EXEC], cwd=self.PATH_TO_MODULE)
-        install_proc.wait()
+        proc_res = install_proc.wait()
+        if proc_res == 1:  # failed to execute
+            sys.exit(1)
 
     def reset_irida_db(self):
         db_reset_proc = subprocess.Popen(self.IRIDA_DB_RESET, shell=True)
-        db_reset_proc.wait()
+        proc_res = db_reset_proc.wait()
+
+        if proc_res == 1:  # failed to execute
+            print "Unable to execute:\n {cmd}".format(cmd=self.IRIDA_DB_RESET)
+            sys.exit(1)
 
     def run_irida(self):
         irida_server_proc = subprocess.Popen(

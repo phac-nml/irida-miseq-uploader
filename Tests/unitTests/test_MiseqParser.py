@@ -4,7 +4,8 @@ from csv import reader
 
 from Model.Sample import Sample
 from Parsers.miseqParser import (parse_metadata, parse_samples, get_csv_reader,
-                                 get_pair_files, parse_out_sequence_file,
+                                 get_pair_files, get_all_fastq_files,
+                                 parse_out_sequence_file,
                                  complete_parse_samples)
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
@@ -99,7 +100,8 @@ class TestMiSeqParser(unittest.TestCase):
                     for data_header in seq_file_headers]))
 
             self.assertEqual(len(sample.get_pair_files()), 2)
-            pf_list = get_pair_files(data_dir, sample.get_id())
+            fastq_files = get_all_fastq_files(data_dir)
+            pf_list = get_pair_files(fastq_files, sample.get_id())
             self.assertEqual(pf_list, sample.get_pair_files())
 
     def test_parse_samples(self):
@@ -182,7 +184,8 @@ class TestMiSeqParser(unittest.TestCase):
         invalid_sample_id = "-1"
 
         with self.assertRaises(IOError) as context:
-            pair_file_list = get_pair_files(invalid_dir, invalid_sample_id)
+            fastq_files = get_all_fastq_files(invalid_dir)
+            pair_file_list = get_pair_files(fastq_files, invalid_sample_id)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
@@ -191,16 +194,18 @@ class TestMiSeqParser(unittest.TestCase):
         valid_sample_id = "01-1111"
 
         with self.assertRaises(IOError) as context:
-            pair_file_list = get_pair_files(invalid_dir, valid_sample_id)
+            fastq_files = get_all_fastq_files(invalid_dir)
+            pair_file_list = get_pair_files(fastq_files, valid_sample_id)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
     def test_get_pair_files_valid_dir_invalid_id(self):
 
         valid_dir = path.join(path_to_module, "fake_ngs_data")
-        invalid_sample_id = "-1"
+        invalid_sample_id = "-1~"
 
-        pair_file_list = get_pair_files(valid_dir, invalid_sample_id)
+        fastq_files = get_all_fastq_files(valid_dir)
+        pair_file_list = get_pair_files(fastq_files, invalid_sample_id)
 
         self.assertEqual(len(pair_file_list), 0)
 
@@ -209,7 +214,8 @@ class TestMiSeqParser(unittest.TestCase):
         valid_dir = path.join(path_to_module, "fake_ngs_data")
         valid_sample_id = "01-1111"
 
-        pair_file_list = get_pair_files(valid_dir, valid_sample_id)
+        fastq_files = get_all_fastq_files(valid_dir)
+        pair_file_list = get_pair_files(fastq_files, valid_sample_id)
         correct_pair_list = [
             path.join(path_to_module, "fake_ngs_data", "Data", "Intensities",
                       "BaseCalls", "01-1111_S1_L001_R1_001.fastq.gz"),

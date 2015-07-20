@@ -51,4 +51,9 @@ Run unit tests and PEP8 verification with:
 
     $ python RunAllTests.py
 
+Running integration tests in addition to unit tests and PEP8 verification: (can take a while)
+
+    $ echo "grant all privileges on irida_uploader_test.* to 'test'@'localhost' identified by 'test';" | mysql -u mysql_user -p
+    $ python RunAllTests.py --integration
+
 You can comment out test_suites inside RunAllTests.py to not have them run

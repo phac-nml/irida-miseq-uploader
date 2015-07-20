@@ -8,7 +8,9 @@ import Tests.integrationTests.test_ApiCalls_integration as apiCalls_integration
 import unittest
 import platform
 import argparse
+import sys
 from os import system, path, listdir, getcwd
+
 
 """
 For running all tests or commenting out particular tests suites to only run
@@ -47,18 +49,18 @@ def run_verify_PEP8():
         print "Running PEP8 verification"
         res = system("./scripts/verifyPEP8.sh")
 
-        if res == 0:
-            print "No PEP8 errors"
+    return res
 
 
 if __name__ == "__main__":
 
     suite_list = []
     setup_handler = None
+    exit_with_failure = False
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--integration", action="store_true",
-                        help="Run the integration tests (takes a long time)")
+                        help="Run integration tests (can take a long time)")
     args = parser.parse_args()
 
     if args.integration:
@@ -71,9 +73,20 @@ if __name__ == "__main__":
 
     full_suite = unittest.TestSuite(suite_list)
     runner = unittest.TextTestRunner()
-    runner.run(full_suite)
+    test_result = runner.run(full_suite)
 
     if setup_handler is not None:
         setup_handler.stop_irida()
 
-    run_verify_PEP8()
+    pep8_result = run_verify_PEP8()
+
+    if len(test_result.failures)>0 or len(test_result.errors)>0:
+        exit_with_failure = True
+
+    if pep8_result == 0:
+        print "No PEP8 errors"
+    else:
+        exit_with_failure = True
+
+    if exit_with_failure:
+        sys.exit(1)

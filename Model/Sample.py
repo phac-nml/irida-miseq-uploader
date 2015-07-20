@@ -1,3 +1,4 @@
+import json
 """
 A Sample will store (key: value) pairs using a dictionary.
 e.g  {"sequencerSampleId": "01-1111"}
@@ -13,6 +14,9 @@ class Sample:
 
     def get_id(self):
         return self.get("sequencerSampleId")
+
+    def get_project_id(self):
+        return self.get("sampleProject")
 
     def get_dict(self):
         return self.sample_dict
@@ -37,3 +41,15 @@ class Sample:
 
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)
+
+    class JsonEncoder(json.JSONEncoder):
+
+        def default(self, obj):
+
+            if isinstance(obj, Sample):
+                sample_dict = dict(obj.get_dict())
+                # get sample dict and make a copy of it
+                sample_dict.pop("sampleProject")
+                return sample_dict
+            else:
+                return json.JSONEncoder.default(self, obj)

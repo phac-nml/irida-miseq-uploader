@@ -8,6 +8,7 @@ from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
+from Model.SequenceFile import SequenceFile
 
 import API.apiCalls
 
@@ -708,12 +709,11 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "1"
         }
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
         sample = API.apiCalls.Sample(sample_dict)
-        seqRes = api.get_sequence_files(proj, sample)
+        seqRes = api.get_sequence_files(sample)
 
         self.assertEqual(len(seqRes), 1)
         self.assertEqual(seq_dict.items(), seqRes[0].items())
@@ -732,13 +732,12 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = MagicMock(side_effect=[StopIteration])
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "999")
-        sample = API.apiCalls.Sample({})
+        sample = API.apiCalls.Sample({"sampleProject": "999"})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            seqRes = api.get_sequence_files(proj, sample)
+            seqRes = api.get_sequence_files(sample)
 
-        self.assertTrue(proj.get_id() + " doesn't exist"
+        self.assertTrue(sample["sampleProject"] + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -759,13 +758,13 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "999"
         }
-        proj = API.apiCalls.Project("project1", "projectDescription", "999")
+
         sample = API.apiCalls.Sample(sample_dict)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.get_sequence_files(proj, sample)
+            api.get_sequence_files(sample)
 
         self.assertTrue(sample.get_id() + " doesn't exist"
                         in str(err.exception))
@@ -881,7 +880,7 @@ class TestApiCalls(unittest.TestCase):
                 "sequencerSampleId": "03-3333",
                 "description": "The 53rd sample",
                 "sampleName": "03-3333",
-                "identifier": "1"
+                "sampleProject": "1"
             }
         }
 
@@ -902,13 +901,15 @@ class TestApiCalls(unittest.TestCase):
             "sequencerSampleId": "03-3333",
             "description": "The 53rd sample",
             "sampleName": "03-3333",
-            "identifier": "1"
+            "sampleProject": "1"
         }
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
         sample = API.apiCalls.Sample(sample_dict)
-        json_res = api.send_samples(proj, [sample])
+        json_res_list = api.send_samples([sample])
 
+        self.assertEqual(len(json_res_list), 1)
+
+        json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -926,13 +927,13 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = MagicMock(side_effect=[StopIteration])
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "-1")
-        sample = API.apiCalls.Sample({})
+        proj_id = "-1"
+        sample = API.apiCalls.Sample({"sampleProject": proj_id})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            api.send_samples(proj, [sample])
+            api.send_samples([sample])
 
-        self.assertTrue(proj.get_id() + " doesn't exist"
+        self.assertTrue(proj_id + " doesn't exist"
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -960,14 +961,125 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
-        sample = API.apiCalls.Sample({})
+        sample = API.apiCalls.Sample({"sampleProject": "1"})
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.send_samples(proj, [sample])
+            api.send_samples([sample])
 
-        self.assertTrue(str(session_response.status_code) + " " +
+        self.assertTrue(str(session_response.status_code) + ": " +
                         session_response.text in str(err.exception))
+
+    @patch("__builtin__.open")
+    @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_):
+
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        json_dict = {
+            "resource": [
+                {
+                    "file": "03-3333_S1_L001_R1_001.fastq.gz"
+                },
+                {
+                    "file": "03-3333_S1_L001_R2_001.fastq.gz"
+                }
+            ]
+        }
+
+        json_obj = json.dumps(json_dict)
+
+        session_response = Foo()
+        setattr(session_response, "status_code", httplib.CREATED)
+        setattr(session_response, "text", json_obj)
+
+        session_post = MagicMock(side_effect=[session_response])
+        session = Foo()
+        setattr(session, "post", session_post)
+
+        api.get_link = lambda x, y, targ_dict="": None
+        api.session = session
+
+        sample_dict = {
+            "sequencerSampleId": "03-3333",
+            "description": "The 53rd sample",
+            "sampleName": "03-3333",
+            "sampleProject": "1"
+        }
+
+        sample = API.apiCalls.Sample(sample_dict)
+        pair_files = ["03-3333_S1_L001_R1_001.fastq.gz",
+                      "03-3333_S1_L001_R2_001.fastq.gz"]
+        seq_file = SequenceFile({}, pair_files)
+        sample.set_seq_file(seq_file)
+        json_res_list = api.send_pair_sequence_files([sample])
+
+        self.assertEqual(len(json_res_list), 1)
+
+        json_res = json_res_list[0]
+        self.assertEqual(json_res, json_dict)
+
+        mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
+        mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
+
+    @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_pair_sequence_files_invalid_proj_id(self, mock_cs):
+
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        api.get_link = MagicMock(side_effect=[StopIteration])
+
+        proj_id = "-1"
+        sample = API.apiCalls.Sample({"sampleProject": proj_id})
+
+        with self.assertRaises(API.apiCalls.ProjectError) as err:
+            api.send_pair_sequence_files([sample])
+
+        self.assertIn("project ID: {proj_id} doesn't exist".format(
+            proj_id=proj_id), str(err.exception))
+
+    @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_pair_sequence_files_invalid_sample_id(self, mock_cs):
+
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        api.get_link = MagicMock(side_effect=[None, None, StopIteration])
+
+        proj_id = "1"
+        sample_id = "-1"
+        sample = API.apiCalls.Sample({
+            "sampleProject": proj_id,
+            "sequencerSampleId": sample_id
+        })
+
+        with self.assertRaises(API.apiCalls.SampleError) as err:
+            api.send_pair_sequence_files([sample])
+
+        self.assertIn("sample ID: {sample_id} doesn't exist".format(
+            sample_id=sample_id), str(err.exception))
 
 
 def load_test_suite():
@@ -1017,6 +1129,14 @@ def load_test_suite():
     api_test_suite.addTest(TestApiCalls("test_send_samples_invalid_proj_id"))
     api_test_suite.addTest(
         TestApiCalls("test_send_samples_invalid_server_res"))
+
+    api_test_suite.addTest(TestApiCalls("test_send_pair_sequence_files_valid"))
+    api_test_suite.addTest(
+        TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
+    api_test_suite.addTest(
+        TestApiCalls("test_send_pair_sequence_files_invalid_sample_id"))
+    # api_test_suite.addTest(
+    #    TestApiCalls("test_send_pair_sequence_files_invalid_server_res"))
 
     return api_test_suite
 

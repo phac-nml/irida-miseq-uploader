@@ -415,7 +415,6 @@ class SettingsFrame(wx.Frame):
         hide all icons
         """
 
-
         self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
         self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
