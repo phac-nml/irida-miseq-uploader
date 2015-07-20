@@ -478,7 +478,7 @@ class ApiCalls:
                               open(sample.get_pair_files()[0], "rb")),
                     "parameters1": ("", "{\"parameters1\": \"p1\"}",
                                     "application/json"),
-                    "file2": (sample.get_pair_files()[0],
+                    "file2": (sample.get_pair_files()[1],
                               open(sample.get_pair_files()[1], "rb")),
                     "parameters2": ("", "{\"parameters2\": \"p2\"}",
                                     "application/json")
