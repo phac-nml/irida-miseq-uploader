@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from urllib2 import urlopen, URLError
 from os import path
 from time import time, sleep
+import sys
 import subprocess
 import httplib
 
@@ -59,11 +60,17 @@ class SetupIridaData:
     def install_irida(self):
         install_proc = subprocess.Popen(
             [self.INSTALL_IRIDA_EXEC], cwd=self.PATH_TO_MODULE)
-        install_proc.wait()
+        proc_res = install_proc.wait()
+        if proc_res == 1:  # failed to execute
+            sys.exit(1)
+
 
     def reset_irida_db(self):
         db_reset_proc = subprocess.Popen(self.IRIDA_DB_RESET, shell=True)
-        db_reset_proc.wait()
+        proc_res = db_reset_proc.wait()
+
+        if proc_res == 1:  # failed to execute
+            sys.exit(1)
 
     def run_irida(self):
         irida_server_proc = subprocess.Popen(

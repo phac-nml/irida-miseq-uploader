@@ -9,6 +9,7 @@ echo "Downloading IRIDA..."
 if ! git clone http://irida.corefacility.ca/gitlab/irida/irida.git
 then
     echo >&2 "Failed to clone"
+    exit 1
 else
   pushd irida
   git checkout master
@@ -24,4 +25,3 @@ else
   popd
   echo "IRIDA has been installed"
 fi
-
