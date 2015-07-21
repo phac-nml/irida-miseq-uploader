@@ -138,8 +138,8 @@ class MainFrame(wx.Frame):
     def add_curr_file_progress_bar(self):
 
         """
-        Adds progress bar. Will be used for displaying progress of
-            sequence files upload.
+        Adds current file progress bar. Will be used for displaying progress of
+            the current sequence file pairs being uploaded.
 
         no return value
         """
@@ -156,6 +156,13 @@ class MainFrame(wx.Frame):
         self.cf_progress_bar.Hide()
 
     def add_overall_progress_bar(self):
+
+        """
+        Adds overall progress bar. Will be used for displaying progress of
+            all sequence files uploaded.
+
+        no return value
+        """
 
         self.ov_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
@@ -253,6 +260,8 @@ class MainFrame(wx.Frame):
 
         """
         print colored text to the log_panel
+        if no color provided then just uses self.LOG_PNL_REG_TXT_COLOR
+        as default
 
         arguments:
             msg -- the message to print
@@ -281,6 +290,7 @@ class MainFrame(wx.Frame):
 
         no return value
         """
+
         self.settings_frame.Destroy()
         self.Destroy()
 
@@ -288,14 +298,28 @@ class MainFrame(wx.Frame):
 
         """
         Function bound to upload_button being clicked
-        Currently just prints values entered in text boxes
-            and pairFiles in seqRun
+        uploads each SequencingRun in self.seq_run_list to irida web server
+
+        each SequencingRun will contain a list of samples and each sample
+        from the list of samples will contain a pair of sequence files
+
+        for each sample in the sample list, we check if the project_id
+        that it's supposed to be uploaded to already exists and
+        raises an error if it doesn't
+
+        we then check if the sample's id exists for it's given project_id
+        if it doesn't exist then create it
+
+        finally we create a thread which runs api.send_pair_sequence_files()
+        and send it the list of samples and our callback function:
+        self.pair_upload_callback()
 
         arguments:
                 event -- EVT_BUTTON when upload button is clicked
 
         no return value
         """
+
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
         self.log_color_print("Starting upload")
@@ -318,16 +342,33 @@ class MainFrame(wx.Frame):
 
     def pair_upload_callback(self, monitor):
 
+        """
+        callback function used by api.send_pair_sequence_files()
+        makes the Publisher send "update_progress_bars" message that contains
+        progress percentage data whenever the percentage of the current file
+        being uploaded changes.
+
+        arguments:
+            monitor -- an encoder.MultipartEncoderMonitor object
+                       used for calculating and storing upload percentage data
+                       It tracks percentage of overall upload progress
+                        and percentage of current file upload progress.
+                       the percentages are rounded to `ndigits` decimal place.
+
+        no return value
+        """
+
+        ndigits = 4
         monitor.cf_upload_pct = (monitor.bytes_read /
                                  (monitor.len * 1.0))
-        monitor.cf_upload_pct = round(monitor.cf_upload_pct, 4) * 100
+        monitor.cf_upload_pct = round(monitor.cf_upload_pct, ndigits) * 100
 
         monitor.total_bytes_read += monitor.bytes_read - monitor.prev_bytes
         monitor.ov_upload_pct = (monitor.total_bytes_read /
                                  (monitor.size_of_all_seq_files * 1.0))
-        monitor.ov_upload_pct = round(monitor.ov_upload_pct, 4) * 100
+        monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
 
-        data_dict = {
+        progress_data = {
             "curr_file_upload_pct": monitor.cf_upload_pct,
             "overall_upload_pct": monitor.ov_upload_pct,
             "curr_files_uploading": "\n".join(monitor.files)
@@ -337,29 +378,60 @@ class MainFrame(wx.Frame):
 
             wx.CallAfter(Publisher().sendMessage,
                          "update_progress_bars",
-                         data_dict)
+                         progress_data)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_pct = monitor.cf_upload_pct
 
-    def update_progress_bars(self, data_dict):
+    def update_progress_bars(self, progress_data):
 
-        if (isinstance(data_dict.data, str) and
-                data_dict.data == "Upload Complete"):
-            self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
-            self.upload_button.Enable()
+        """
+        Subscribed to "update_progress_bars"
+        This function is called when Publisher() sends the message
+        "update_progress_bars"
+
+        Updates boths progress bars and progress labels
+        If progress_data is a string equal to "Upload Complete" then
+        it calls handle_upload_complete() which displays the
+        "Upload Complete" message in the log panel and
+        re-enables the upload button.
+
+        arguments:
+            progress_data -- object containing dictionary that holds data
+                             to be used by the progress bars and labels
+                             dictionary is in progress_data.data
+
+        no return value
+        """
+
+        if (isinstance(progress_data.data, str) and
+                progress_data.data == "Upload Complete"):
+            self.handle_upload_complete()
+
         else:
             self.cf_progress_bar.SetValue(
-                data_dict.data["curr_file_upload_pct"])
+                progress_data.data["curr_file_upload_pct"])
             self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
-                files=str(data_dict.data["curr_files_uploading"]),
-                pct=str(data_dict.data["curr_file_upload_pct"])))
+                files=str(progress_data.data["curr_files_uploading"]),
+                pct=str(progress_data.data["curr_file_upload_pct"])))
 
-            self.ov_progress_bar.SetValue(data_dict.data["overall_upload_pct"])
+            self.ov_progress_bar.SetValue(progress_data.data
+                                          ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("Overall: {pct}%".format(
-                pct=str(data_dict.data["overall_upload_pct"])))
+                pct=str(progress_data.data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
+
+    def handle_upload_complete(self):
+
+        """
+        function responsible for handling what happens after an upload
+        of sequence files finishes
+        displays "Upload Complete" to log panel and re-enables upload button.
+        """
+
+        self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
+        self.upload_button.Enable()
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
