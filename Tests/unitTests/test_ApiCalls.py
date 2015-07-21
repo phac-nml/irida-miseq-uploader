@@ -1048,6 +1048,8 @@ class TestApiCalls(unittest.TestCase):
 
         proj_id = "-1"
         sample = API.apiCalls.Sample({"sampleProject": proj_id})
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_pair_sequence_files([sample])
@@ -1076,6 +1078,8 @@ class TestApiCalls(unittest.TestCase):
             "sampleProject": proj_id,
             "sequencerSampleId": sample_id
         })
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_pair_sequence_files([sample])
