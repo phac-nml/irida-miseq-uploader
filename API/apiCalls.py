@@ -421,7 +421,7 @@ class ApiCalls:
                                   sample_data=str(sample)))
         return json_res_list
 
-    def send_pair_sequence_files(self, samples_list):
+    def send_pair_sequence_files(self, samples_list, callback=None):
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
@@ -431,20 +431,6 @@ class ApiCalls:
 
         returns a list containing dictionaries of the result of post request.
         """
-        def callback(monitor):
-
-            monitor.upload_pct = ((monitor.bytes_read * 1.0) /
-                                  (monitor.len * 1.0))
-            monitor.upload_pct = round(monitor.upload_pct, 2)
-            if monitor.prev_pct != monitor.upload_pct:
-                try:
-                    wx.CallAfter(Publisher().sendMessage,
-                                 "update_progress_bar",
-                                 (monitor.upload_pct*100))
-                except AssertionError:
-                    pass
-
-            monitor.prev_pct = monitor.upload_pct
 
         json_res_list = []
 

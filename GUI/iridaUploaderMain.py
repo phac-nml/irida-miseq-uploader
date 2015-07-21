@@ -297,10 +297,25 @@ class MainFrame(wx.Frame):
                     api.send_samples(sr.get_sample_list())
 
             thread = Thread(target=api.send_pair_sequence_files,
-                            args=(sr.get_sample_list(),))
+                            args=(sr.get_sample_list(), self.callback,))
             thread.start()
 
         event.GetEventObject().Enable()
+
+    def callback(self, monitor):
+
+        monitor.upload_pct = ((monitor.bytes_read * 1.0) /
+                              (monitor.len * 1.0))
+        monitor.upload_pct = round(monitor.upload_pct, 2)
+        if monitor.prev_pct != monitor.upload_pct:
+            try:
+                wx.CallAfter(Publisher().sendMessage,
+                             "update_progress_bar",
+                             (monitor.upload_pct*100))
+            except AssertionError:
+                pass
+
+        monitor.prev_pct = monitor.upload_pct
 
     def update_progress_bar(self, upload_pct):
 
