@@ -29,7 +29,7 @@ class MainFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 700)
+        self.WINDOW_SIZE = (900, 750)
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
@@ -40,13 +40,12 @@ class MainFrame(wx.Frame):
         self.seq_run_list = []
         self.browse_path = getcwd()
         self.dir_dlg = None
-        self.p_bar_percent = 0
         self.api = None
 
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
         self.LONG_BOX_SIZE = (650, 32)  # choose directory
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
-        self.LABEL_TEXT_WIDTH = 70
+        self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
@@ -64,7 +63,8 @@ class MainFrame(wx.Frame):
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
         self.add_settings_button()
-        self.add_progress_bar()
+        self.add_curr_file_progress_bar()
+        self.add_overall_progress_bar()
         self.add_upload_button()
 
         self.top_sizer.AddSpacer(10)  # space between top and directory box
@@ -94,7 +94,7 @@ class MainFrame(wx.Frame):
         self.SetSizer(self.top_sizer)
         self.Layout()
 
-        Publisher.subscribe(self.update_progress_bar, "update_progress_bar")
+        Publisher.subscribe(self.update_progress_bars, "update_progress_bars")
 
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
@@ -123,9 +123,9 @@ class MainFrame(wx.Frame):
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
 
-        self.directory_sizer.Add(self.dir_label, 0, wx.ALL, 5)
-        self.directory_sizer.Add(self.dir_box, 0, wx.ALL, 5)
-        self.directory_sizer.Add(self.browse_button, 0, wx.ALL, 5)
+        self.directory_sizer.Add(self.dir_label)
+        self.directory_sizer.Add(self.dir_box)
+        self.directory_sizer.Add(self.browse_button)
 
         tip = "Select the directory containing the SampleSheet.csv file " + \
             "to be uploaded"
@@ -135,7 +135,7 @@ class MainFrame(wx.Frame):
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
 
-    def add_progress_bar(self):
+    def add_curr_file_progress_bar(self):
 
         """
         Adds progress bar. Will be used for displaying progress of
@@ -144,15 +144,29 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        self.progress_label = wx.StaticText(
+        self.cf_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label=str(self.p_bar_percent) + "%")
-        self.progress_bar = wx.Gauge(self, range=100, size=(
+            label="File: 0%")
+        self.cf_progress_bar = wx.Gauge(self, range=100, size=(
             self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.progress_label)
-        self.progress_bar_sizer.Add(self.progress_bar)
-        self.progress_label.Hide()
-        self.progress_bar.Hide()
+        self.progress_bar_sizer.Add(self.cf_progress_label, flag=wx.BOTTOM,
+                                    border=20)
+        self.progress_bar_sizer.Add(self.cf_progress_bar)
+        self.cf_progress_label.Hide()
+        self.cf_progress_bar.Hide()
+
+    def add_overall_progress_bar(self):
+
+        self.ov_progress_label = wx.StaticText(
+            self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
+            label="Overall: 0%")
+        self.ov_progress_bar = wx.Gauge(self, range=100, size=(
+            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.ov_progress_label, flag=wx.TOP,
+                                    border=5)
+        self.progress_bar_sizer.Add(self.ov_progress_bar)
+        self.ov_progress_label.Hide()
+        self.ov_progress_bar.Hide()
 
     def add_upload_button(self):
 
@@ -282,9 +296,10 @@ class MainFrame(wx.Frame):
 
         no return value
         """
-        event.GetEventObject().Disable()
+        self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
-
+        self.log_color_print("Starting upload")
+        
         api = self.api
         for sr in self.seq_run_list:
 
@@ -297,31 +312,53 @@ class MainFrame(wx.Frame):
                     api.send_samples(sr.get_sample_list())
 
             thread = Thread(target=api.send_pair_sequence_files,
-                            args=(sr.get_sample_list(), self.callback,))
+                            args=(sr.get_sample_list(),
+                                  self.pair_upload_callback,))
             thread.start()
 
-        event.GetEventObject().Enable()
+    def pair_upload_callback(self, monitor):
 
-    def callback(self, monitor):
+        monitor.cf_upload_pct = (monitor.bytes_read /
+                                 (monitor.len * 1.0))
+        monitor.cf_upload_pct = round(monitor.cf_upload_pct, 4) * 100
 
-        monitor.upload_pct = ((monitor.bytes_read * 1.0) /
-                              (monitor.len * 1.0))
-        monitor.upload_pct = round(monitor.upload_pct, 2)
-        if monitor.prev_pct != monitor.upload_pct:
-            try:
-                wx.CallAfter(Publisher().sendMessage,
-                             "update_progress_bar",
-                             (monitor.upload_pct*100))
-            except AssertionError:
-                pass
+        monitor.total_bytes_read+= monitor.bytes_read - monitor.prev_bytes
+        monitor.ov_upload_pct = (monitor.total_bytes_read /
+                                 (monitor.size_of_all_seq_files * 1.0))
+        monitor.ov_upload_pct = round(monitor.ov_upload_pct, 4) * 100
 
-        monitor.prev_pct = monitor.upload_pct
+        data_dict = {
+            "curr_file_upload_pct": monitor.cf_upload_pct,
+            "overall_upload_pct": monitor.ov_upload_pct,
+            "curr_files_uploading": "\n".join(monitor.files)
+        }
 
-    def update_progress_bar(self, upload_pct):
+        if monitor.prev_pct != monitor.cf_upload_pct:
 
-        self.progress_bar.SetValue(upload_pct.data)
-        self.progress_label.SetLabel(str(upload_pct.data) + "%")
-        self.Refresh()
+            wx.CallAfter(Publisher().sendMessage,
+                         "update_progress_bars",
+                         data_dict)
+
+        monitor.prev_bytes = monitor.bytes_read
+        monitor.prev_pct = monitor.cf_upload_pct
+
+    def update_progress_bars(self, data_dict):
+
+        if (isinstance(data_dict.data, str) and
+            data_dict.data == "Upload Complete"):
+            self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
+            self.upload_button.Enable()
+        else:
+            self.cf_progress_bar.SetValue(data_dict.data["curr_file_upload_pct"])
+            self.cf_progress_label.SetLabel(
+                str(data_dict.data["curr_files_uploading"]) + "\n" +
+                str(data_dict.data["curr_file_upload_pct"]) + "%")
+
+            self.ov_progress_bar.SetValue(data_dict.data["overall_upload_pct"])
+            self.ov_progress_label.SetLabel("Overall: " +
+                str(data_dict.data["overall_upload_pct"]) + "%")
+            wx.Yield()
+            self.Refresh()
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
@@ -344,11 +381,16 @@ class MainFrame(wx.Frame):
         self.display_warning(msg)
         self.upload_button.Disable()
 
-        self.progress_label.Hide()
-        self.progress_bar.Hide()
-        self.p_bar_percent = 0
-        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
-        self.progress_bar.SetValue(self.p_bar_percent)
+        self.cf_progress_label.Hide()
+        self.cf_progress_bar.Hide()
+        self.cf_progress_label.SetLabel(0 + "%")
+        self.cf_progress_bar.SetValue(0)
+
+        self.ov_progress_label.Hide()
+        self.ov_progress_bar.Hide()
+        self.ov_progress_label.SetLabel(0 + "%")
+        self.ov_progress_bar.SetValue(0)
+
         self.seq_run = None
 
     def open_dir_dlg(self, event):
@@ -444,8 +486,10 @@ class MainFrame(wx.Frame):
                 self.upload_button.Enable()
                 self.log_color_print(sample_sheet_file + " is valid\n",
                                      self.LOG_PNL_OK_TXT_COLOR)
-                self.progress_label.Show()
-                self.progress_bar.Show()
+                self.cf_progress_label.Show()
+                self.cf_progress_bar.Show()
+                self.ov_progress_label.Show()
+                self.ov_progress_bar.Show()
                 self.Layout()
 
             except (SampleSheetError, SequenceFileError), e:

@@ -9,6 +9,7 @@ from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
+from wx.lib.pubsub import Publisher
 
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
@@ -435,6 +436,10 @@ class ApiCalls:
 
         json_res_list = []
 
+        size_of_all_seq_files = sum([path.getsize(file)
+                                     for sample in samples_list
+                                     for file in sample.get_pair_files()])
+        total_bytes_read = 0
         for sample in samples_list:
 
             try:
@@ -476,15 +481,19 @@ class ApiCalls:
             e = encoder.MultipartEncoder(fields=files)
             monitor = encoder.MultipartEncoderMonitor(e, callback)
             headers = {"Content-Type": monitor.content_type}
-            monitor.total_file_size = path.getsize(
-                sample.get_pair_files()[0]) + path.getsize(
-                sample.get_pair_files()[1])
-            monitor.upload_pct = 0.0
+
+            monitor.files = sample.get_pair_files()
+            monitor.total_bytes_read = total_bytes_read
+            monitor.size_of_all_seq_files = size_of_all_seq_files
+            monitor.cf_upload_pct = 0.0
             monitor.prev_pct = 0.0
+            monitor.prev_bytes = 0
             # https://github.com/kennethreitz/requests/issues/1495
             # content-type for parameters: ('filename', 'data', 'Content-Type)
 
             response = self.session.post(url, data=monitor, headers=headers)
+            total_bytes_read = monitor.total_bytes_read
+
             # print "Headers:", response.request.headers
             # print "Body:", response.request.body
             if response.status_code == httplib.CREATED:
@@ -496,5 +505,6 @@ class ApiCalls:
                                          status_code=str(response.status_code),
                                          err_msg=response.text,
                                          ud=str(files)))
+        Publisher().sendMessage("update_progress_bars", "Upload Complete")
 
         return json_res_list
