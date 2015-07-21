@@ -27,9 +27,6 @@ class Sample:
             ret_val = self.sample_dict[key]
         return ret_val
 
-    def __setitem__(self, key, value):
-        self.sample_dict[key] = value
-
     def get(self, key):
         return self.__getitem__(key)
 
@@ -41,9 +38,6 @@ class Sample:
 
     def set_seq_file(self, seq_file):
         self.seq_file = seq_file
-
-    def pop(self, key):
-        return self.sample_dict.pop(key)
 
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)

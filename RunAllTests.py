@@ -56,10 +56,11 @@ if __name__ == "__main__":
 
     suite_list = []
     setup_handler = None
+    exit_with_failure = False
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--integration", action="store_true",
-                        help="Run the integration tests (takes a long time)")
+                        help="Run integration tests (can take a long time)")
     args = parser.parse_args()
 
     if args.integration:
@@ -74,16 +75,18 @@ if __name__ == "__main__":
     runner = unittest.TextTestRunner()
     test_result = runner.run(full_suite)
 
-
     if setup_handler is not None:
         setup_handler.stop_irida()
 
     pep8_result = run_verify_PEP8()
 
     if len(test_result.failures)>0 or len(test_result.errors)>0:
-        sys.exit(1)
+        exit_with_failure = True
 
     if pep8_result == 0:
         print "No PEP8 errors"
     else:
+        exit_with_failure = True
+
+    if exit_with_failure:
         sys.exit(1)
