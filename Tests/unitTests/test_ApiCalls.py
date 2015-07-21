@@ -1008,6 +1008,7 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         API.apiCalls.encoder.MultipartEncoder = MagicMock()
         API.apiCalls.path = MagicMock()
+        API.apiCalls.Publisher = MagicMock()
 
         sample_dict = {
             "sequencerSampleId": "03-3333",

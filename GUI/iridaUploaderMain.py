@@ -299,7 +299,7 @@ class MainFrame(wx.Frame):
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
         self.log_color_print("Starting upload")
-        
+
         api = self.api
         for sr in self.seq_run_list:
 
@@ -322,7 +322,7 @@ class MainFrame(wx.Frame):
                                  (monitor.len * 1.0))
         monitor.cf_upload_pct = round(monitor.cf_upload_pct, 4) * 100
 
-        monitor.total_bytes_read+= monitor.bytes_read - monitor.prev_bytes
+        monitor.total_bytes_read += monitor.bytes_read - monitor.prev_bytes
         monitor.ov_upload_pct = (monitor.total_bytes_read /
                                  (monitor.size_of_all_seq_files * 1.0))
         monitor.ov_upload_pct = round(monitor.ov_upload_pct, 4) * 100
@@ -345,18 +345,19 @@ class MainFrame(wx.Frame):
     def update_progress_bars(self, data_dict):
 
         if (isinstance(data_dict.data, str) and
-            data_dict.data == "Upload Complete"):
+                data_dict.data == "Upload Complete"):
             self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
             self.upload_button.Enable()
         else:
-            self.cf_progress_bar.SetValue(data_dict.data["curr_file_upload_pct"])
-            self.cf_progress_label.SetLabel(
-                str(data_dict.data["curr_files_uploading"]) + "\n" +
-                str(data_dict.data["curr_file_upload_pct"]) + "%")
+            self.cf_progress_bar.SetValue(
+                data_dict.data["curr_file_upload_pct"])
+            self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
+                files=str(data_dict.data["curr_files_uploading"]),
+                pct=str(data_dict.data["curr_file_upload_pct"])))
 
             self.ov_progress_bar.SetValue(data_dict.data["overall_upload_pct"])
-            self.ov_progress_label.SetLabel("Overall: " +
-                str(data_dict.data["overall_upload_pct"]) + "%")
+            self.ov_progress_label.SetLabel("Overall: {pct}%".format(
+                pct=str(data_dict.data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
 
@@ -383,12 +384,12 @@ class MainFrame(wx.Frame):
 
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
-        self.cf_progress_label.SetLabel(0 + "%")
+        self.cf_progress_label.SetLabel("0%")
         self.cf_progress_bar.SetValue(0)
 
         self.ov_progress_label.Hide()
         self.ov_progress_bar.Hide()
-        self.ov_progress_label.SetLabel(0 + "%")
+        self.ov_progress_label.SetLabel("0%")
         self.ov_progress_bar.SetValue(0)
 
         self.seq_run = None
