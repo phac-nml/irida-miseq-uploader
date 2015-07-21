@@ -4,8 +4,6 @@ import httplib
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
-import wx
-from wx.lib.pubsub import Publisher
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -15,7 +13,6 @@ from requests_toolbelt.multipart import encoder
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
 from Model.Sample import Sample
-from Model.ValidationResult import ValidationResult
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
@@ -428,6 +425,10 @@ class ApiCalls:
 
         arguments:
             samples_list -- list containing Sample object(s)
+            callback -- optional callback argument for use with monitor
+                        callback function accepts a
+                        encoder.MultipartEncoderMonitor object as it's only
+                        parameter
 
         returns a list containing dictionaries of the result of post request.
         """
@@ -472,8 +473,7 @@ class ApiCalls:
                                     "application/json")
             })
 
-            e = encoder.MultipartEncoder(
-                fields=files)
+            e = encoder.MultipartEncoder(fields=files)
             monitor = encoder.MultipartEncoderMonitor(e, callback)
             headers = {"Content-Type": monitor.content_type}
             monitor.total_file_size = path.getsize(
