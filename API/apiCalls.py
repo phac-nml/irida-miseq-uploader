@@ -419,6 +419,38 @@ class ApiCalls:
                                   sample_data=str(sample)))
         return json_res_list
 
+    def get_file_size_list(self, samples_list):
+        """
+        calculate file size for the pair files in a sample
+
+        arguments:
+            samples_list -- list containing Sample object(s)
+
+        returns list containing file sizes for each sample's pair files
+        """
+
+        file_size_list = []
+        for sample in samples_list:
+
+            files = ({
+                    "file1": (sample.get_pair_files()[0],
+                              open(sample.get_pair_files()[0], "rb")),
+                    "parameters1": ("", "{\"parameters1\": \"p1\"}",
+                                    "application/json"),
+                    "file2": (sample.get_pair_files()[1],
+                              open(sample.get_pair_files()[1], "rb")),
+                    "parameters2": ("", "{\"parameters2\": \"p2\"}",
+                                    "application/json")
+            })
+
+            e = encoder.MultipartEncoder(fields=files)
+
+            bytes_read_size = len(str(e.to_string()))
+            file_size_list.append(bytes_read_size)
+            sample.pair_files_byte_size = bytes_read_size
+
+        return file_size_list
+
     def send_pair_sequence_files(self, samples_list, callback=None):
         """
         send pair sequence files found in each sample in samples_list
@@ -436,9 +468,9 @@ class ApiCalls:
 
         json_res_list = []
 
-        size_of_all_seq_files = sum([path.getsize(file)
-                                     for sample in samples_list
-                                     for file in sample.get_pair_files()])
+        file_size_list = self.get_file_size_list(samples_list)
+        size_of_all_seq_files = sum(file_size_list)
+
         total_bytes_read = 0
         for sample in samples_list:
 
@@ -479,23 +511,33 @@ class ApiCalls:
             })
 
             e = encoder.MultipartEncoder(fields=files)
+
             monitor = encoder.MultipartEncoderMonitor(e, callback)
-            headers = {"Content-Type": monitor.content_type}
 
             monitor.files = sample.get_pair_files()
             monitor.total_bytes_read = total_bytes_read
             monitor.size_of_all_seq_files = size_of_all_seq_files
+
+            monitor.ov_upload_pct = 0.0
             monitor.cf_upload_pct = 0.0
-            monitor.prev_pct = 0.0
+            monitor.prev_cf_pct = 0.0
+            monitor.prev_ov_pct = 0.0
             monitor.prev_bytes = 0
-            # https://github.com/kennethreitz/requests/issues/1495
-            # content-type for parameters: ('filename', 'data', 'Content-Type)
+
+            headers = {"Content-Type": monitor.content_type}
 
             response = self.session.post(url, data=monitor, headers=headers)
             total_bytes_read = monitor.total_bytes_read
+            """
+            # Show that there is no difference between Content-Length
+            # and the size for a sample's pair files.
+            print "{v1} - {v2} = {val}".format(
+                v1=int(response.request.headers["Content-Length"]),
+                v2=sample.pair_files_byte_size,
+                val=(int(response.request.headers["Content-Length"]) -
+                sample.pair_files_byte_size))
+            """
 
-            # print "Headers:", response.request.headers
-            # print "Body:", response.request.body
             if response.status_code == httplib.CREATED:
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
@@ -505,6 +547,7 @@ class ApiCalls:
                                          status_code=str(response.status_code),
                                          err_msg=response.text,
                                          ud=str(files)))
+
         Publisher().sendMessage("update_progress_bars", "Upload Complete")
 
         return json_res_list
