@@ -179,20 +179,19 @@ class SettingsFrame(wx.Frame):
                        self.config_dict["username"],
                        self.config_dict["password"])
 
-        if self.parent is not None:
-            self.parent.api = api
+        return api
 
     def attempt_connect_to_api(self):
 
         """
         attempt to create a connection to api with saved config credentials
 
-        no return value
+        return ApiCalls object created from self.create_api_obj
         """
 
         try:
 
-            self.create_api_obj()
+            api = self.create_api_obj()
 
             self.reset_display()
 
@@ -225,6 +224,8 @@ class SettingsFrame(wx.Frame):
 
         except:
             self.handle_unexpected_error()
+
+        return api
 
     def handle_URL_error(self, e, msg_printed=False):
 
