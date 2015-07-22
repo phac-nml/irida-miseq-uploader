@@ -340,6 +340,8 @@ class MainFrame(wx.Frame):
                                   self.pair_upload_callback,))
             thread.start()
 
+            self.seq_run_list.remove(sr)
+
     def pair_upload_callback(self, monitor):
 
         """
@@ -363,7 +365,7 @@ class MainFrame(wx.Frame):
                                  (monitor.len * 1.0))
         monitor.cf_upload_pct = round(monitor.cf_upload_pct, ndigits) * 100
 
-        monitor.total_bytes_read += monitor.bytes_read - monitor.prev_bytes
+        monitor.total_bytes_read += (monitor.bytes_read - monitor.prev_bytes)
         monitor.ov_upload_pct = (monitor.total_bytes_read /
                                  (monitor.size_of_all_seq_files * 1.0))
         monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
@@ -374,14 +376,16 @@ class MainFrame(wx.Frame):
             "curr_files_uploading": "\n".join(monitor.files)
         }
 
-        if monitor.prev_pct != monitor.cf_upload_pct:
-
+        # only call update_progress_bars if one of the % values have changed
+        if (monitor.prev_cf_pct != monitor.cf_upload_pct or
+                monitor.prev_ov_pct != monitor.ov_upload_pct):
             wx.CallAfter(Publisher().sendMessage,
                          "update_progress_bars",
                          progress_data)
 
         monitor.prev_bytes = monitor.bytes_read
-        monitor.prev_pct = monitor.cf_upload_pct
+        monitor.prev_cf_pct = monitor.cf_upload_pct
+        monitor.prev_ov_pct = monitor.ov_upload_pct
 
     def update_progress_bars(self, progress_data):
 
