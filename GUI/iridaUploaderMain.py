@@ -2,7 +2,6 @@ import wx
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
-from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.pubsub import Publisher
@@ -12,12 +11,12 @@ from Model.SequencingRun import SequencingRun
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list)
-from Validation.onlineValidation import project_exists, sample_exists
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame
+from UploadThread import UploadThread
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -298,21 +297,8 @@ class MainFrame(wx.Frame):
 
         """
         Function bound to upload_button being clicked
-        uploads each SequencingRun in self.seq_run_list to irida web server
-
-        each SequencingRun will contain a list of samples and each sample
-        from the list of samples will contain a pair of sequence files
-
-        for each sample in the sample list, we check if the project_id
-        that it's supposed to be uploaded to already exists and
-        raises an error if it doesn't
-
-        we then check if the sample's id exists for it's given project_id
-        if it doesn't exist then create it
-
-        finally we create a thread which runs api.send_pair_sequence_files()
-        and send it the list of samples and our callback function:
-        self.pair_upload_callback()
+        creates a different thread UploadThread which handles the entire
+        upload process
 
         arguments:
                 event -- EVT_BUTTON when upload button is clicked
@@ -322,25 +308,9 @@ class MainFrame(wx.Frame):
 
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
+
         self.log_color_print("Starting upload")
-
-        api = self.api
-        for sr in self.seq_run_list:
-
-            for sample in sr.get_sample_list():
-                if project_exists(api, sample.get_project_id()) is False:
-                    raise ProjectError("Project ID: {id} doesn't exist".format(
-                                        id=sample.get("sampleProject")))
-
-                if sample_exists(api, sample) is False:
-                    api.send_samples(sr.get_sample_list())
-
-            thread = Thread(target=api.send_pair_sequence_files,
-                            args=(sr.get_sample_list(),
-                                  self.pair_upload_callback,))
-            thread.start()
-
-            self.seq_run_list.remove(sr)
+        UploadThread(self)
 
     def pair_upload_callback(self, monitor):
 
@@ -435,7 +405,6 @@ class MainFrame(wx.Frame):
         """
 
         self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
-        self.upload_button.Enable()
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
