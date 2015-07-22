@@ -1046,6 +1046,7 @@ class TestApiCalls(unittest.TestCase):
         )
 
         api.get_link = MagicMock(side_effect=[StopIteration])
+        api.get_file_size_list = MagicMock()
 
         proj_id = "-1"
         sample = API.apiCalls.Sample({"sampleProject": proj_id})
@@ -1072,6 +1073,7 @@ class TestApiCalls(unittest.TestCase):
         )
 
         api.get_link = MagicMock(side_effect=[None, None, StopIteration])
+        api.get_file_size_list = MagicMock()
 
         proj_id = "1"
         sample_id = "-1"
