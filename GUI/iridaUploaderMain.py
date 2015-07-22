@@ -118,7 +118,8 @@ class MainFrame(wx.Frame):
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File path")
-        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE,
+                                   style=wx.TE_PROCESS_ENTER)
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
 
@@ -133,6 +134,12 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
+        self.Bind(wx.EVT_TEXT_ENTER, self.manually_enter_dir, self.dir_box)
+
+    def manually_enter_dir(self, evt):
+
+        self.browse_path = self.dir_box.GetValue()
+        self.start_sample_sheet_processing()
 
     def add_curr_file_progress_bar(self):
 
@@ -469,44 +476,49 @@ class MainFrame(wx.Frame):
 
             self.browse_path = self.dir_dlg.GetPaths()[0].replace(
                 "Home directory", path.expanduser("~"))
-            self.dir_box.SetValue(self.browse_path)
 
-            try:
-
-                res_list = self.find_sample_sheet(self.browse_path,
-                                                  "SampleSheet.csv")
-                if len(res_list) == 0:
-                    sub_dirs = [str(f) for f in listdir(self.browse_path)
-                                if path.isdir(
-                                path.join(self.browse_path, f))]
-
-                    err_msg = ("SampleSheet.csv file not found in the " +
-                               "selected directory:\n" +
-                               self.browse_path)
-                    if len(sub_dirs) > 0:
-                        err_msg = (err_msg + " or its " +
-                                   "subdirectories:\n" + ", ".join(sub_dirs))
-
-                    raise SampleSheetError(err_msg)
-
-                else:
-                    self.sample_sheet_files = res_list
-
-                for ss in self.sample_sheet_files:
-                    self.log_color_print("Processing: " + ss)
-                    try:
-                        self.process_sample_sheet(ss)
-                    except (SampleSheetError, SequenceFileError):
-                        self.log_color_print(
-                            "Stopping the processing of SampleSheet.csv " +
-                            "files due to failed validation of previous " +
-                            "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-                        break  # stop processing sheets if validation fails
-
-            except SampleSheetError, e:
-                self.handle_invalid_sheet_or_seq_file(str(e))
+            self.start_sample_sheet_processing()
 
         self.dir_dlg.Destroy()
+
+    def start_sample_sheet_processing(self):
+
+        self.dir_box.SetValue(self.browse_path)
+
+        try:
+
+            res_list = self.find_sample_sheet(self.browse_path,
+                                              "SampleSheet.csv")
+            if len(res_list) == 0:
+                sub_dirs = [str(f) for f in listdir(self.browse_path)
+                            if path.isdir(
+                            path.join(self.browse_path, f))]
+
+                err_msg = ("SampleSheet.csv file not found in the " +
+                           "selected directory:\n" +
+                           self.browse_path)
+                if len(sub_dirs) > 0:
+                    err_msg = (err_msg + " or its " +
+                               "subdirectories:\n" + ", ".join(sub_dirs))
+
+                raise SampleSheetError(err_msg)
+
+            else:
+                self.sample_sheet_files = res_list
+
+            for ss in self.sample_sheet_files:
+                self.log_color_print("Processing: " + ss)
+                try:
+                    self.process_sample_sheet(ss)
+                except (SampleSheetError, SequenceFileError):
+                    self.log_color_print(
+                        "Stopping the processing of SampleSheet.csv " +
+                        "files due to failed validation of previous " +
+                        "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
+                    break  # stop processing sheets if validation fails
+
+        except SampleSheetError, e:
+            self.handle_invalid_sheet_or_seq_file(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):
 
