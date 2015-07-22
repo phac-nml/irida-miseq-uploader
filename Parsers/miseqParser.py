@@ -1,6 +1,6 @@
 import re
-from os import walk, path
-from fnmatch import filter as fnfilter
+from os import path, listdir
+from fnmatch import translate as fn_translate
 from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
@@ -227,9 +227,18 @@ def get_all_fastq_files(data_dir):
     return list containing path for fastq files
     """
 
-    pattern = "*.fastq.*"
-    fastq_file_list = recursive_find(data_dir, pattern)
-    fastq_file_list.sort()
+    pattern = fn_translate("*.fastq.*")
+    fastq_files_path = path.join(data_dir, "Data", "Intensities", "BaseCalls")
+
+    try:
+        file_list = listdir(fastq_files_path)
+        fastq_file_list = [path.join(fastq_files_path, file)
+                           for file in file_list if re.match(pattern, file)]
+        fastq_file_list.sort()
+
+    except OSError:
+        msg = "Invalid directory " + fastq_files_path
+        raise OSError(msg)
 
     return fastq_file_list
 
@@ -262,30 +271,3 @@ def get_pair_files(fastq_file_list, sample_id):
             pair_file_list.sort()
 
     return pair_file_list
-
-
-def recursive_find(top_dir, pattern):
-
-    """
-    Traverse through a directory and its subdirectories looking for files that
-        match given pattern
-
-    arguments:
-            top_dir -- top level directory to start searching from
-            pattern -- pattern to try and match using fnfilter/ fnmatch.filter
-
-    returns list containing files that match pattern
-    """
-
-    result_list = []
-
-    if path.isdir(top_dir):
-        for root, dirs, files in walk(top_dir):
-            for filename in fnfilter(files, pattern):
-                res = path.join(root, filename)
-                result_list.append(res)
-    else:
-        msg = "Invalid directory " + top_dir
-        raise IOError(msg)
-
-    return result_list

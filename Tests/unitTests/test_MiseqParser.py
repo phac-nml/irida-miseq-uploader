@@ -10,7 +10,7 @@ from Parsers.miseqParser import (parse_metadata, parse_samples, get_csv_reader,
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 
-path_to_module = path.dirname(__file__)
+path_to_module = path.abspath(path.dirname(__file__))
 if len(path_to_module) == 0:
     path_to_module = '.'
 
@@ -183,7 +183,7 @@ class TestMiSeqParser(unittest.TestCase):
         invalid_dir = "+/not a directory/+"
         invalid_sample_id = "-1"
 
-        with self.assertRaises(IOError) as context:
+        with self.assertRaises(OSError) as context:
             fastq_files = get_all_fastq_files(invalid_dir)
             pair_file_list = get_pair_files(fastq_files, invalid_sample_id)
 
@@ -193,7 +193,7 @@ class TestMiSeqParser(unittest.TestCase):
         invalid_dir = "+/not a directory/+"
         valid_sample_id = "01-1111"
 
-        with self.assertRaises(IOError) as context:
+        with self.assertRaises(OSError) as context:
             fastq_files = get_all_fastq_files(invalid_dir)
             pair_file_list = get_pair_files(fastq_files, valid_sample_id)
 
