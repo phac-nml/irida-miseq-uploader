@@ -433,11 +433,11 @@ class ApiCalls:
         for sample in samples_list:
 
             files = ({
-                    "file1": (sample.get_pair_files()[0],
+                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
                               open(sample.get_pair_files()[0], "rb")),
                     "parameters1": ("", "{\"parameters1\": \"p1\"}",
                                     "application/json"),
-                    "file2": (sample.get_pair_files()[1],
+                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
                               open(sample.get_pair_files()[1], "rb")),
                     "parameters2": ("", "{\"parameters2\": \"p2\"}",
                                     "application/json")
@@ -500,11 +500,11 @@ class ApiCalls:
             url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
             files = ({
-                    "file1": (sample.get_pair_files()[0],
+                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
                               open(sample.get_pair_files()[0], "rb")),
                     "parameters1": ("", "{\"parameters1\": \"p1\"}",
                                     "application/json"),
-                    "file2": (sample.get_pair_files()[1],
+                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
                               open(sample.get_pair_files()[1], "rb")),
                     "parameters2": ("", "{\"parameters2\": \"p2\"}",
                                     "application/json")
