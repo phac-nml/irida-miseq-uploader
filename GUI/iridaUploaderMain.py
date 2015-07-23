@@ -396,8 +396,9 @@ class MainFrame(wx.Frame):
             evt = self.send_seq_files_evt(
                 sample_list=sr.get_sample_list(),
                 send_pairs_callback=self.pair_upload_callback)
-
             self.GetEventHandler().ProcessEvent(evt)
+
+            self.seq_run_list.remove(sr)
 
     def pair_upload_callback(self, monitor):
 
@@ -491,10 +492,10 @@ class MainFrame(wx.Frame):
         """
         function responsible for handling what happens after an upload
         of sequence files finishes
-        displays "Upload Complete" to log panel and re-enables upload button.
+        displays "Upload Complete" to log panel.
         """
 
-        self.log_color_print("Upload complete", self.LOG_PNL_OK_TXT_COLOR)
+        self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
