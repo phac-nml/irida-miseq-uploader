@@ -8,6 +8,7 @@ from wx.lib.pubsub import Publisher
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
+from Validation.onlineValidation import project_exists, sample_exists
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list)
@@ -17,6 +18,7 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame
 from UploadThread import UploadThread
+
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -137,6 +139,15 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_TEXT_ENTER, self.manually_enter_dir, self.dir_box)
 
     def manually_enter_dir(self, evt):
+
+        """
+        Function bound to user typing in to the dir_box and then pressing
+        the enter key.
+        Sets self.browse_path to the value enterred by the user because
+        self.browse_path is used in self.start_sample_sheet_processing()
+
+        no return value
+        """
 
         self.browse_path = self.dir_box.GetValue()
         self.start_sample_sheet_processing()
@@ -300,12 +311,45 @@ class MainFrame(wx.Frame):
         self.settings_frame.Destroy()
         self.Destroy()
 
+    def start_cf_progress_bar_pulse(self):
+
+        """
+        pulse self.cf_progress_bar (move bar left and right) until uploading
+        sequence file starts
+        small indication that program is processing and is not frozen
+        the pulse stops when self.pulse_timer.Stop() is called in
+        self.update_progress_bars()
+
+        no return value
+        """
+
+        pulse_interval = 100  # milliseconds
+        self.pulse_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, lambda evt: self.cf_progress_bar.Pulse(),
+                  self.pulse_timer)
+        self.pulse_timer.Start(pulse_interval)
+
     def upload_to_server(self, event):
 
         """
         Function bound to upload_button being clicked
-        creates a different thread UploadThread which handles the entire
-        upload process
+
+        uploads each SequencingRun in self.seq_run_list to irida web server
+
+        each SequencingRun will contain a list of samples and each sample
+        from the list of samples will contain a pair of sequence files
+
+        for each sample in the sample list, we check if the project_id
+        that it's supposed to be uploaded to already exists and
+        raises an error if it doesn't
+
+        we then check if the sample's id exists for it's given project_id
+        if it doesn't exist then create it
+
+        finally we create an UploadThread which runs
+        api.send_pair_sequence_files() and send it the list of samples and
+        our callback function:
+        self.pair_upload_callback()
 
         arguments:
                 event -- EVT_BUTTON when upload button is clicked
@@ -317,7 +361,27 @@ class MainFrame(wx.Frame):
         # disable upload button to prevent accidental double-click
 
         self.log_color_print("Starting upload")
-        UploadThread(self)
+        self.log_color_print("Calculating file sizes")
+
+        self.start_cf_progress_bar_pulse()
+        self.thread_list = []
+
+        api = self.api
+        for sr in self.seq_run_list:
+
+            for sample in sr.get_sample_list():
+                if project_exists(api, sample.get_project_id()) is False:
+                    raise ProjectError("Project ID: {id} doesn't exist".format(
+                                        id=sample.get("sampleProject")))
+
+                if sample_exists(api, sample) is False:
+                    api.send_samples(sr.get_sample_list())
+
+            ut = UploadThread(api.send_pair_sequence_files,
+                              sr.get_sample_list(),
+                              self.pair_upload_callback)
+
+            self.thread_list.append(ut)
 
     def pair_upload_callback(self, monitor):
 
@@ -384,6 +448,9 @@ class MainFrame(wx.Frame):
 
         no return value
         """
+
+        if self.pulse_timer.IsRunning():
+            self.pulse_timer.Stop()
 
         if (isinstance(progress_data.data, str) and
                 progress_data.data == "Upload Complete"):
@@ -517,7 +584,7 @@ class MainFrame(wx.Frame):
                         "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
                     break  # stop processing sheets if validation fails
 
-        except SampleSheetError, e:
+        except (SampleSheetError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):

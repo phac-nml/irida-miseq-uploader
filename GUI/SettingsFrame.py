@@ -189,6 +189,8 @@ class SettingsFrame(wx.Frame):
         return ApiCalls object created from self.create_api_obj
         """
 
+        api = None
+
         try:
 
             api = self.create_api_obj()
