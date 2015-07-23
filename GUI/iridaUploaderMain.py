@@ -2,9 +2,11 @@ import wx
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
+from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.pubsub import Publisher
+from wx.lib.newevent import NewEvent
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -17,7 +19,6 @@ from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame
-from UploadThread import UploadThread
 
 
 path_to_module = path.dirname(__file__)
@@ -36,6 +37,8 @@ class MainFrame(wx.Frame):
                           size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
+
+        self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.sample_sheet_files = []
         self.seq_run_list = []
@@ -97,11 +100,25 @@ class MainFrame(wx.Frame):
 
         Publisher.subscribe(self.update_progress_bars, "update_progress_bars")
 
+        self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
         self.Show()
+
+    def handle_send_seq_evt(self, evt):
+
+        """
+        function bound to custom event self.EVT_SEND_SEQ_FILES
+        creates new thread for sending pair sequence files
+
+        no return value
+        """
+
+        t = Thread(target=self.api.send_pair_sequence_files,
+                   args=(evt.sample_list, evt.send_pairs_callback,))
+        t.start()
 
     def add_select_sample_sheet_section(self):
 
@@ -364,7 +381,6 @@ class MainFrame(wx.Frame):
         self.log_color_print("Calculating file sizes")
 
         self.start_cf_progress_bar_pulse()
-        self.thread_list = []
 
         api = self.api
         for sr in self.seq_run_list:
@@ -377,11 +393,11 @@ class MainFrame(wx.Frame):
                 if sample_exists(api, sample) is False:
                     api.send_samples(sr.get_sample_list())
 
-            ut = UploadThread(api.send_pair_sequence_files,
-                              sr.get_sample_list(),
-                              self.pair_upload_callback)
+            evt = self.send_seq_files_evt(
+                sample_list=sr.get_sample_list(),
+                send_pairs_callback=self.pair_upload_callback)
 
-            self.thread_list.append(ut)
+            self.GetEventHandler().ProcessEvent(evt)
 
     def pair_upload_callback(self, monitor):
 
