@@ -1,6 +1,7 @@
 import ast
 import json
 import httplib
+import wx
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
@@ -547,7 +548,8 @@ class ApiCalls:
                                          status_code=str(response.status_code),
                                          err_msg=response.text,
                                          ud=str(files)))
-
-        Publisher().sendMessage("update_progress_bars", "Upload Complete")
+        if callback is not None:
+            wx.CallAfter(Publisher().sendMessage, "update_progress_bars",
+                         "Upload Complete")
 
         return json_res_list
