@@ -438,6 +438,7 @@ class ApiCalls:
         return file_size_list
 
     def send_pair_sequence_files(self, samples_list, callback=None):
+
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
@@ -455,76 +456,82 @@ class ApiCalls:
         json_res_list = []
 
         file_size_list = self.get_file_size_list(samples_list)
-        size_of_all_seq_files = sum(file_size_list)
+        self.size_of_all_seq_files = sum(file_size_list)
 
-        total_bytes_read = 0
+        self.total_bytes_read = 0
+
         for sample in samples_list:
+            json_res = self._send_pair_sequence_files(sample, callback)
+            json_res_list.append(json_res)
 
-            try:
-                project_id = sample.get_project_id()
-                proj_URL = self.get_link(self.base_URL, "projects")
-                samples_url = self.get_link(proj_URL, "project/samples",
-                                            targ_dict={
-                                                "key": "identifier",
-                                                "value": project_id
-                                            })
-            except StopIteration:
-                raise ProjectError("The given project ID: " +
-                                   project_id + " doesn't exist")
-
-            try:
-                sample_id = sample.get_id()
-                seq_url = self.get_link(samples_url, "sample/sequenceFiles",
-                                        targ_dict={
-                                            "key": "sequencerSampleId",
-                                            "value": sample_id
-                                        })
-            except StopIteration:
-                raise SampleError("The given sample ID: " +
-                                  sample_id + " doesn't exist")
-
-            url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
-
-            files = ({
-                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
-                              open(sample.get_pair_files()[0], "rb")),
-                    "parameters1": ("", "{\"parameters1\": \"p1\"}",
-                                    "application/json"),
-                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
-                              open(sample.get_pair_files()[1], "rb")),
-                    "parameters2": ("", "{\"parameters2\": \"p2\"}",
-                                    "application/json")
-            })
-
-            e = encoder.MultipartEncoder(fields=files)
-
-            monitor = encoder.MultipartEncoderMonitor(e, callback)
-
-            monitor.files = sample.get_pair_files()
-            monitor.total_bytes_read = total_bytes_read
-            monitor.size_of_all_seq_files = size_of_all_seq_files
-
-            monitor.ov_upload_pct = 0.0
-            monitor.cf_upload_pct = 0.0
-            monitor.prev_cf_pct = 0.0
-            monitor.prev_ov_pct = 0.0
-            monitor.prev_bytes = 0
-
-            headers = {"Content-Type": monitor.content_type}
-
-            response = self.session.post(url, data=monitor, headers=headers)
-            total_bytes_read = monitor.total_bytes_read
-
-            if response.status_code == httplib.CREATED:
-                json_res = json.loads(response.text)
-                json_res_list.append(json_res)
-            else:
-                raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
-                                         "Upload data: {ud}").format(
-                                         status_code=str(response.status_code),
-                                         err_msg=response.text,
-                                         ud=str(files)))
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
 
-        return json_res_list
+    def _send_pair_sequence_files(self, sample, callback):
+
+        try:
+            project_id = sample.get_project_id()
+            proj_URL = self.get_link(self.base_URL, "projects")
+            samples_url = self.get_link(proj_URL, "project/samples",
+                                        targ_dict={
+                                            "key": "identifier",
+                                            "value": project_id
+                                        })
+        except StopIteration:
+            raise ProjectError("The given project ID: " +
+                               project_id + " doesn't exist")
+
+        try:
+            sample_id = sample.get_id()
+            seq_url = self.get_link(samples_url, "sample/sequenceFiles",
+                                    targ_dict={
+                                        "key": "sequencerSampleId",
+                                        "value": sample_id
+                                    })
+        except StopIteration:
+            raise SampleError("The given sample ID: " +
+                              sample_id + " doesn't exist")
+
+        url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
+
+        files = ({
+                "file1": (sample.get_pair_files()[0].replace("\\", "/"),
+                          open(sample.get_pair_files()[0], "rb")),
+                "parameters1": ("", "{\"parameters1\": \"p1\"}",
+                                "application/json"),
+                "file2": (sample.get_pair_files()[1].replace("\\", "/"),
+                          open(sample.get_pair_files()[1], "rb")),
+                "parameters2": ("", "{\"parameters2\": \"p2\"}",
+                                "application/json")
+        })
+
+        e = encoder.MultipartEncoder(fields=files)
+
+        monitor = encoder.MultipartEncoderMonitor(e, callback)
+
+        monitor.files = sample.get_pair_files()
+        monitor.total_bytes_read = self.total_bytes_read
+        monitor.size_of_all_seq_files = self.size_of_all_seq_files
+
+        monitor.ov_upload_pct = 0.0
+        monitor.cf_upload_pct = 0.0
+        monitor.prev_cf_pct = 0.0
+        monitor.prev_ov_pct = 0.0
+        monitor.prev_bytes = 0
+
+        headers = {"Content-Type": monitor.content_type}
+
+        response = self.session.post(url, data=monitor, headers=headers)
+        self.total_bytes_read = monitor.total_bytes_read
+
+        if response.status_code == httplib.CREATED:
+            json_res = json.loads(response.text)
+
+        else:
+            raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
+                                     "Upload data: {ud}").format(
+                                     status_code=str(response.status_code),
+                                     err_msg=response.text,
+                                     ud=str(files)))
+
+        return json_res
