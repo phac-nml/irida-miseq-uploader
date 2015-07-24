@@ -579,6 +579,10 @@ class MainFrame(wx.Frame):
     def start_sample_sheet_processing(self):
 
         self.dir_box.SetValue(self.browse_path)
+        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_bar.SetValue(0)
+        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_bar.SetValue(0)
 
         try:
 
