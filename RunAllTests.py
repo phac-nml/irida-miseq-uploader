@@ -14,7 +14,7 @@ from os import system, path, listdir, getcwd
 
 """
 For running all tests or commenting out particular tests suites to only run
-selected tests.
+selected tests. 
 """
 
 
