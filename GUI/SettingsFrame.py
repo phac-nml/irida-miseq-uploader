@@ -464,12 +464,13 @@ class SettingsFrame(wx.Frame):
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
-
-        self.url_container.Add(self.base_url_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        
+        self.url_box_icon_sizer.Add(self.base_url_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1, flag=wx.EXPAND)
         self.url_box_icon_sizer.Add(self.base_URL_icon, flag=wx.ALIGN_CENTER_VERTICAL)
         self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1, flag=wx.EXPAND)
-        self.url_box_err_sizer.Add(self.url_err_label)
+        self.url_box_err_sizer.Add(self.url_err_label, flag=wx.LEFT,
+                                   border=self.base_url_label.GetSize()[0])
         self.url_container.Add(self.url_box_err_sizer, proportion=1, flag=wx.EXPAND)
 
     def add_username_section(self):
