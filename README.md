@@ -35,7 +35,7 @@ Build a virtualenv and install the dependencies:
     $ cd iridauploader
     $ pip install -r requirements.txt --allow-external pypubsub
     $ scripts/virtualenv_wx.sh
-    $ python setup.py install --user
+    $ python setup.py install
 
 Remember that wxPython must be already installed using:
 
