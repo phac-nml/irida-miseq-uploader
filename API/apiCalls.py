@@ -1,7 +1,6 @@
 import ast
 import json
 import httplib
-import wx
 from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
@@ -10,7 +9,7 @@ from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
-from wx.lib.pubsub import Publisher
+from pubsub import pub
 
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
@@ -548,8 +547,7 @@ class ApiCalls:
                                          status_code=str(response.status_code),
                                          err_msg=response.text,
                                          ud=str(files)))
-        if callback is not None:
-            wx.CallAfter(Publisher().sendMessage, "update_progress_bars",
-                         "Upload Complete")
+
+        pub.sendMessage("pair_seq_files_upload_complete")
 
         return json_res_list

@@ -5,8 +5,8 @@ from fnmatch import filter as fnfilter
 from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
-from wx.lib.pubsub import Publisher
 from wx.lib.newevent import NewEvent
+from pubsub import pub
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -98,8 +98,9 @@ class MainFrame(wx.Frame):
         self.SetSizer(self.top_sizer)
         self.Layout()
 
-        Publisher.subscribe(self.update_progress_bars, "update_progress_bars")
-
+        pub.subscribe(self.update_progress_bars, "update_progress_bars")
+        pub.subscribe(self.pair_seq_files_upload_complete,
+                      "pair_seq_files_upload_complete")
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
@@ -400,13 +401,24 @@ class MainFrame(wx.Frame):
 
             self.seq_run_list.remove(sr)
 
+    def pair_seq_files_upload_complete(self):
+
+        """
+        Subscribed to "pair_seq_files_upload_complete"
+        Adds to wx events queue: publisher send a message that uploading
+        sequence files is complete
+        """
+
+        wx.CallAfter(pub.sendMessage,
+                     "update_progress_bars", progress_data="Upload Complete")
+
     def pair_upload_callback(self, monitor):
 
         """
         callback function used by api.send_pair_sequence_files()
-        makes the Publisher send "update_progress_bars" message that contains
-        progress percentage data whenever the percentage of the current file
-        being uploaded changes.
+        makes the publisher (pub) send "update_progress_bars" message that
+        contains progress percentage data whenever the percentage of the
+        current file being uploaded changes.
 
         arguments:
             monitor -- an encoder.MultipartEncoderMonitor object
@@ -437,9 +449,9 @@ class MainFrame(wx.Frame):
         # only call update_progress_bars if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
                 monitor.prev_ov_pct != monitor.ov_upload_pct):
-            wx.CallAfter(Publisher().sendMessage,
+            wx.CallAfter(pub.sendMessage,
                          "update_progress_bars",
-                         progress_data)
+                         progress_data=progress_data)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
@@ -449,7 +461,7 @@ class MainFrame(wx.Frame):
 
         """
         Subscribed to "update_progress_bars"
-        This function is called when Publisher() sends the message
+        This function is called when pub (publisher) sends the message
         "update_progress_bars"
 
         Updates boths progress bars and progress labels
@@ -461,7 +473,6 @@ class MainFrame(wx.Frame):
         arguments:
             progress_data -- object containing dictionary that holds data
                              to be used by the progress bars and labels
-                             dictionary is in progress_data.data
 
         no return value
         """
@@ -469,21 +480,21 @@ class MainFrame(wx.Frame):
         if self.pulse_timer.IsRunning():
             self.pulse_timer.Stop()
 
-        if (isinstance(progress_data.data, str) and
-                progress_data.data == "Upload Complete"):
+        if (isinstance(progress_data, str) and
+                progress_data == "Upload Complete"):
             self.handle_upload_complete()
 
         else:
             self.cf_progress_bar.SetValue(
-                progress_data.data["curr_file_upload_pct"])
+                progress_data["curr_file_upload_pct"])
             self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
-                files=str(progress_data.data["curr_files_uploading"]),
-                pct=str(progress_data.data["curr_file_upload_pct"])))
+                files=str(progress_data["curr_files_uploading"]),
+                pct=str(progress_data["curr_file_upload_pct"])))
 
-            self.ov_progress_bar.SetValue(progress_data.data
+            self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("Overall: {pct}%".format(
-                pct=str(progress_data.data["overall_upload_pct"])))
+                pct=str(progress_data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
 
