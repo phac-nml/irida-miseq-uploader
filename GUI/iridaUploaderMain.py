@@ -384,22 +384,29 @@ class MainFrame(wx.Frame):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
-        for sr in self.seq_run_list:
+        try:
+            for sr in self.seq_run_list:
 
-            for sample in sr.get_sample_list():
-                if project_exists(api, sample.get_project_id()) is False:
-                    raise ProjectError("Project ID: {id} doesn't exist".format(
-                                        id=sample.get("sampleProject")))
+                for sample in sr.get_sample_list():
+                    if project_exists(api, sample.get_project_id()) is False:
+                        msg = "Project ID: {id} doesn't exist".format(
+                               id=sample.get_project_id())
+                        raise ProjectError(msg)
 
-                if sample_exists(api, sample) is False:
-                    api.send_samples(sr.get_sample_list())
+                    if sample_exists(api, sample) is False:
+                        api.send_samples(sr.get_sample_list())
 
-            evt = self.send_seq_files_evt(
-                sample_list=sr.get_sample_list(),
-                send_pairs_callback=self.pair_upload_callback)
-            self.GetEventHandler().ProcessEvent(evt)
+                evt = self.send_seq_files_evt(
+                    sample_list=sr.get_sample_list(),
+                    send_pairs_callback=self.pair_upload_callback)
+                self.GetEventHandler().ProcessEvent(evt)
 
-            self.seq_run_list.remove(sr)
+                self.seq_run_list.remove(sr)
+
+        except ProjectError, e:
+            self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
+            self.display_warning(e.message)
 
     def pair_seq_files_upload_complete(self):
 
