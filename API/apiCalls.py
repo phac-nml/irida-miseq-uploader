@@ -547,7 +547,7 @@ class ApiCalls:
                                          status_code=str(response.status_code),
                                          err_msg=response.text,
                                          ud=str(files)))
-
-        pub.sendMessage("pair_seq_files_upload_complete")
+        if callback is not None:
+            pub.sendMessage("pair_seq_files_upload_complete")
 
         return json_res_list
