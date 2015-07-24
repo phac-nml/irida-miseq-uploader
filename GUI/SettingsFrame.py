@@ -105,8 +105,8 @@ class SettingsFrame(wx.Frame):
 
         self.SetSizer(self.top_sizer)
 
-        self.top_sizer.Add(self.url_container, proportion=0,
-                           flag=wx.ALL | wx.ALIGN_CENTER,
+        self.top_sizer.Add(self.url_container, proportion=1,
+                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
                            border=self.SIZER_BORDER)
 
         self.user_pass_container.Add(
@@ -452,13 +452,12 @@ class SettingsFrame(wx.Frame):
 
         self.base_url_label = wx.StaticText(
             parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Base URL")
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.base_URL_box = wx.TextCtrl(self)
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
@@ -466,13 +465,12 @@ class SettingsFrame(wx.Frame):
         self.base_URL_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
 
-        self.url_container.Add(self.base_url_label, flag=wx.TOP, border=5)
-        self.url_box_icon_sizer.Add(self.base_URL_box, flag=wx.TOP, border=5)
-        self.url_box_icon_sizer.Add(self.base_URL_icon, 0, flag=wx.LEFT |
-                                    wx.BOTTOM | wx.TOP, border=5)
-        self.url_box_err_sizer.Add(self.url_box_icon_sizer)
+        self.url_container.Add(self.base_url_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1, flag=wx.EXPAND)
+        self.url_box_icon_sizer.Add(self.base_URL_icon, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1, flag=wx.EXPAND)
         self.url_box_err_sizer.Add(self.url_err_label)
-        self.url_container.Add(self.url_box_err_sizer)
+        self.url_container.Add(self.url_box_err_sizer, proportion=1, flag=wx.EXPAND)
 
     def add_username_section(self):
 
@@ -638,8 +636,6 @@ class SettingsFrame(wx.Frame):
         self.client_id_icon.Hide()
         self.client_secret_icon.Hide()
 
-        self.url_container.Add(self.base_URL_icon, flag=wx.TOP,
-                               border=self.SIZER_BORDER)
 
     def show_warning_icon(self, targ, tooltip=""):
 
