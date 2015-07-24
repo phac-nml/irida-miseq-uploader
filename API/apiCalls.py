@@ -1,7 +1,6 @@
 import ast
 import json
 import httplib
-from os import path
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 
@@ -432,20 +431,7 @@ class ApiCalls:
         file_size_list = []
         for sample in samples_list:
 
-            files = ({
-                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
-                              open(sample.get_pair_files()[0], "rb")),
-                    "parameters1": ("", "{\"parameters1\": \"p1\"}",
-                                    "application/json"),
-                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
-                              open(sample.get_pair_files()[1], "rb")),
-                    "parameters2": ("", "{\"parameters2\": \"p2\"}",
-                                    "application/json")
-            })
-
-            e = encoder.MultipartEncoder(fields=files)
-
-            bytes_read_size = len(str(e.to_string()))
+            bytes_read_size = sample.get_pair_files_size()
             file_size_list.append(bytes_read_size)
             sample.pair_files_byte_size = bytes_read_size
 
@@ -528,15 +514,6 @@ class ApiCalls:
 
             response = self.session.post(url, data=monitor, headers=headers)
             total_bytes_read = monitor.total_bytes_read
-            """
-            # Show that there is no difference between Content-Length
-            # and the size for a sample's pair files.
-            print "{v1} - {v2} = {val}".format(
-                v1=int(response.request.headers["Content-Length"]),
-                v2=sample.pair_files_byte_size,
-                val=(int(response.request.headers["Content-Length"]) -
-                sample.pair_files_byte_size))
-            """
 
             if response.status_code == httplib.CREATED:
                 json_res = json.loads(response.text)
