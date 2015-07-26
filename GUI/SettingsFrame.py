@@ -147,7 +147,7 @@ class SettingsFrame(wx.Frame):
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM)
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND)
 
         self.Center()
         self.Layout()
@@ -744,9 +744,8 @@ class SettingsFrame(wx.Frame):
 
         self.default_btn = wx.Button(self, label="Restore to default")
         self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, 3,
-                               flag=wx.ALIGN_LEFT | wx.LEFT, border=5)
-        self.buttons_sizer.AddStretchSpacer(8)
+        self.buttons_sizer.Add(self.default_btn, flag=wx.ALIGN_LEFT)
+        self.buttons_sizer.AddStretchSpacer()
 
     def restore_default_settings(self, evt):
 
@@ -825,8 +824,7 @@ class SettingsFrame(wx.Frame):
 
         self.save_btn = wx.Button(self, label="Save")
         self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
-        self.buttons_sizer.Add(self.save_btn, 0,
-                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
+        self.buttons_sizer.Add(self.save_btn, flag=wx.ALIGN_RIGHT)
 
     def save_changes(self, evt):
 
@@ -864,8 +862,7 @@ class SettingsFrame(wx.Frame):
 
         self.close_btn = wx.Button(self, label="Close")
         self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
-        self.buttons_sizer.Add(self.close_btn, 0,
-                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
+        self.buttons_sizer.Add(self.close_btn, flag=wx.ALIGN_RIGHT)
 
     def close_handler(self, event):
 
