@@ -72,7 +72,8 @@ class SettingsFrame(wx.Frame):
         self.password_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.password_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
+        self.id_secret_static_box = wx.StaticBox(self, label="Client authorization")
+        self.id_secret_container = wx.StaticBoxSizer(self.id_secret_static_box, wx.VERTICAL)
 
         self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.client_id_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
