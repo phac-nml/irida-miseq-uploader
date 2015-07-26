@@ -61,7 +61,8 @@ class SettingsFrame(wx.Frame):
         self.url_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.url_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
+        self.user_pass_static_box = wx.StaticBox(self, label="User authorization")
+        self.user_pass_container = wx.StaticBoxSizer(self.user_pass_static_box, wx.VERTICAL)
 
         self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.username_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
