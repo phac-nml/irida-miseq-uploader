@@ -48,7 +48,6 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.NEUTRAL_BOX_COLOR = wx.WHITE
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
         self.PADDING_LEN = 5
 
@@ -394,7 +393,6 @@ class SettingsFrame(wx.Frame):
         self.reset_display()
 
         for label in err_labels:
-            label.Show()
             label.SetLabel(err_description)
 
         for log_msg in err_log_msgs:
@@ -409,19 +407,11 @@ class SettingsFrame(wx.Frame):
 
         """
         set gui objects (box, label, icons) to initial state
-        set all box background color to self.NEUTRAL_BOX_COLOR
-        hide all error labels
-        hide all icons
+        hide all error labels - set to empty string
+        hide all icons - replace them with transparent icon
         """
 
-        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.client_secret_box.SetBackgroundColour(
-            self.NEUTRAL_BOX_COLOR)
-
-        self.url_err_label.SetLabel("")
+        self.url_err_label.SetLabel("\n")
         self.username_err_label.SetLabel("")
         self.password_err_label.SetLabel("")
         self.client_id_err_label.SetLabel("")
@@ -456,7 +446,6 @@ class SettingsFrame(wx.Frame):
 
         self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.base_URL_icon.Hide()
 
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
@@ -494,7 +483,6 @@ class SettingsFrame(wx.Frame):
 
         self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.username_icon.Hide()
 
         self.username_box_icon_sizer.Add(self.username_label,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
@@ -525,7 +513,6 @@ class SettingsFrame(wx.Frame):
 
         self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.password_icon.Hide()
 
         self.password_box_icon_sizer.Add(self.password_label,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
@@ -556,7 +543,6 @@ class SettingsFrame(wx.Frame):
 
         self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_id_icon.Hide()
 
         self.client_id_box_icon_sizer.Add(self.client_id_label,
                                           flag=wx.ALIGN_CENTER_VERTICAL)
@@ -587,7 +573,6 @@ class SettingsFrame(wx.Frame):
 
         self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_secret_icon.Hide()
 
         self.client_secret_box_icon_sizer.Add(self.client_secret_label,
                                               flag=wx.ALIGN_CENTER_VERTICAL)
@@ -686,6 +671,9 @@ class SettingsFrame(wx.Frame):
 
         arguments:
             targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            hide -- if True actually hide the icon object instead of placing
+                    a transparent placeholder icon in it
+                    used just for base_URL_icon because it's box expands
 
         no return value
         """
