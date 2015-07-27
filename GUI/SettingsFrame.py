@@ -45,7 +45,7 @@ class SettingsFrame(wx.Frame):
         self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
-        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 30
+        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
@@ -54,7 +54,9 @@ class SettingsFrame(wx.Frame):
         self.VALID_CONNECTION_COLOR = (50, 255, 50)
         self.INVALID_CONNECTION_COLOR = (244, 66, 54)
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
+        self.PADDING_LEN = 5
 
+        self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.url_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -104,13 +106,13 @@ class SettingsFrame(wx.Frame):
         self.add_default_btn()
         self.add_save_btn()
         self.add_close_btn()
-
-        self.SetSizer(self.top_sizer)
+        
+        self.SetSizer(self.padding)
 
         self.top_sizer.Add(self.url_container, proportion=1,
                            flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
                            border=self.SIZER_BORDER)
-
+        
         self.user_pass_container.Add(
             self.username_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
@@ -135,19 +137,22 @@ class SettingsFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=self.SIZER_BORDER)
+            flag=wx.ALIGN_CENTER, border=self.SIZER_BORDER)
 
-        self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
         self.debug_log_container.Add(self.debug_sizer)
         self.debug_log_container.Add(self.log_panel_sizer)
 
         self.top_sizer.Add(
             self.debug_log_container, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER)
+            flag=wx.ALIGN_CENTER)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND)
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND 
+            | wx.LEFT | wx.RIGHT, border=self.SIZER_BORDER*2)
+        
+        self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND, 
+                         border=self.PADDING_LEN)
 
         self.Center()
         self.Layout()
