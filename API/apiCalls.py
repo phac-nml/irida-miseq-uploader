@@ -467,6 +467,8 @@ class ApiCalls:
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
 
+        return json_res_list
+
     def _send_pair_sequence_files(self, sample, callback):
 
         try:
