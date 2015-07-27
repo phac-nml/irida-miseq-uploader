@@ -51,8 +51,6 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.NEUTRAL_BOX_COLOR = wx.WHITE
-        self.VALID_CONNECTION_COLOR = (50, 255, 50)
-        self.INVALID_CONNECTION_COLOR = (244, 66, 54)
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
         self.PADDING_LEN = 5
 
@@ -63,8 +61,10 @@ class SettingsFrame(wx.Frame):
         self.url_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.url_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.user_pass_static_box = wx.StaticBox(self, label="User authorization")
-        self.user_pass_container = wx.StaticBoxSizer(self.user_pass_static_box, wx.VERTICAL)
+        self.user_pass_static_box = wx.StaticBox(
+            self, label="User authorization")
+        self.user_pass_container = wx.StaticBoxSizer(
+            self.user_pass_static_box, wx.VERTICAL)
 
         self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.username_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -74,8 +74,10 @@ class SettingsFrame(wx.Frame):
         self.password_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.password_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.id_secret_static_box = wx.StaticBox(self, label="Client authorization")
-        self.id_secret_container = wx.StaticBoxSizer(self.id_secret_static_box, wx.VERTICAL)
+        self.id_secret_static_box = wx.StaticBox(
+            self, label="Client authorization")
+        self.id_secret_container = wx.StaticBoxSizer(
+            self.id_secret_static_box, wx.VERTICAL)
 
         self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
         self.client_id_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -106,13 +108,13 @@ class SettingsFrame(wx.Frame):
         self.add_default_btn()
         self.add_save_btn()
         self.add_close_btn()
-        
+
         self.SetSizer(self.padding)
 
         self.top_sizer.Add(self.url_container, proportion=1,
                            flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
                            border=self.SIZER_BORDER)
-        
+
         self.user_pass_container.Add(
             self.username_container, proportion=0,
             flag=wx.ALL, border=self.SIZER_BORDER)
@@ -140,14 +142,14 @@ class SettingsFrame(wx.Frame):
         self.top_sizer.Add(
             self.debug_log_container, proportion=0,
             flag=wx.ALIGN_CENTER)
-        
-        self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND, 
+
+        self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND,
                          border=self.PADDING_LEN)
 
         self.padding.AddStretchSpacer()
         self.padding.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND 
-            | wx.LEFT | wx.RIGHT| wx.BOTTOM, border=self.SIZER_BORDER*2)
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
+            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
         self.Center()
         self.Layout()
@@ -198,13 +200,6 @@ class SettingsFrame(wx.Frame):
             api = self.create_api_obj()
 
             self.reset_display()
-
-            self.base_URL_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.username_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.password_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.client_id_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.client_secret_box.SetBackgroundColour(
-                                                self.VALID_CONNECTION_COLOR)
 
             self.log_color_print("\nSuccessfully connected to API.",
                                  self.LOG_PNL_OK_TXT_COLOR)
@@ -387,8 +382,9 @@ class SettingsFrame(wx.Frame):
         arguments:
             err_labels -- list of label text objects to have their label set
                           to err_description
-            err_boxes -- list of textbox objects to have their background set
-                         to self.INVALID_CONNECTION_COLOR
+            err_boxes -- used to be: list of textbox objects to have their
+                         background set to self.INVALID_CONNECTION_COLOR
+                         currently isn't used
             err_log_msgs -- list of string messages to display to the log_panel
             err_description -- description of error to be used for err_labels
             err_icons -- list of icons to be changed to show warning icon
@@ -402,9 +398,6 @@ class SettingsFrame(wx.Frame):
         for label in err_labels:
             label.Show()
             label.SetLabel(err_description)
-
-        for box in err_boxes:
-            box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
         for log_msg in err_log_msgs:
             self.log_color_print(log_msg,
@@ -471,11 +464,16 @@ class SettingsFrame(wx.Frame):
         self.base_URL_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
 
-        self.url_box_icon_sizer.Add(self.base_url_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1, flag=wx.EXPAND)
-        self.url_box_icon_sizer.Add(self.base_URL_icon, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1, flag=wx.EXPAND)
-        self.url_box_err_sizer.Add(self.url_err_label, flag=wx.LEFT,
+        self.url_box_icon_sizer.Add(self.base_url_label,
+                                    flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1,
+                                    flag=wx.EXPAND)
+        self.url_box_icon_sizer.Add(self.base_URL_icon,
+                                    flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1,
+                                   flag=wx.EXPAND)
+        self.url_box_err_sizer.Add(self.url_err_label,
+                                   flag=wx.LEFT,
                                    border=self.base_url_label.GetSize()[0])
         self.url_container.Add(self.url_box_err_sizer, proportion=1)
 
@@ -641,7 +639,8 @@ class SettingsFrame(wx.Frame):
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
-        placeholder_img_path = path.join(path_to_module, "images", "Placeholder.png")
+        placeholder_img_path = path.join(path_to_module, "images",
+                                         "Placeholder.png")
         self.ph_img = wx.Image(placeholder_img_path,
                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
