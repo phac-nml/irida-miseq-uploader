@@ -112,8 +112,8 @@ class SettingsFrame(wx.Frame):
         self.SetSizer(self.padding)
 
         self.top_sizer.Add(self.url_container, proportion=1,
-                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
-                           border=self.SIZER_BORDER)
+                           flag=wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER |
+                           wx.EXPAND, border=self.SIZER_BORDER*2)
 
         self.user_pass_container.Add(
             self.username_container, proportion=0,
@@ -134,7 +134,7 @@ class SettingsFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
-            flag=wx.ALIGN_CENTER)
+            flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
         self.debug_log_container.Add(self.debug_sizer)
         self.debug_log_container.Add(self.log_panel_sizer)
@@ -452,7 +452,7 @@ class SettingsFrame(wx.Frame):
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self)
+        self.base_URL_box = wx.TextCtrl(self, size=(-1,self.ICON_HEIGHT))
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
