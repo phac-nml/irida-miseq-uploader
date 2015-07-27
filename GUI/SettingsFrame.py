@@ -130,14 +130,9 @@ class SettingsFrame(wx.Frame):
         self.credentials_container.Add(self.user_pass_container)
         self.credentials_container.Add(self.id_secret_container)
 
-        spacer_size = (self.WINDOW_SIZE[0] -
-                       self.credentials_container.GetMinSize()[0] -
-                       ((self.SIZER_BORDER + self.ICON_WIDTH)*2))
-        self.credentials_container.InsertSpacer(1, (spacer_size, -1))
-
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
-            flag=wx.ALIGN_CENTER, border=self.SIZER_BORDER)
+            flag=wx.ALIGN_CENTER)
 
         self.debug_log_container.Add(self.debug_sizer)
         self.debug_log_container.Add(self.log_panel_sizer)
@@ -145,14 +140,14 @@ class SettingsFrame(wx.Frame):
         self.top_sizer.Add(
             self.debug_log_container, proportion=0,
             flag=wx.ALIGN_CENTER)
-
-        self.top_sizer.AddStretchSpacer()
-        self.top_sizer.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND 
-            | wx.LEFT | wx.RIGHT, border=self.SIZER_BORDER*2)
         
         self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND, 
                          border=self.PADDING_LEN)
+
+        self.padding.AddStretchSpacer()
+        self.padding.Add(
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND 
+            | wx.LEFT | wx.RIGHT| wx.BOTTOM, border=self.SIZER_BORDER*2)
 
         self.Center()
         self.Layout()
@@ -435,13 +430,13 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box.SetBackgroundColour(
             self.NEUTRAL_BOX_COLOR)
 
-        self.url_err_label.Hide()
-        self.username_err_label.Hide()
-        self.password_err_label.Hide()
-        self.client_id_err_label.Hide()
-        self.client_secret_err_label.Hide()
+        self.url_err_label.SetLabel("")
+        self.username_err_label.SetLabel("")
+        self.password_err_label.SetLabel("")
+        self.client_id_err_label.SetLabel("")
+        self.client_secret_err_label.SetLabel("")
 
-        self.hide_icon(self.base_URL_icon)
+        self.hide_icon(self.base_URL_icon, hide=True)
         self.hide_icon(self.password_icon)
         self.hide_icon(self.username_icon)
         self.hide_icon(self.client_id_icon)
@@ -646,6 +641,10 @@ class SettingsFrame(wx.Frame):
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
+        placeholder_img_path = path.join(path_to_module, "images", "Placeholder.png")
+        self.ph_img = wx.Image(placeholder_img_path,
+                               wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+
     def show_warning_icon(self, targ, tooltip=""):
 
         """
@@ -689,7 +688,7 @@ class SettingsFrame(wx.Frame):
         self.Layout()
         self.Refresh()
 
-    def hide_icon(self, targ):
+    def hide_icon(self, targ, hide=False):
 
         """
         hide icon for given targ
@@ -699,8 +698,10 @@ class SettingsFrame(wx.Frame):
 
         no return value
         """
-
-        targ.Hide()
+        if hide:
+            targ.Hide()
+        else:
+            targ.SetBitmap(self.ph_img)
         targ.SetLabel("hidden")  # for tests
         self.Layout()
         self.Refresh()
