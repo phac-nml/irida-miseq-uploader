@@ -39,10 +39,8 @@ class SettingsFrame(wx.Frame):
         self.prompt_dlg = None
         self.show_debug_msg = False
 
-        self.LONG_BOX_SIZE = (400, 32)  # url
         self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
-        self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
@@ -446,13 +444,13 @@ class SettingsFrame(wx.Frame):
         """
 
         self.base_url_label = wx.StaticText(
-            parent=self, id=-1,
+            parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH, -1),
             label="Base URL")
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self, size=(-1,self.ICON_HEIGHT))
+        self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT))
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
@@ -486,7 +484,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.username_label = wx.StaticText(
-            parent=self, id=-1, label="Username")
+            self, id=-1, label="Username", size=(self.LABEL_TEXT_WIDTH, -1))
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -516,7 +514,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.password_label = wx.StaticText(
-            self, id=-1, label="Password")
+            self, id=-1, label="Password", size=(self.LABEL_TEXT_WIDTH, -1))
 
         self.password_err_label = wx.StaticText(self, id=-1, label="")
         self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -547,9 +545,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.client_id_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Client ID")
+            parent=self, id=-1, label="ID", size=(self.LABEL_TEXT_WIDTH, -1))
 
         self.client_id_err_label = wx.StaticText(self, id=-1, label="")
         self.client_id_err_label.SetForegroundColour(
@@ -562,11 +558,11 @@ class SettingsFrame(wx.Frame):
             self.ICON_WIDTH, self.ICON_HEIGHT))
         self.client_id_icon.Hide()
 
-        self.client_id_container.Add(self.client_id_label)
+        self.client_id_box_icon_sizer.Add(self.client_id_label,
+                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_icon_sizer.Add(self.client_id_box)
         self.client_id_box_icon_sizer.Add(self.client_id_icon,
-                                          flag=wx.LEFT | wx.BOTTOM,
-                                          border=5)
+                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
         self.client_id_box_err_sizer.Add(self.client_id_err_label)
         self.client_id_container.Add(self.client_id_box_err_sizer)
@@ -580,9 +576,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.client_secret_label = wx.StaticText(
-            self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Client Secret")
+            self, id=-1, label="Secret", size=(self.LABEL_TEXT_WIDTH, -1))
 
         self.client_secret_err_label = wx.StaticText(self, id=-1, label="")
         self.client_secret_err_label.SetForegroundColour(
@@ -595,11 +589,11 @@ class SettingsFrame(wx.Frame):
             self.ICON_WIDTH, self.ICON_HEIGHT))
         self.client_secret_icon.Hide()
 
-        self.client_secret_container.Add(self.client_secret_label)
+        self.client_secret_box_icon_sizer.Add(self.client_secret_label,
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_secret_box_icon_sizer.Add(self.client_secret_box)
         self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
-                                              flag=wx.LEFT | wx.BOTTOM,
-                                              border=5)
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
         self.client_secret_box_err_sizer.Add(self.client_secret_err_label)
         self.client_secret_container.Add(self.client_secret_box_err_sizer)
