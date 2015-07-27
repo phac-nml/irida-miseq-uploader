@@ -93,7 +93,7 @@ class SettingsFrame(wx.Frame):
 
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.add_icons()
+        self.create_icon_images()
         self.add_URL_section()
         self.add_username_section()
         self.add_password_section()
@@ -463,6 +463,10 @@ class SettingsFrame(wx.Frame):
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
 
+        self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.base_URL_icon.Hide()
+
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
@@ -494,6 +498,10 @@ class SettingsFrame(wx.Frame):
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
 
+        self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.username_icon.Hide()
+
         self.username_container.Add(self.username_label)
         self.username_box_icon_sizer.Add(self.username_box)
         self.username_box_icon_sizer.Add(self.username_icon,
@@ -522,6 +530,10 @@ class SettingsFrame(wx.Frame):
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
 
+        self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.password_icon.Hide()
+
         self.password_container.Add(self.password_label)
         self.password_box_icon_sizer.Add(self.password_box)
         self.password_box_icon_sizer.Add(self.password_icon,
@@ -549,6 +561,10 @@ class SettingsFrame(wx.Frame):
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
+
+        self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_id_icon.Hide()
 
         self.client_id_container.Add(self.client_id_label)
         self.client_id_box_icon_sizer.Add(self.client_id_box)
@@ -579,6 +595,10 @@ class SettingsFrame(wx.Frame):
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
 
+        self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_icon.Hide()
+
         self.client_secret_container.Add(self.client_secret_label)
         self.client_secret_box_icon_sizer.Add(self.client_secret_box)
         self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
@@ -602,26 +622,14 @@ class SettingsFrame(wx.Frame):
         self.debug_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_debug_checkbox)
         self.debug_sizer.Add(self.debug_checkbox)
 
-    def add_icons(self):
+    def create_icon_images(self):
 
         """
-        Adds place holder StaticBitmap for each field and and hide it.
-        Will be used by show_warning_icon and show_success_icon when
-        they are going to display an icon
+        Creates success and warning icons to be used by show_warning_icon()
+        and show_success_icon() when they are going to display an icon
 
         no return value
         """
-
-        self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
 
         # success icon made by OCHA @ "http://www.unocha.org". CC BY 3.0
         suc_img_path = path.join(path_to_module, "images", "Success.png")
@@ -632,13 +640,6 @@ class SettingsFrame(wx.Frame):
         warn_img_path = path.join(path_to_module, "images", "Warning.png")
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-
-        self.base_URL_icon.Hide()
-        self.username_icon.Hide()
-        self.password_icon.Hide()
-        self.client_id_icon.Hide()
-        self.client_secret_icon.Hide()
-
 
     def show_warning_icon(self, targ, tooltip=""):
 
