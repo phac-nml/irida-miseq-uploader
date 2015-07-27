@@ -486,9 +486,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.username_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Username")
+            parent=self, id=-1, label="Username")
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -500,10 +498,11 @@ class SettingsFrame(wx.Frame):
             self.ICON_WIDTH, self.ICON_HEIGHT))
         self.username_icon.Hide()
 
-        self.username_container.Add(self.username_label)
+        self.username_box_icon_sizer.Add(self.username_label,
+                                         flag=wx.ALIGN_CENTER_VERTICAL)
         self.username_box_icon_sizer.Add(self.username_box)
         self.username_box_icon_sizer.Add(self.username_icon,
-                                         flag=wx.LEFT | wx.BOTTOM, border=5)
+                                         flag=wx.ALIGN_CENTER_VERTICAL)
         self.username_box_err_sizer.Add(self.username_box_icon_sizer)
         self.username_box_err_sizer.Add(self.username_err_label)
         self.username_container.Add(self.username_box_err_sizer)
@@ -517,9 +516,7 @@ class SettingsFrame(wx.Frame):
         """
 
         self.password_label = wx.StaticText(
-            self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Password")
+            self, id=-1, label="Password")
 
         self.password_err_label = wx.StaticText(self, id=-1, label="")
         self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -532,10 +529,11 @@ class SettingsFrame(wx.Frame):
             self.ICON_WIDTH, self.ICON_HEIGHT))
         self.password_icon.Hide()
 
-        self.password_container.Add(self.password_label)
+        self.password_box_icon_sizer.Add(self.password_label,
+                                         flag=wx.ALIGN_CENTER_VERTICAL)
         self.password_box_icon_sizer.Add(self.password_box)
         self.password_box_icon_sizer.Add(self.password_icon,
-                                         flag=wx.LEFT | wx.BOTTOM, border=5)
+                                         flag=wx.ALIGN_CENTER_VERTICAL)
         self.password_box_err_sizer.Add(self.password_box_icon_sizer)
         self.password_box_err_sizer.Add(self.password_err_label)
         self.password_container.Add(self.password_box_err_sizer)
