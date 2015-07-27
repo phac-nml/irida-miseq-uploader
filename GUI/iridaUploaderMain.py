@@ -411,6 +411,11 @@ class MainFrame(wx.Frame):
             self.cf_progress_bar.SetValue(0)
             self.display_warning(e.message)
 
+        except Exception, e:
+            self.pulse_timer.Stop()
+            self.display_warning("{error_name}: {error_msg}".format(
+                error_name=e.__class__.__name__, error_msg=e.message))
+
     def pair_seq_files_upload_complete(self):
 
         """
