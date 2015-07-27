@@ -442,6 +442,9 @@ class ApiCalls:
         """
         send pair sequence files found in each sample in samples_list
         the pair files to be sent is in sample.get_pair_files()
+        this function iterates through the samples in samples_list and send
+        them to _send_pair_sequence_files() which actually makes the connection
+        to the api in order to send the data
 
         arguments:
             samples_list -- list containing Sample object(s)
@@ -470,6 +473,21 @@ class ApiCalls:
         return json_res_list
 
     def _send_pair_sequence_files(self, sample, callback):
+
+        """
+        post request to send pair sequence files found in given sample argument
+        raises error if either project ID or sample ID found in Sample object
+        doesn't exist in irida
+
+        arguments:
+            sample -- Sample object
+            callback -- optional callback argument for use with monitor
+                        callback function accepts a
+                        encoder.MultipartEncoderMonitor object as it's only
+                        parameter
+
+        returns result of post request.
+        """
 
         try:
             project_id = sample.get_project_id()
