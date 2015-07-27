@@ -1,4 +1,5 @@
 import wx
+import sys
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
@@ -119,6 +120,7 @@ class MainFrame(wx.Frame):
 
         t = Thread(target=self.api.send_pair_sequence_files,
                    args=(evt.sample_list, evt.send_pairs_callback,))
+        t.daemon = True
         t.start()
 
     def add_select_sample_sheet_section(self):
@@ -328,6 +330,7 @@ class MainFrame(wx.Frame):
 
         self.settings_frame.Destroy()
         self.Destroy()
+        sys.exit(0)
 
     def start_cf_progress_bar_pulse(self):
 
