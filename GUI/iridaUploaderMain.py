@@ -1,19 +1,26 @@
 import wx
+import sys
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
+from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
+from wx.lib.newevent import NewEvent
+from pubsub import pub
 
-from Parsers.miseqParser import (complete_parse_samples, parse_metadata,
-                                 get_pair_files)
+from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
+from Validation.onlineValidation import project_exists, sample_exists
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list)
+from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame
+
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -25,23 +32,25 @@ class MainFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 700)
+        self.WINDOW_SIZE = (900, 750)
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
 
+        self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
+
         self.sample_sheet_files = []
         self.seq_run_list = []
         self.browse_path = getcwd()
         self.dir_dlg = None
-        self.p_bar_percent = 0
+        self.api = None
 
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
         self.LONG_BOX_SIZE = (650, 32)  # choose directory
         self.SHORT_BOX_SIZE = (200, 32)  # user and pass
-        self.LABEL_TEXT_WIDTH = 70
+        self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
@@ -59,7 +68,8 @@ class MainFrame(wx.Frame):
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
         self.add_settings_button()
-        self.add_progress_bar()
+        self.add_curr_file_progress_bar()
+        self.add_overall_progress_bar()
         self.add_upload_button()
 
         self.top_sizer.AddSpacer(10)  # space between top and directory box
@@ -89,11 +99,29 @@ class MainFrame(wx.Frame):
         self.SetSizer(self.top_sizer)
         self.Layout()
 
+        pub.subscribe(self.update_progress_bars, "update_progress_bars")
+        pub.subscribe(self.pair_seq_files_upload_complete,
+                      "pair_seq_files_upload_complete")
+        self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
         self.Show()
+
+    def handle_send_seq_evt(self, evt):
+
+        """
+        function bound to custom event self.EVT_SEND_SEQ_FILES
+        creates new thread for sending pair sequence files
+
+        no return value
+        """
+
+        t = Thread(target=self.api.send_pair_sequence_files,
+                   args=(evt.sample_list, evt.send_pairs_callback,))
+        t.daemon = True
+        t.start()
 
     def add_select_sample_sheet_section(self):
 
@@ -112,13 +140,14 @@ class MainFrame(wx.Frame):
             parent=self, id=-1,
             size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File path")
-        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE,
+                                   style=wx.TE_PROCESS_ENTER)
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
 
-        self.directory_sizer.Add(self.dir_label, 0, wx.ALL, 5)
-        self.directory_sizer.Add(self.dir_box, 0, wx.ALL, 5)
-        self.directory_sizer.Add(self.browse_button, 0, wx.ALL, 5)
+        self.directory_sizer.Add(self.dir_label)
+        self.directory_sizer.Add(self.dir_box)
+        self.directory_sizer.Add(self.browse_button)
 
         tip = "Select the directory containing the SampleSheet.csv file " + \
             "to be uploaded"
@@ -127,25 +156,61 @@ class MainFrame(wx.Frame):
         self.browse_button.SetToolTipString(tip)
 
         self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
+        self.Bind(wx.EVT_TEXT_ENTER, self.manually_enter_dir, self.dir_box)
 
-    def add_progress_bar(self):
+    def manually_enter_dir(self, evt):
 
         """
-        Adds progress bar. Will be used for displaying progress of
-            sequence files upload.
+        Function bound to user typing in to the dir_box and then pressing
+        the enter key.
+        Sets self.browse_path to the value enterred by the user because
+        self.browse_path is used in self.start_sample_sheet_processing()
 
         no return value
         """
 
-        self.progress_label = wx.StaticText(
+        self.browse_path = self.dir_box.GetValue()
+        self.start_sample_sheet_processing()
+
+    def add_curr_file_progress_bar(self):
+
+        """
+        Adds current file progress bar. Will be used for displaying progress of
+            the current sequence file pairs being uploaded.
+
+        no return value
+        """
+
+        self.cf_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label=str(self.p_bar_percent) + "%")
-        self.progress_bar = wx.Gauge(self, range=100, size=(
+            label="File: 0%")
+        self.cf_progress_bar = wx.Gauge(self, range=100, size=(
             self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.progress_label)
-        self.progress_bar_sizer.Add(self.progress_bar)
-        self.progress_label.Hide()
-        self.progress_bar.Hide()
+        self.progress_bar_sizer.Add(self.cf_progress_label, flag=wx.BOTTOM,
+                                    border=20)
+        self.progress_bar_sizer.Add(self.cf_progress_bar)
+        self.cf_progress_label.Hide()
+        self.cf_progress_bar.Hide()
+
+    def add_overall_progress_bar(self):
+
+        """
+        Adds overall progress bar. Will be used for displaying progress of
+            all sequence files uploaded.
+
+        no return value
+        """
+
+        self.ov_progress_label = wx.StaticText(
+            self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
+            label="Overall: 0%")
+        self.ov_progress_bar = wx.Gauge(self, range=100, size=(
+            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.ov_progress_label, flag=wx.TOP,
+                                    border=5)
+        self.progress_bar_sizer.Add(self.ov_progress_bar)
+        self.ov_progress_label.Hide()
+        self.ov_progress_bar.Hide()
 
     def add_upload_button(self):
 
@@ -232,6 +297,8 @@ class MainFrame(wx.Frame):
 
         """
         print colored text to the log_panel
+        if no color provided then just uses self.LOG_PNL_REG_TXT_COLOR
+        as default
 
         arguments:
             msg -- the message to print
@@ -260,15 +327,50 @@ class MainFrame(wx.Frame):
 
         no return value
         """
+
         self.settings_frame.Destroy()
         self.Destroy()
+        sys.exit(0)
+
+    def start_cf_progress_bar_pulse(self):
+
+        """
+        pulse self.cf_progress_bar (move bar left and right) until uploading
+        sequence file starts
+        small indication that program is processing and is not frozen
+        the pulse stops when self.pulse_timer.Stop() is called in
+        self.update_progress_bars()
+
+        no return value
+        """
+
+        pulse_interval = 100  # milliseconds
+        self.pulse_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, lambda evt: self.cf_progress_bar.Pulse(),
+                  self.pulse_timer)
+        self.pulse_timer.Start(pulse_interval)
 
     def upload_to_server(self, event):
 
         """
         Function bound to upload_button being clicked
-        Currently just prints values entered in text boxes
-            and pairFiles in seqRun
+
+        uploads each SequencingRun in self.seq_run_list to irida web server
+
+        each SequencingRun will contain a list of samples and each sample
+        from the list of samples will contain a pair of sequence files
+
+        for each sample in the sample list, we check if the project_id
+        that it's supposed to be uploaded to already exists and
+        raises an error if it doesn't
+
+        we then check if the sample's id exists for it's given project_id
+        if it doesn't exist then create it
+
+        finally we create an UploadThread which runs
+        api.send_pair_sequence_files() and send it the list of samples and
+        our callback function:
+        self.pair_upload_callback()
 
         arguments:
                 event -- EVT_BUTTON when upload button is clicked
@@ -276,17 +378,150 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        print("Server URL: " + self.base_URL + "\n" + "User: " +
-              self.username + "\n" + "Password: " +
-              self.password.strip())
-        self.p_bar_percent += 1
-        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
-        self.progress_bar.SetValue(self.p_bar_percent)
+        self.upload_button.Disable()
+        # disable upload button to prevent accidental double-click
 
-        for sr in self.seq_run_list:
-            print sr.get_workflow()
-            pprint([sr.get_pair_files(sample.get_id())
-                    for sample in sr.get_sample_list()])
+        self.log_color_print("Starting upload")
+        self.log_color_print("Calculating file sizes")
+
+        self.start_cf_progress_bar_pulse()
+
+        api = self.api
+        try:
+            for sr in self.seq_run_list:
+
+                for sample in sr.get_sample_list():
+                    if project_exists(api, sample.get_project_id()) is False:
+                        msg = "Project ID: {id} doesn't exist".format(
+                               id=sample.get_project_id())
+                        raise ProjectError(msg)
+
+                    if sample_exists(api, sample) is False:
+                        api.send_samples(sr.get_sample_list())
+
+                evt = self.send_seq_files_evt(
+                    sample_list=sr.get_sample_list(),
+                    send_pairs_callback=self.pair_upload_callback)
+                self.GetEventHandler().ProcessEvent(evt)
+
+                self.seq_run_list.remove(sr)
+
+        except ProjectError, e:
+            self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
+            self.display_warning(e.message)
+
+        except Exception, e:
+            self.pulse_timer.Stop()
+            self.display_warning("{error_name}: {error_msg}".format(
+                error_name=e.__class__.__name__, error_msg=e.message))
+
+    def pair_seq_files_upload_complete(self):
+
+        """
+        Subscribed to "pair_seq_files_upload_complete"
+        Adds to wx events queue: publisher send a message that uploading
+        sequence files is complete
+        """
+
+        wx.CallAfter(pub.sendMessage,
+                     "update_progress_bars", progress_data="Upload Complete")
+
+    def pair_upload_callback(self, monitor):
+
+        """
+        callback function used by api.send_pair_sequence_files()
+        makes the publisher (pub) send "update_progress_bars" message that
+        contains progress percentage data whenever the percentage of the
+        current file being uploaded changes.
+
+        arguments:
+            monitor -- an encoder.MultipartEncoderMonitor object
+                       used for calculating and storing upload percentage data
+                       It tracks percentage of overall upload progress
+                        and percentage of current file upload progress.
+                       the percentages are rounded to `ndigits` decimal place.
+
+        no return value
+        """
+
+        ndigits = 4
+        monitor.cf_upload_pct = (monitor.bytes_read /
+                                 (monitor.len * 1.0))
+        monitor.cf_upload_pct = round(monitor.cf_upload_pct, ndigits) * 100
+
+        monitor.total_bytes_read += (monitor.bytes_read - monitor.prev_bytes)
+        monitor.ov_upload_pct = (monitor.total_bytes_read /
+                                 (monitor.size_of_all_seq_files * 1.0))
+        monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
+
+        progress_data = {
+            "curr_file_upload_pct": monitor.cf_upload_pct,
+            "overall_upload_pct": monitor.ov_upload_pct,
+            "curr_files_uploading": "\n".join(monitor.files)
+        }
+
+        # only call update_progress_bars if one of the % values have changed
+        if (monitor.prev_cf_pct != monitor.cf_upload_pct or
+                monitor.prev_ov_pct != monitor.ov_upload_pct):
+            wx.CallAfter(pub.sendMessage,
+                         "update_progress_bars",
+                         progress_data=progress_data)
+
+        monitor.prev_bytes = monitor.bytes_read
+        monitor.prev_cf_pct = monitor.cf_upload_pct
+        monitor.prev_ov_pct = monitor.ov_upload_pct
+
+    def update_progress_bars(self, progress_data):
+
+        """
+        Subscribed to "update_progress_bars"
+        This function is called when pub (publisher) sends the message
+        "update_progress_bars"
+
+        Updates boths progress bars and progress labels
+        If progress_data is a string equal to "Upload Complete" then
+        it calls handle_upload_complete() which displays the
+        "Upload Complete" message in the log panel and
+        re-enables the upload button.
+
+        arguments:
+            progress_data -- object containing dictionary that holds data
+                             to be used by the progress bars and labels
+
+        no return value
+        """
+
+        if self.pulse_timer.IsRunning():
+            self.pulse_timer.Stop()
+
+        if (isinstance(progress_data, str) and
+                progress_data == "Upload Complete"):
+            self.handle_upload_complete()
+
+        else:
+            self.cf_progress_bar.SetValue(
+                progress_data["curr_file_upload_pct"])
+            self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
+                files=str(progress_data["curr_files_uploading"]),
+                pct=str(progress_data["curr_file_upload_pct"])))
+
+            self.ov_progress_bar.SetValue(progress_data
+                                          ["overall_upload_pct"])
+            self.ov_progress_label.SetLabel("Overall: {pct}%".format(
+                pct=str(progress_data["overall_upload_pct"])))
+            wx.Yield()
+            self.Refresh()
+
+    def handle_upload_complete(self):
+
+        """
+        function responsible for handling what happens after an upload
+        of sequence files finishes
+        displays "Upload Complete" to log panel.
+        """
+
+        self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
@@ -309,11 +544,16 @@ class MainFrame(wx.Frame):
         self.display_warning(msg)
         self.upload_button.Disable()
 
-        self.progress_label.Hide()
-        self.progress_bar.Hide()
-        self.p_bar_percent = 0
-        self.progress_label.SetLabel(str(self.p_bar_percent) + "%")
-        self.progress_bar.SetValue(self.p_bar_percent)
+        self.cf_progress_label.Hide()
+        self.cf_progress_bar.Hide()
+        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_bar.SetValue(0)
+
+        self.ov_progress_label.Hide()
+        self.ov_progress_bar.Hide()
+        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_bar.SetValue(0)
+
         self.seq_run = None
 
     def open_dir_dlg(self, event):
@@ -346,44 +586,53 @@ class MainFrame(wx.Frame):
 
             self.browse_path = self.dir_dlg.GetPaths()[0].replace(
                 "Home directory", path.expanduser("~"))
-            self.dir_box.SetValue(self.browse_path)
 
-            try:
-
-                res_list = self.find_sample_sheet(self.browse_path,
-                                                  "SampleSheet.csv")
-                if len(res_list) == 0:
-                    sub_dirs = [str(f) for f in listdir(self.browse_path)
-                                if path.isdir(
-                                path.join(self.browse_path, f))]
-
-                    err_msg = ("SampleSheet.csv file not found in the " +
-                               "selected directory:\n" +
-                               self.browse_path)
-                    if len(sub_dirs) > 0:
-                        err_msg = (err_msg + " or its " +
-                                   "subdirectories:\n" + ", ".join(sub_dirs))
-
-                    raise SampleSheetError(err_msg)
-
-                else:
-                    self.sample_sheet_files = res_list
-
-                for ss in self.sample_sheet_files:
-                    self.log_color_print("Processing: " + ss)
-                    try:
-                        self.process_sample_sheet(ss)
-                    except (SampleSheetError, SequenceFileError):
-                        self.log_color_print(
-                            "Stopping the processing of SampleSheet.csv " +
-                            "files due to failed validation of previous " +
-                            "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-                        break  # stop processing sheets if validation fails
-
-            except SampleSheetError, e:
-                self.handle_invalid_sheet_or_seq_file(str(e))
+            self.start_sample_sheet_processing()
 
         self.dir_dlg.Destroy()
+
+    def start_sample_sheet_processing(self):
+
+        self.dir_box.SetValue(self.browse_path)
+        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_bar.SetValue(0)
+        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_bar.SetValue(0)
+
+        try:
+
+            res_list = self.find_sample_sheet(self.browse_path,
+                                              "SampleSheet.csv")
+            if len(res_list) == 0:
+                sub_dirs = [str(f) for f in listdir(self.browse_path)
+                            if path.isdir(
+                            path.join(self.browse_path, f))]
+
+                err_msg = ("SampleSheet.csv file not found in the " +
+                           "selected directory:\n" +
+                           self.browse_path)
+                if len(sub_dirs) > 0:
+                    err_msg = (err_msg + " or its " +
+                               "subdirectories:\n" + ", ".join(sub_dirs))
+
+                raise SampleSheetError(err_msg)
+
+            else:
+                self.sample_sheet_files = res_list
+
+            for ss in self.sample_sheet_files:
+                self.log_color_print("Processing: " + ss)
+                try:
+                    self.process_sample_sheet(ss)
+                except (SampleSheetError, SequenceFileError):
+                    self.log_color_print(
+                        "Stopping the processing of SampleSheet.csv " +
+                        "files due to failed validation of previous " +
+                        "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
+                    break  # stop processing sheets if validation fails
+
+        except (SampleSheetError, IOError), e:
+            self.handle_invalid_sheet_or_seq_file(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):
 
@@ -409,8 +658,10 @@ class MainFrame(wx.Frame):
                 self.upload_button.Enable()
                 self.log_color_print(sample_sheet_file + " is valid\n",
                                      self.LOG_PNL_OK_TXT_COLOR)
-                self.progress_label.Show()
-                self.progress_bar.Show()
+                self.cf_progress_label.Show()
+                self.cf_progress_bar.Show()
+                self.ov_progress_label.Show()
+                self.ov_progress_bar.Show()
                 self.Layout()
 
             except (SampleSheetError, SequenceFileError), e:
@@ -526,5 +777,5 @@ if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.settings_frame.attempt_connect_to_api()
+    frame.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()

@@ -1006,6 +1006,8 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
+        API.apiCalls.encoder.MultipartEncoder = MagicMock()
+        API.apiCalls.ApiCalls.get_file_size_list = MagicMock()
 
         sample_dict = {
             "sequencerSampleId": "03-3333",
@@ -1043,9 +1045,12 @@ class TestApiCalls(unittest.TestCase):
         )
 
         api.get_link = MagicMock(side_effect=[StopIteration])
+        api.get_file_size_list = MagicMock()
 
         proj_id = "-1"
         sample = API.apiCalls.Sample({"sampleProject": proj_id})
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_pair_sequence_files([sample])
@@ -1067,6 +1072,7 @@ class TestApiCalls(unittest.TestCase):
         )
 
         api.get_link = MagicMock(side_effect=[None, None, StopIteration])
+        api.get_file_size_list = MagicMock()
 
         proj_id = "1"
         sample_id = "-1"
@@ -1074,6 +1080,8 @@ class TestApiCalls(unittest.TestCase):
             "sampleProject": proj_id,
             "sequencerSampleId": sample_id
         })
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_pair_sequence_files([sample])

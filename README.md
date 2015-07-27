@@ -33,9 +33,9 @@ Build a virtualenv and install the dependencies:
     $ source bin/activate
     $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
     $ cd iridauploader
-    $ pip install -r requirements.txt
+    $ pip install -r requirements.txt --allow-external pypubsub
     $ scripts/virtualenv_wx.sh
-    $ python setup.py install --user
+    $ python setup.py install
 
 Remember that wxPython must be already installed using:
 
@@ -52,6 +52,7 @@ Run unit tests and PEP8 verification with:
     $ python RunAllTests.py
 
 Running integration tests in addition to unit tests and PEP8 verification: (can take a while)
+Google Chrome must be installed for selenium testing
 
     $ echo "grant all privileges on irida_uploader_test.* to 'test'@'localhost' identified by 'test';" | mysql -u mysql_user -p
     $ python RunAllTests.py --integration

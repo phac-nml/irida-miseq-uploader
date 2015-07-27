@@ -36,6 +36,9 @@ class Sample:
     def get_pair_files(self):
         return self.seq_file.get_pair_files()
 
+    def get_pair_files_size(self):
+        return self.seq_file.get_pair_files_size()
+
     def set_seq_file(self, seq_file):
         self.seq_file = seq_file
 
