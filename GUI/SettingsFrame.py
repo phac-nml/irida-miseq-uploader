@@ -491,7 +491,8 @@ class SettingsFrame(wx.Frame):
                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.username_box_err_sizer.Add(self.username_box_icon_sizer)
         self.username_box_err_sizer.Add(self.username_err_label)
-        self.username_container.Add(self.username_box_err_sizer)
+        self.username_container.Add(self.username_box_err_sizer, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
 
     def add_password_section(self):
 
@@ -551,7 +552,8 @@ class SettingsFrame(wx.Frame):
                                           flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
         self.client_id_box_err_sizer.Add(self.client_id_err_label)
-        self.client_id_container.Add(self.client_id_box_err_sizer)
+        self.client_id_container.Add(self.client_id_box_err_sizer, flag=wx.TOP,
+            border=self.client_id_err_label.GetSize()[1])
 
     def add_client_secret_section(self):
 
