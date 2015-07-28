@@ -570,7 +570,8 @@ class SettingsPanel(wx.Panel):
         self.client_id_box_icon_sizer.Add(self.client_id_icon,
                                           flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
-        self.client_id_box_err_sizer.Add(self.client_id_err_label, flag=wx.ALIGN_CENTER)
+        self.client_id_box_err_sizer.Add(self.client_id_err_label,
+                                         flag=wx.ALIGN_CENTER)
         self.client_id_container.Add(
             self.client_id_box_err_sizer, flag=wx.TOP,
             border=self.client_id_err_label.GetSize()[1])
@@ -741,6 +742,7 @@ class SettingsPanel(wx.Panel):
                  "Click 'Close' to go back to uploader window.\n" +
                  "Click 'Default' to restore settings to default values.\n")
 
+        self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
         self.log_panel.AppendText("\n")
