@@ -45,6 +45,7 @@ class SettingsPanel(wx.Panel):
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.ICON_WIDTH = self.ICON_HEIGHT = 24
+        self.CREDENTIALS_SPACE = 30
         self.PADDING_LEN = 5
         self.TEXTCTRL_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
@@ -126,6 +127,7 @@ class SettingsPanel(wx.Panel):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.credentials_container.Add(self.user_pass_container)
+        self.credentials_container.AddSpacer(self.CREDENTIALS_SPACE)
         self.credentials_container.Add(self.id_secret_container)
 
         self.top_sizer.Add(
@@ -145,7 +147,7 @@ class SettingsPanel(wx.Panel):
         self.padding.AddStretchSpacer()
         self.padding.Add(
             self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
-            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*2)
+            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*3)
 
         self.Center()
         self.Layout()
