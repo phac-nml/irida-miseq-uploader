@@ -50,6 +50,9 @@ class SettingsFrame(wx.Frame):
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
         self.PADDING_LEN = 5
+        self.TEXTCTRL_FONT = wx.Font(
+            pointSize=12, family=wx.FONTFAMILY_DEFAULT,
+            style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -443,6 +446,7 @@ class SettingsFrame(wx.Frame):
         self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT))
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
+        self.base_URL_box.SetFont(self.TEXTCTRL_FONT)
 
         self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -480,6 +484,7 @@ class SettingsFrame(wx.Frame):
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
+        self.username_box.SetFont(self.TEXTCTRL_FONT)
 
         self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -512,6 +517,7 @@ class SettingsFrame(wx.Frame):
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
+        self.password_box.SetFont(self.TEXTCTRL_FONT)
 
         self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -542,6 +548,7 @@ class SettingsFrame(wx.Frame):
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
+        self.client_id_box.SetFont(self.TEXTCTRL_FONT)
 
         self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -574,6 +581,7 @@ class SettingsFrame(wx.Frame):
 
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
+        self.client_secret_box.SetFont(self.TEXTCTRL_FONT)
 
         self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
