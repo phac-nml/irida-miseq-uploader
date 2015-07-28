@@ -44,7 +44,7 @@ class SettingsPanel(wx.Panel):
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
+        self.ICON_WIDTH = self.ICON_HEIGHT = 24
         self.PADDING_LEN = 5
         self.TEXTCTRL_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
@@ -613,7 +613,7 @@ class SettingsPanel(wx.Panel):
 
         no return value
         """
-        
+
         # success icon made by Google @ "http://www.google.com". CC BY 3.0
         suc_img_path = path.join(path_to_module, "images", "Success.png")
         self.suc_img = wx.Image(suc_img_path,
