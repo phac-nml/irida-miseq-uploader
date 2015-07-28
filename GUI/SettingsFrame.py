@@ -19,17 +19,13 @@ DEFAULT_CLIENT_ID = "testClient"
 DEFAULT_CLIENT_SECRET = "testClientSecret"
 
 
-class SettingsFrame(wx.Frame):
+class SettingsPanel(wx.Panel):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
 
         self.parent = parent
         self.WINDOW_SIZE = (700, 550)
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title="Settings",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+        wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
@@ -51,7 +47,7 @@ class SettingsFrame(wx.Frame):
         self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
         self.PADDING_LEN = 5
         self.TEXTCTRL_FONT = wx.Font(
-            pointSize=12, family=wx.FONTFAMILY_DEFAULT,
+            pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
@@ -153,7 +149,6 @@ class SettingsFrame(wx.Frame):
 
         self.Center()
         self.Layout()
-        self.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def load_curr_config(self):
 
@@ -443,7 +438,8 @@ class SettingsFrame(wx.Frame):
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT))
+        self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT),
+                                        style=wx.TE_RICH)
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
         self.base_URL_box.SetFont(self.TEXTCTRL_FONT)
@@ -865,7 +861,8 @@ class SettingsFrame(wx.Frame):
     def close_handler(self, event):
 
         """
-        Function bound to window/MainFrame being closed (close button/alt+f4)
+        Function bound to window/SettingsFrame being closed
+            (close button/alt+f4)
         Destroy self if running alone or hide self if running
             attached to iridaUploaderMain
         Check if any changes have been made that weren't saved and prompt user
@@ -898,6 +895,7 @@ class SettingsFrame(wx.Frame):
             if user_choice == wx.ID_YES:
                 targ_section = "apiCalls"
                 self.write_config_data(targ_section, changes_dict)
+                self.load_curr_config()
 
             else:
                 self.base_URL_box.SetValue(self.config_dict["baseURL"])
@@ -909,10 +907,14 @@ class SettingsFrame(wx.Frame):
 
                 self.prompt_dlg.Destroy()
 
-        if self.parent is None:  # if running SettingsFrame by itself for tests
-            self.Destroy()
+        if self.parent.parent is None:  # standalone
+            self.parent.Destroy()
+
         else:
-            self.Hide()  # running attached to iridaUploaderMain
+            self.parent.Hide()  # running attached to iridaUploaderMain
+
+        self.log_panel.Clear()
+        self.attempt_connect_to_api()
 
     def log_color_print(self, msg, color, add_new_line=True):
 
@@ -997,6 +999,25 @@ class SettingsFrame(wx.Frame):
         if self.show_debug_msg:
             self.log_color_print("Message from server: " + str(err.message),
                                  self.LOG_PNL_ERR_TXT_COLOR)
+
+
+class SettingsFrame(wx.Frame):
+
+    def __init__(self, parent=None):
+
+        self.WINDOW_SIZE = (700, 550)
+        self.parent = parent
+        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
+                          title="Settings",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
+
+        self.sf = SettingsPanel(self)
+        self.Center()
+        self.attempt_connect_to_api = self.sf.attempt_connect_to_api
+        self.Bind(wx.EVT_CLOSE, self.sf.close_handler)
+        self.close_btn = self.sf.close_btn  # test_iridaUploaderMain.py
 
 
 if __name__ == "__main__":
