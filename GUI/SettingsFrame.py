@@ -613,8 +613,8 @@ class SettingsPanel(wx.Panel):
 
         no return value
         """
-
-        # success icon made by OCHA @ "http://www.unocha.org". CC BY 3.0
+        
+        # success icon made by Google @ "http://www.google.com". CC BY 3.0
         suc_img_path = path.join(path_to_module, "images", "Success.png")
         self.suc_img = wx.Image(suc_img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
