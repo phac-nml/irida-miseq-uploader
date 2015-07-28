@@ -454,6 +454,7 @@ class SettingsPanel(wx.Panel):
 
         self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.base_URL_icon.category = "base_url"
 
         tip = "Enter the URL for the IRIDA server"
         self.base_URL_box.SetToolTipString(tip)
@@ -493,6 +494,7 @@ class SettingsPanel(wx.Panel):
 
         self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.username_icon.category = "authorization"
 
         self.username_box_icon_sizer.Add(self.username_label,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
@@ -529,6 +531,7 @@ class SettingsPanel(wx.Panel):
 
         self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.password_icon.category = "authorization"
 
         self.password_box_icon_sizer.Add(self.password_label,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
@@ -563,6 +566,7 @@ class SettingsPanel(wx.Panel):
 
         self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_id_icon.category = "client"
 
         self.client_id_box_icon_sizer.Add(self.client_id_label,
                                           flag=wx.ALIGN_CENTER_VERTICAL)
@@ -599,6 +603,7 @@ class SettingsPanel(wx.Panel):
 
         self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_icon.category = "client"
 
         self.client_secret_box_icon_sizer.Add(self.client_secret_label,
                                               flag=wx.ALIGN_CENTER_VERTICAL)
@@ -648,7 +653,7 @@ class SettingsPanel(wx.Panel):
         self.ph_img = wx.Image(placeholder_img_path,
                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
-    def show_warning_icon(self, targ, tooltip=""):
+    def show_warning_icon(self, targ, tooltip):
 
         """
         inserts warning icon (self.warn_img) in to targs icon placeholder
@@ -663,28 +668,42 @@ class SettingsPanel(wx.Panel):
         """
 
         targ.SetBitmap(self.warn_img)
-        if len(tooltip) > 0:
+
+        if targ.category == "authorization":
+            self.user_pass_static_box.SetToolTipString(tooltip)
+            self.id_secret_static_box.SetToolTip(None)
+
+        elif targ.category == "client":
+            self.id_secret_static_box.SetToolTipString(tooltip)
+            self.user_pass_static_box.SetToolTip(None)
+
+        else:
             targ.SetToolTipString(tooltip)
+
         targ.SetLabel("warning")  # for tests
         targ.Show()
 
         self.Layout()
         self.Refresh()
 
-    def show_success_icon(self, targ, tooltip=""):
+    def show_success_icon(self, targ):
 
         """
         inserts success icon (self.suc_img) in to targ icon place holder
+        clears tool tips for the static boxes and given targ
 
         arguments:
             targ -- the icon place holder to be shown (e.g self.base_URL_icon)
-            tooltip -- message to be used as a tooltip
 
         no return value
         """
 
         targ.SetBitmap(self.suc_img)
-        targ.SetToolTipString(tooltip)
+
+        targ.SetToolTip(None)
+        self.user_pass_static_box.SetToolTip(None)
+        self.id_secret_static_box.SetToolTip(None)
+
         targ.SetLabel("success")  # for tests
         targ.Show()
 
