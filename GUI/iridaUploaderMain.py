@@ -1,12 +1,13 @@
 import wx
+import sys
 from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
-from wx.lib.pubsub import Publisher
 from wx.lib.newevent import NewEvent
+from pubsub import pub
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -98,8 +99,9 @@ class MainFrame(wx.Frame):
         self.SetSizer(self.top_sizer)
         self.Layout()
 
-        Publisher.subscribe(self.update_progress_bars, "update_progress_bars")
-
+        pub.subscribe(self.update_progress_bars, "update_progress_bars")
+        pub.subscribe(self.pair_seq_files_upload_complete,
+                      "pair_seq_files_upload_complete")
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
@@ -118,6 +120,7 @@ class MainFrame(wx.Frame):
 
         t = Thread(target=self.api.send_pair_sequence_files,
                    args=(evt.sample_list, evt.send_pairs_callback,))
+        t.daemon = True
         t.start()
 
     def add_select_sample_sheet_section(self):
@@ -327,6 +330,7 @@ class MainFrame(wx.Frame):
 
         self.settings_frame.Destroy()
         self.Destroy()
+        sys.exit(0)
 
     def start_cf_progress_bar_pulse(self):
 
@@ -383,30 +387,53 @@ class MainFrame(wx.Frame):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
-        for sr in self.seq_run_list:
+        try:
+            for sr in self.seq_run_list:
 
-            for sample in sr.get_sample_list():
-                if project_exists(api, sample.get_project_id()) is False:
-                    raise ProjectError("Project ID: {id} doesn't exist".format(
-                                        id=sample.get("sampleProject")))
+                for sample in sr.get_sample_list():
+                    if project_exists(api, sample.get_project_id()) is False:
+                        msg = "Project ID: {id} doesn't exist".format(
+                               id=sample.get_project_id())
+                        raise ProjectError(msg)
 
-                if sample_exists(api, sample) is False:
-                    api.send_samples(sr.get_sample_list())
+                    if sample_exists(api, sample) is False:
+                        api.send_samples(sr.get_sample_list())
 
-            evt = self.send_seq_files_evt(
-                sample_list=sr.get_sample_list(),
-                send_pairs_callback=self.pair_upload_callback)
-            self.GetEventHandler().ProcessEvent(evt)
+                evt = self.send_seq_files_evt(
+                    sample_list=sr.get_sample_list(),
+                    send_pairs_callback=self.pair_upload_callback)
+                self.GetEventHandler().ProcessEvent(evt)
 
-            self.seq_run_list.remove(sr)
+                self.seq_run_list.remove(sr)
+
+        except ProjectError, e:
+            self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
+            self.display_warning(e.message)
+
+        except Exception, e:
+            self.pulse_timer.Stop()
+            self.display_warning("{error_name}: {error_msg}".format(
+                error_name=e.__class__.__name__, error_msg=e.message))
+
+    def pair_seq_files_upload_complete(self):
+
+        """
+        Subscribed to "pair_seq_files_upload_complete"
+        Adds to wx events queue: publisher send a message that uploading
+        sequence files is complete
+        """
+
+        wx.CallAfter(pub.sendMessage,
+                     "update_progress_bars", progress_data="Upload Complete")
 
     def pair_upload_callback(self, monitor):
 
         """
         callback function used by api.send_pair_sequence_files()
-        makes the Publisher send "update_progress_bars" message that contains
-        progress percentage data whenever the percentage of the current file
-        being uploaded changes.
+        makes the publisher (pub) send "update_progress_bars" message that
+        contains progress percentage data whenever the percentage of the
+        current file being uploaded changes.
 
         arguments:
             monitor -- an encoder.MultipartEncoderMonitor object
@@ -437,9 +464,9 @@ class MainFrame(wx.Frame):
         # only call update_progress_bars if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
                 monitor.prev_ov_pct != monitor.ov_upload_pct):
-            wx.CallAfter(Publisher().sendMessage,
+            wx.CallAfter(pub.sendMessage,
                          "update_progress_bars",
-                         progress_data)
+                         progress_data=progress_data)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
@@ -449,7 +476,7 @@ class MainFrame(wx.Frame):
 
         """
         Subscribed to "update_progress_bars"
-        This function is called when Publisher() sends the message
+        This function is called when pub (publisher) sends the message
         "update_progress_bars"
 
         Updates boths progress bars and progress labels
@@ -461,7 +488,6 @@ class MainFrame(wx.Frame):
         arguments:
             progress_data -- object containing dictionary that holds data
                              to be used by the progress bars and labels
-                             dictionary is in progress_data.data
 
         no return value
         """
@@ -469,21 +495,21 @@ class MainFrame(wx.Frame):
         if self.pulse_timer.IsRunning():
             self.pulse_timer.Stop()
 
-        if (isinstance(progress_data.data, str) and
-                progress_data.data == "Upload Complete"):
+        if (isinstance(progress_data, str) and
+                progress_data == "Upload Complete"):
             self.handle_upload_complete()
 
         else:
             self.cf_progress_bar.SetValue(
-                progress_data.data["curr_file_upload_pct"])
+                progress_data["curr_file_upload_pct"])
             self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
-                files=str(progress_data.data["curr_files_uploading"]),
-                pct=str(progress_data.data["curr_file_upload_pct"])))
+                files=str(progress_data["curr_files_uploading"]),
+                pct=str(progress_data["curr_file_upload_pct"])))
 
-            self.ov_progress_bar.SetValue(progress_data.data
+            self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("Overall: {pct}%".format(
-                pct=str(progress_data.data["overall_upload_pct"])))
+                pct=str(progress_data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
 
@@ -568,6 +594,10 @@ class MainFrame(wx.Frame):
     def start_sample_sheet_processing(self):
 
         self.dir_box.SetValue(self.browse_path)
+        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_bar.SetValue(0)
+        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_bar.SetValue(0)
 
         try:
 

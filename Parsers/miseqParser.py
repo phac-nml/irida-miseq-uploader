@@ -157,6 +157,9 @@ def parse_samples(sample_sheet_file):
             sample_dict[key] = line[i]  # assumes values are never empty
             i = i + 1
 
+        if len(sample_dict["sampleName"]) == 0:
+            sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
+
         sample = Sample(deepcopy(sample_dict))
         sample_list.append(sample)
 

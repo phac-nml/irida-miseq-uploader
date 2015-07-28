@@ -1007,8 +1007,7 @@ class TestApiCalls(unittest.TestCase):
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
         API.apiCalls.encoder.MultipartEncoder = MagicMock()
-        API.apiCalls.path = MagicMock()
-        API.apiCalls.Publisher = MagicMock()
+        API.apiCalls.ApiCalls.get_file_size_list = MagicMock()
 
         sample_dict = {
             "sequencerSampleId": "03-3333",
