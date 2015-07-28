@@ -47,10 +47,11 @@ class SettingsPanel(wx.Panel):
         self.ICON_WIDTH = self.ICON_HEIGHT = 24
         self.CREDENTIALS_SPACE = 30
         self.PADDING_LEN = 5
-        self.TEXTCTRL_FONT = wx.Font(
+        self.TEXTBOX_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
-        self.STATIC_TEXT_FONT = self.TEXTCTRL_FONT
+        self.LABEL_TXT_FONT = self.TEXTBOX_FONT
+        self.ERR_TXT_FONT = self.TEXTBOX_FONT
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -61,7 +62,7 @@ class SettingsPanel(wx.Panel):
 
         self.user_pass_static_box = wx.StaticBox(
             self, label="User authorization")
-        self.user_pass_static_box.SetFont(self.STATIC_TEXT_FONT)
+        self.user_pass_static_box.SetFont(self.LABEL_TXT_FONT)
         self.user_pass_container = wx.StaticBoxSizer(
             self.user_pass_static_box, wx.VERTICAL)
 
@@ -75,7 +76,7 @@ class SettingsPanel(wx.Panel):
 
         self.id_secret_static_box = wx.StaticBox(
             self, label="Client authorization")
-        self.id_secret_static_box.SetFont(self.STATIC_TEXT_FONT)            
+        self.id_secret_static_box.SetFont(self.LABEL_TXT_FONT)
         self.id_secret_container = wx.StaticBoxSizer(
             self.id_secret_static_box, wx.VERTICAL)
 
@@ -439,16 +440,17 @@ class SettingsPanel(wx.Panel):
         self.base_url_label = wx.StaticText(
             parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH, -1),
             label="Base URL")
-        self.base_url_label.SetFont(self.STATIC_TEXT_FONT)
+        self.base_url_label.SetFont(self.LABEL_TXT_FONT)
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.url_err_label.SetFont(self.ERR_TXT_FONT)
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT),
                                         style=wx.TE_RICH)
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
-        self.base_URL_box.SetFont(self.TEXTCTRL_FONT)
+        self.base_URL_box.SetFont(self.TEXTBOX_FONT)
 
         self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -466,8 +468,7 @@ class SettingsPanel(wx.Panel):
         self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1,
                                    flag=wx.EXPAND)
         self.url_box_err_sizer.Add(self.url_err_label,
-                                   flag=wx.LEFT,
-                                   border=self.base_url_label.GetSize()[0])
+                                   flag=wx.ALIGN_CENTER)
         self.url_container.Add(self.url_box_err_sizer, proportion=1)
 
     def add_username_section(self):
@@ -480,14 +481,15 @@ class SettingsPanel(wx.Panel):
 
         self.username_label = wx.StaticText(
             self, id=-1, label="Username", size=(self.LABEL_TEXT_WIDTH, -1))
-        self.username_label.SetFont(self.STATIC_TEXT_FONT)
+        self.username_label.SetFont(self.LABEL_TXT_FONT)
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.username_err_label.SetFont(self.ERR_TXT_FONT)
         self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
-        self.username_box.SetFont(self.TEXTCTRL_FONT)
+        self.username_box.SetFont(self.TEXTBOX_FONT)
 
         self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -498,7 +500,8 @@ class SettingsPanel(wx.Panel):
         self.username_box_icon_sizer.Add(self.username_icon,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.username_box_err_sizer.Add(self.username_box_icon_sizer)
-        self.username_box_err_sizer.Add(self.username_err_label)
+        self.username_box_err_sizer.Add(self.username_err_label,
+                                        flag=wx.ALIGN_CENTER)
         self.username_container.Add(
             self.username_box_err_sizer, flag=wx.TOP,
             border=self.username_err_label.GetSize()[1])
@@ -513,15 +516,16 @@ class SettingsPanel(wx.Panel):
 
         self.password_label = wx.StaticText(
             self, id=-1, label="Password", size=(self.LABEL_TEXT_WIDTH, -1))
-        self.password_label.SetFont(self.STATIC_TEXT_FONT)
+        self.password_label.SetFont(self.LABEL_TXT_FONT)
 
         self.password_err_label = wx.StaticText(self, id=-1, label="")
+        self.password_err_label.SetFont(self.ERR_TXT_FONT)
         self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
-        self.password_box.SetFont(self.TEXTCTRL_FONT)
+        self.password_box.SetFont(self.TEXTBOX_FONT)
 
         self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -532,7 +536,8 @@ class SettingsPanel(wx.Panel):
         self.password_box_icon_sizer.Add(self.password_icon,
                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.password_box_err_sizer.Add(self.password_box_icon_sizer)
-        self.password_box_err_sizer.Add(self.password_err_label)
+        self.password_box_err_sizer.Add(self.password_err_label,
+                                        flag=wx.ALIGN_CENTER)
         self.password_container.Add(self.password_box_err_sizer)
 
     def add_client_id_section(self):
@@ -545,15 +550,16 @@ class SettingsPanel(wx.Panel):
 
         self.client_id_label = wx.StaticText(
             parent=self, id=-1, label="ID", size=(self.LABEL_TEXT_WIDTH, -1))
-        self.client_id_label.SetFont(self.STATIC_TEXT_FONT)
+        self.client_id_label.SetFont(self.LABEL_TXT_FONT)
 
         self.client_id_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_id_err_label.SetFont(self.ERR_TXT_FONT)
         self.client_id_err_label.SetForegroundColour(
             self.LOG_PNL_ERR_TXT_COLOR)
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
-        self.client_id_box.SetFont(self.TEXTCTRL_FONT)
+        self.client_id_box.SetFont(self.TEXTBOX_FONT)
 
         self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -564,7 +570,7 @@ class SettingsPanel(wx.Panel):
         self.client_id_box_icon_sizer.Add(self.client_id_icon,
                                           flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
-        self.client_id_box_err_sizer.Add(self.client_id_err_label)
+        self.client_id_box_err_sizer.Add(self.client_id_err_label, flag=wx.ALIGN_CENTER)
         self.client_id_container.Add(
             self.client_id_box_err_sizer, flag=wx.TOP,
             border=self.client_id_err_label.GetSize()[1])
@@ -579,15 +585,16 @@ class SettingsPanel(wx.Panel):
 
         self.client_secret_label = wx.StaticText(
             self, id=-1, label="Secret", size=(self.LABEL_TEXT_WIDTH, -1))
-        self.client_secret_label.SetFont(self.STATIC_TEXT_FONT)
+        self.client_secret_label.SetFont(self.LABEL_TXT_FONT)
 
         self.client_secret_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_secret_err_label.SetFont(self.ERR_TXT_FONT)
         self.client_secret_err_label.SetForegroundColour(
             self.LOG_PNL_ERR_TXT_COLOR)
 
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
-        self.client_secret_box.SetFont(self.TEXTCTRL_FONT)
+        self.client_secret_box.SetFont(self.TEXTBOX_FONT)
 
         self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -598,7 +605,8 @@ class SettingsPanel(wx.Panel):
         self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
                                               flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
-        self.client_secret_box_err_sizer.Add(self.client_secret_err_label)
+        self.client_secret_box_err_sizer.Add(self.client_secret_err_label,
+                                             flag=wx.ALIGN_CENTER)
         self.client_secret_container.Add(self.client_secret_box_err_sizer)
 
     def add_debug_checkbox(self):
