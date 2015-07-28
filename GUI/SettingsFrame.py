@@ -35,7 +35,7 @@ class SettingsPanel(wx.Panel):
         self.prompt_dlg = None
         self.show_debug_msg = False
 
-        self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
+        self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.SIZER_BORDER = 5
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
@@ -50,6 +50,7 @@ class SettingsPanel(wx.Panel):
         self.TEXTCTRL_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
+        self.STATIC_TEXT_FONT = self.TEXTCTRL_FONT
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -60,6 +61,7 @@ class SettingsPanel(wx.Panel):
 
         self.user_pass_static_box = wx.StaticBox(
             self, label="User authorization")
+        self.user_pass_static_box.SetFont(self.STATIC_TEXT_FONT)
         self.user_pass_container = wx.StaticBoxSizer(
             self.user_pass_static_box, wx.VERTICAL)
 
@@ -73,6 +75,7 @@ class SettingsPanel(wx.Panel):
 
         self.id_secret_static_box = wx.StaticBox(
             self, label="Client authorization")
+        self.id_secret_static_box.SetFont(self.STATIC_TEXT_FONT)            
         self.id_secret_container = wx.StaticBoxSizer(
             self.id_secret_static_box, wx.VERTICAL)
 
@@ -436,6 +439,7 @@ class SettingsPanel(wx.Panel):
         self.base_url_label = wx.StaticText(
             parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH, -1),
             label="Base URL")
+        self.base_url_label.SetFont(self.STATIC_TEXT_FONT)
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -476,6 +480,7 @@ class SettingsPanel(wx.Panel):
 
         self.username_label = wx.StaticText(
             self, id=-1, label="Username", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.username_label.SetFont(self.STATIC_TEXT_FONT)
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
         self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -508,6 +513,7 @@ class SettingsPanel(wx.Panel):
 
         self.password_label = wx.StaticText(
             self, id=-1, label="Password", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.password_label.SetFont(self.STATIC_TEXT_FONT)
 
         self.password_err_label = wx.StaticText(self, id=-1, label="")
         self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
@@ -539,6 +545,7 @@ class SettingsPanel(wx.Panel):
 
         self.client_id_label = wx.StaticText(
             parent=self, id=-1, label="ID", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.client_id_label.SetFont(self.STATIC_TEXT_FONT)
 
         self.client_id_err_label = wx.StaticText(self, id=-1, label="")
         self.client_id_err_label.SetForegroundColour(
@@ -572,6 +579,7 @@ class SettingsPanel(wx.Panel):
 
         self.client_secret_label = wx.StaticText(
             self, id=-1, label="Secret", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.client_secret_label.SetFont(self.STATIC_TEXT_FONT)
 
         self.client_secret_err_label = wx.StaticText(self, id=-1, label="")
         self.client_secret_err_label.SetForegroundColour(
