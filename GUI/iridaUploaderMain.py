@@ -57,17 +57,18 @@ class MainFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
+        self.OPEN_SETTINGS_ID = 111 # arbitrary value
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.settings_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
-        self.add_settings_button()
+        self.add_options_menu()
+        self.add_settings_option()
         self.add_curr_file_progress_bar()
         self.add_overall_progress_bar()
         self.add_upload_button()
@@ -81,10 +82,6 @@ class MainFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
-
-        self.top_sizer.Add(
-            self.settings_button_sizer, proportion=0,
-            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=20)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
@@ -261,17 +258,35 @@ class MainFrame(wx.Frame):
         self.settings_frame.Center()
         self.settings_frame.Show()
 
-    def add_settings_button(self):
+
+    def add_options_menu(self):
 
         """
-        Adds settings button to open settings menu
+        Adds Options menu on top of program
+        Shortcut / accelerator: Alt + T
 
         no return value
         """
 
-        self.settings_button = wx.Button(self, label="Settings")
-        self.settings_button.Bind(wx.EVT_BUTTON, self.open_settings)
-        self.settings_button_sizer.Add(self.settings_button)
+        self.menubar = wx.MenuBar()
+        self.options_menu = wx.Menu()
+        self.menubar.Append(self.options_menu, "Op&tions")
+        self.SetMenuBar(self.menubar)
+
+    def add_settings_option(self):
+
+        """
+        Add Settings on options menu
+        Clicking Settings will call self.open_settings()
+        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
+
+        no return value
+        """
+
+        settings_item = wx.MenuItem(self.options_menu, self.OPEN_SETTINGS_ID,
+                                    "&Settings\tCTRL+I")
+        self.options_menu.AppendItem(settings_item)
+        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
 
     def display_warning(self, warn_msg):
 
