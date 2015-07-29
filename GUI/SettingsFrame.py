@@ -792,9 +792,9 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        self.log_panel.Clear()
         changes_dict = self.get_changes_dict()
         if len(changes_dict) > 0:
+            self.log_panel.Clear()
             self.log_panel.AppendText("Saving...\n")
 
             targ_section = "apiCalls"
