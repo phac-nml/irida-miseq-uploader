@@ -47,6 +47,7 @@ class SettingsPanel(wx.Panel):
         self.ICON_WIDTH = self.ICON_HEIGHT = 24
         self.CREDENTIALS_SPACE = 30
         self.PADDING_LEN = 5
+        self.ICON_TXT_FIELD_SPACE = 5
         self.TEXTBOX_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
@@ -464,7 +465,8 @@ class SettingsPanel(wx.Panel):
         self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1,
                                     flag=wx.EXPAND)
         self.url_box_icon_sizer.Add(self.base_URL_icon,
-                                    flag=wx.ALIGN_CENTER_VERTICAL)
+                                    flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT,
+                                    border=self.ICON_TXT_FIELD_SPACE)
         self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1,
                                    flag=wx.EXPAND)
         self.url_box_err_sizer.Add(self.url_err_label,
@@ -499,7 +501,9 @@ class SettingsPanel(wx.Panel):
                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.username_box_icon_sizer.Add(self.username_box)
         self.username_box_icon_sizer.Add(self.username_icon,
-                                         flag=wx.ALIGN_CENTER_VERTICAL)
+                                         flag=wx.ALIGN_CENTER_VERTICAL |
+                                         wx.LEFT,
+                                         border=self.ICON_TXT_FIELD_SPACE)
         self.username_box_err_sizer.Add(self.username_box_icon_sizer)
         self.username_box_err_sizer.Add(self.username_err_label,
                                         flag=wx.ALIGN_CENTER)
@@ -536,7 +540,9 @@ class SettingsPanel(wx.Panel):
                                          flag=wx.ALIGN_CENTER_VERTICAL)
         self.password_box_icon_sizer.Add(self.password_box)
         self.password_box_icon_sizer.Add(self.password_icon,
-                                         flag=wx.ALIGN_CENTER_VERTICAL)
+                                         flag=wx.ALIGN_CENTER_VERTICAL |
+                                         wx.LEFT,
+                                         border=self.ICON_TXT_FIELD_SPACE)
         self.password_box_err_sizer.Add(self.password_box_icon_sizer)
         self.password_box_err_sizer.Add(self.password_err_label,
                                         flag=wx.ALIGN_CENTER)
@@ -571,7 +577,9 @@ class SettingsPanel(wx.Panel):
                                           flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_id_box_icon_sizer.Add(self.client_id_box)
         self.client_id_box_icon_sizer.Add(self.client_id_icon,
-                                          flag=wx.ALIGN_CENTER_VERTICAL)
+                                          flag=wx.ALIGN_CENTER_VERTICAL |
+                                          wx.LEFT,
+                                          border=self.ICON_TXT_FIELD_SPACE)
         self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
         self.client_id_box_err_sizer.Add(self.client_id_err_label,
                                          flag=wx.ALIGN_CENTER)
@@ -608,7 +616,9 @@ class SettingsPanel(wx.Panel):
                                               flag=wx.ALIGN_CENTER_VERTICAL)
         self.client_secret_box_icon_sizer.Add(self.client_secret_box)
         self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
-                                              flag=wx.ALIGN_CENTER_VERTICAL)
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.LEFT,
+                                              border=self.ICON_TXT_FIELD_SPACE)
         self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
         self.client_secret_box_err_sizer.Add(self.client_secret_err_label,
                                              flag=wx.ALIGN_CENTER)
