@@ -25,7 +25,7 @@ class SettingsPanel(wx.Panel):
     def __init__(self, parent):
 
         self.parent = parent
-        self.WINDOW_SIZE = (700, 550)
+        self.WINDOW_SIZE = self.parent.WINDOW_SIZE
         wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
@@ -792,9 +792,13 @@ class SettingsPanel(wx.Panel):
 
         if self.log_panel_checkbox.IsChecked():
             self.log_panel.Show()
+            self.parent.SetSizeWH(self.WINDOW_SIZE[0], self.WINDOW_SIZE[1]+200)
+            self.Refresh()
             self.Layout()
         else:
             self.log_panel.Hide()
+            self.parent.SetSizeWH(self.WINDOW_SIZE[0], self.WINDOW_SIZE[1])
+            self.Refresh()
             self.Layout()
 
     def add_log_panel_section(self):
@@ -1036,7 +1040,7 @@ class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 550)
+        self.WINDOW_SIZE = (700, 350)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",
