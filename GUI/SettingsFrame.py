@@ -1,5 +1,6 @@
 import wx
 import sys
+import logging
 from os import path
 from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
@@ -1023,9 +1024,12 @@ class SettingsPanel(wx.Panel):
             self.conf_parser.write(configfile)
 
     def handle_showing_server_msg(self, err):
-        pass
-        # self.log_color_print("Message from server: " + str(err.message),
-        #                     self.LOG_PNL_ERR_TXT_COLOR)
+
+        logging.basicConfig(filename='server_msg.log',
+                            level=logging.DEBUG,
+                            format="%(asctime)s %(message)s",
+                            datefmt='%d/%m/%Y %I:%M:%S %p')
+        logging.debug(err)
 
 
 class SettingsFrame(wx.Frame):
