@@ -107,7 +107,6 @@ class SettingsPanel(wx.Panel):
         self.add_debug_checkbox()
         self.add_log_panel_section()
 
-        self.add_save_btn()
         self.add_close_btn()
 
         self.SetSizer(self.padding)
@@ -451,6 +450,7 @@ class SettingsPanel(wx.Panel):
         self.orig_URL = self.config_dict["baseURL"]
         self.base_URL_box.SetValue(self.orig_URL)
         self.base_URL_box.SetFont(self.TEXTBOX_FONT)
+        self.base_URL_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
         self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -490,6 +490,7 @@ class SettingsPanel(wx.Panel):
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
         self.username_box.SetFont(self.TEXTBOX_FONT)
+        self.username_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
         self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -526,6 +527,7 @@ class SettingsPanel(wx.Panel):
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
         self.password_box.SetFont(self.TEXTBOX_FONT)
+        self.password_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
         self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -560,6 +562,7 @@ class SettingsPanel(wx.Panel):
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
         self.client_id_box.SetFont(self.TEXTBOX_FONT)
+        self.client_id_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
         self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -596,6 +599,7 @@ class SettingsPanel(wx.Panel):
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
         self.client_secret_box.SetFont(self.TEXTBOX_FONT)
+        self.client_secret_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
         self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
@@ -779,19 +783,6 @@ class SettingsPanel(wx.Panel):
 
         self.log_panel.AppendText("\n")
 
-    def add_save_btn(self):
-
-        """
-        Adds save button. Clicking it will call save_changes().
-
-        no return value
-        """
-
-        self.save_btn = wx.Button(self, label="Save")
-        self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
-        self.buttons_sizer.AddStretchSpacer()
-        self.buttons_sizer.Add(self.save_btn, flag=wx.ALIGN_RIGHT)
-
     def save_changes(self, evt):
 
         """
@@ -812,11 +803,7 @@ class SettingsPanel(wx.Panel):
             self.load_curr_config()
             self.print_config_to_log_panel(changes_dict)
 
-        else:
-            self.log_color_print("No changes to save.",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-
-        self.attempt_connect_to_api()
+            self.attempt_connect_to_api()
 
     def add_close_btn(self):
 
@@ -828,6 +815,7 @@ class SettingsPanel(wx.Panel):
 
         self.close_btn = wx.Button(self, label="Close")
         self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
+        self.buttons_sizer.AddStretchSpacer()
         self.buttons_sizer.Add(self.close_btn, flag=wx.ALIGN_RIGHT)
 
     def close_handler(self, event):
