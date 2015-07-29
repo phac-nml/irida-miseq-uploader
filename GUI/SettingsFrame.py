@@ -33,7 +33,6 @@ class SettingsPanel(wx.Panel):
         self.config_dict = OrderedDict()
         self.load_curr_config()
         self.prompt_dlg = None
-        self.show_debug_msg = False
 
         self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
@@ -91,9 +90,9 @@ class SettingsPanel(wx.Panel):
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.lp_checkbox_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_log_container = wx.BoxSizer(wx.VERTICAL)
+        self.checkbox_log_container = wx.BoxSizer(wx.VERTICAL)
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -105,7 +104,7 @@ class SettingsPanel(wx.Panel):
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
-        self.add_debug_checkbox()
+        self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
         self.add_close_btn()
@@ -138,12 +137,14 @@ class SettingsPanel(wx.Panel):
             self.credentials_container, proportion=0,
             flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
-        self.debug_log_container.Add(self.debug_sizer)
-        self.debug_log_container.Add(self.log_panel_sizer)
+        self.checkbox_log_container.Add(
+            self.lp_checkbox_sizer,
+            flag=wx.ALIGN_LEFT | wx.LEFT, border=self.SIZER_BORDER*2)
+        self.checkbox_log_container.Add(self.log_panel_sizer, flag=wx.CENTER)
 
         self.top_sizer.Add(
-            self.debug_log_container, proportion=0,
-            flag=wx.ALIGN_CENTER)
+            self.checkbox_log_container, proportion=0,
+            flag=wx.ALIGN_CENTER | wx.EXPAND)
 
         self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND,
                          border=self.PADDING_LEN)
@@ -678,19 +679,18 @@ class SettingsPanel(wx.Panel):
         self.client_secret_container.Add(
             self.client_secret_err_label_warn_icon, flag=wx.ALIGN_CENTER)
 
-    def add_debug_checkbox(self):
+    def add_show_log_panel_checkbox(self):
 
         """
-        Adds checkbox for debugging option which will display messages from
-        the server in to the log panel
+        Adds checkbox for showing log panel
 
         no return value
         """
 
-        self.debug_checkbox = wx.CheckBox(parent=self, id=-1,
-                                          label="Show messages from server")
-        self.debug_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_debug_checkbox)
-        self.debug_sizer.Add(self.debug_checkbox)
+        self.log_panel_checkbox = wx.CheckBox(parent=self, id=-1,
+                                              label="Show log panel")
+        self.log_panel_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_lp_checkbox)
+        self.lp_checkbox_sizer.Add(self.log_panel_checkbox)
 
     def create_icon_images(self):
 
@@ -780,18 +780,21 @@ class SettingsPanel(wx.Panel):
         self.Layout()
         self.Refresh()
 
-    def handle_debug_checkbox(self, evt):
+    def handle_lp_checkbox(self, evt):
 
         """
-        Funtion bound to self.debug_checkbox being clicked
+        Funtion bound to self.log_panel_checkbox being clicked
+        if checkbox is checked show the log panel otherwise hide it
 
         no return value
         """
 
-        if self.debug_checkbox.IsChecked():
-            self.show_debug_msg = True
+        if self.log_panel_checkbox.IsChecked():
+            self.log_panel.Show()
+            self.Layout()
         else:
-            self.show_debug_msg = False
+            self.log_panel.Hide()
+            self.Layout()
 
     def add_log_panel_section(self):
 
@@ -814,6 +817,7 @@ class SettingsPanel(wx.Panel):
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
         self.log_panel.AppendText("\n")
+        self.log_panel.Hide()
         self.log_panel_sizer.Add(self.log_panel)
 
     def print_config_to_log_panel(self, changes_dict):
@@ -1019,10 +1023,9 @@ class SettingsPanel(wx.Panel):
             self.conf_parser.write(configfile)
 
     def handle_showing_server_msg(self, err):
-
-        if self.show_debug_msg:
-            self.log_color_print("Message from server: " + str(err.message),
-                                 self.LOG_PNL_ERR_TXT_COLOR)
+        pass
+        # self.log_color_print("Message from server: " + str(err.message),
+        #                     self.LOG_PNL_ERR_TXT_COLOR)
 
 
 class SettingsFrame(wx.Frame):
