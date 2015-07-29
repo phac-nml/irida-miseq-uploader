@@ -57,7 +57,7 @@ class MainFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.OPEN_SETTINGS_ID = 111 # arbitrary value
+        self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -258,7 +258,6 @@ class MainFrame(wx.Frame):
         self.settings_frame.Center()
         self.settings_frame.Show()
 
-
     def add_options_menu(self):
 
         """
@@ -402,9 +401,10 @@ class MainFrame(wx.Frame):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
+
         try:
             for sr in self.seq_run_list:
-
+                api.create_paired_seq_run(sr.get_all_metadata())
                 for sample in sr.get_sample_list():
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = "Project ID: {id} doesn't exist".format(

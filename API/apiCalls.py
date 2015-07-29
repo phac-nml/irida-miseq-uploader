@@ -16,6 +16,7 @@ from Model.Sample import Sample
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
+from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
@@ -553,5 +554,45 @@ class ApiCalls:
                                      status_code=str(response.status_code),
                                      err_msg=response.text,
                                      ud=str(files)))
+
+        return json_res
+
+    def create_paired_seq_run(self, metadata_dict):
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+        # constructing manually tempoarily until Tom adds rel
+        seq_run_url = seq_run_url+"/miseqrun/"
+
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        acceptable_properties = [
+            "layoutType", "chemistry", "projectName",
+            "experimentName", "application", "uploadStatus",
+            "investigatorName", "createdDate", "assay", "description",
+            "workflow"]
+
+        # missing readLengths. Not sure which to send.
+
+        metadata_dict["layoutType"] = "PAIRED_END"
+        metadata_dict["uploadStatus"] = "UPLOADING"
+
+        for key in metadata_dict.keys():
+            if key not in acceptable_properties:
+                del metadata_dict[key]
+
+        json_obj = json.dumps(metadata_dict)
+
+        response = self.session.post(seq_run_url, json_obj, **headers)
+
+        if response.status_code == httplib.CREATED:  # 201
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.text)
 
         return json_res
