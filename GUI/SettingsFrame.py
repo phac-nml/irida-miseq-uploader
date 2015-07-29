@@ -57,9 +57,9 @@ class SettingsPanel(wx.Panel):
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.url_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.url_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.url_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_container = wx.BoxSizer(wx.VERTICAL)
 
         self.user_pass_static_box = wx.StaticBox(
             self, label="User authorization")
@@ -205,7 +205,7 @@ class SettingsPanel(wx.Panel):
             self.log_color_print("\nSuccessfully connected to API.",
                                  self.LOG_PNL_OK_TXT_COLOR)
 
-            self.show_success_icon(self.base_URL_icon)
+            self.show_success_icon(self.base_url_suc_icon)
             self.show_success_icon(self.username_suc_icon)
             self.show_success_icon(self.password_suc_icon)
             self.show_success_icon(self.client_id_suc_icon)
@@ -246,13 +246,13 @@ class SettingsPanel(wx.Panel):
             self.handle_showing_server_msg(e)
 
         err_description = ("Cannot connect to url: {url}\n".format(
-                           url=self.base_URL_box.GetValue()))
+                           url=self.base_url_box.GetValue()))
 
         err_log_msgs = [err_description]
 
         err_labels = [self.url_err_label]
-        err_boxes = [self.base_URL_box]
-        err_icons = [self.base_URL_icon]
+        err_boxes = [self.base_url_box]
+        err_icons = [self.base_url_warn_icon]
         icon_tooltip = (err_description +
                         ("\nCheck for typos and if the IRIDA " +
                          "web server is running."))
@@ -338,14 +338,14 @@ class SettingsPanel(wx.Panel):
         """
 
         err_description = ("Cannot connect to url: {url}\n".format(
-                           url=self.base_URL_box.GetValue()))
+                           url=self.base_url_box.GetValue()))
 
         err_log_msgs = [err_description,
                         "Value error message: " + str(e.message)]
 
         err_labels = [self.url_err_label]
-        err_boxes = [self.base_URL_box]
-        err_icons = [self.base_URL_icon]
+        err_boxes = [self.base_url_box]
+        err_icons = [self.base_url_warn_icon]
         icon_tooltip = err_description
 
         self.display_gui_errors(err_labels, err_boxes, err_log_msgs,
@@ -421,7 +421,8 @@ class SettingsPanel(wx.Panel):
         self.client_id_err_label.SetLabel("")
         self.client_secret_err_label.SetLabel("")
 
-        self.hide_icon(self.base_URL_icon, hide=True)
+        self.hide_icon(self.base_url_suc_icon, hide=True)
+        self.hide_icon(self.base_url_warn_icon)
         self.hide_icon(self.username_suc_icon)
         self.hide_icon(self.username_warn_icon)
         self.hide_icon(self.password_suc_icon)
@@ -450,32 +451,43 @@ class SettingsPanel(wx.Panel):
         self.url_err_label.SetFont(self.ERR_TXT_FONT)
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT),
+        self.base_url_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT),
                                         style=wx.TE_RICH)
         self.orig_URL = self.config_dict["baseURL"]
-        self.base_URL_box.SetValue(self.orig_URL)
-        self.base_URL_box.SetFont(self.TEXTBOX_FONT)
-        self.base_URL_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+        self.base_url_box.SetValue(self.orig_URL)
+        self.base_url_box.SetFont(self.TEXTBOX_FONT)
+        self.base_url_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+        self.base_url_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.base_url_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
 
         tip = "Enter the URL for the IRIDA server"
-        self.base_URL_box.SetToolTipString(tip)
+        self.base_url_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
 
-        self.url_box_icon_sizer.Add(self.base_url_label,
-                                    flag=wx.ALIGN_CENTER_VERTICAL)
-        self.url_box_icon_sizer.Add(self.base_URL_box, proportion=1,
-                                    flag=wx.EXPAND)
-        self.url_box_icon_sizer.Add(self.base_URL_icon,
-                                    flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT,
-                                    border=self.ICON_SPACE)
-        self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1,
-                                   flag=wx.EXPAND)
-        self.url_box_err_sizer.Add(self.url_err_label,
-                                   flag=wx.ALIGN_CENTER)
-        self.url_container.Add(self.url_box_err_sizer, proportion=1)
+        self.url_label_box_suc_icon.Add(self.base_url_label,
+                                        flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_label_box_suc_icon.Add(self.base_url_box, proportion=1,
+                                        flag=wx.EXPAND)
+        self.url_label_box_suc_icon.Add(self.base_url_suc_icon,
+                                        flag=wx.ALIGN_CENTER_VERTICAL |
+                                        wx.LEFT,
+                                        border=self.ICON_SPACE)
+
+        self.url_err_label_warn_icon.Add(self.base_url_warn_icon,
+                                         flag=wx.ALIGN_CENTER_VERTICAL |
+                                         wx.RIGHT,
+                                         border=self.ICON_SPACE)
+        self.url_err_label_warn_icon.Add(self.url_err_label, flag=wx.CENTER |
+                                         wx.TOP,
+                                         border=self.ICON_SPACE*2)
+
+        self.url_container.Add(
+            self.url_label_box_suc_icon, proportion=1, flag=wx.TOP | wx.EXPAND)
+        self.url_container.Add(self.url_err_label_warn_icon,
+                               flag=wx.ALIGN_CENTER)
 
     def add_username_section(self):
 
@@ -711,7 +723,7 @@ class SettingsPanel(wx.Panel):
 
         arguments:
             targ -- the icon place holder(s) to be shown
-                    (e.g self.base_URL_icon)
+                    (e.g self.base_url_warn_icon)
 
             tooltip -- message to be used as a tooltip
 
@@ -733,7 +745,7 @@ class SettingsPanel(wx.Panel):
         inserts success icon (self.suc_img) in to targ icon place holder
 
         arguments:
-            targ -- the icon place holder to be shown (e.g self.base_URL_icon)
+            targ -- icon place holder to be shown (e.g self.base_url_suc_icon)
             tooltip -- message to be used as a tooltip
 
         no return value
@@ -753,10 +765,10 @@ class SettingsPanel(wx.Panel):
         hide icon for given targ
 
         arguments:
-            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            targ -- the icon place holder to be hidden
             hide -- if True actually hide the icon object instead of placing
                     a transparent placeholder icon in it
-                    used just for base_URL_icon because it's box expands
+                    used just for base_url_suc_icon because it's box expands
 
         no return value
         """
@@ -910,7 +922,7 @@ class SettingsPanel(wx.Panel):
                 self.load_curr_config()
 
             else:
-                self.base_URL_box.SetValue(self.config_dict["baseURL"])
+                self.base_url_box.SetValue(self.config_dict["baseURL"])
                 self.username_box.SetValue(self.config_dict["username"])
                 self.password_box.SetValue(self.config_dict["password"])
                 self.client_id_box.SetValue(self.config_dict["client_id"])
@@ -978,7 +990,7 @@ class SettingsPanel(wx.Panel):
         """
 
         val_dict = {}
-        val_dict["baseURL"] = self.base_URL_box.GetValue()
+        val_dict["baseURL"] = self.base_url_box.GetValue()
         val_dict["username"] = self.username_box.GetValue()
         val_dict["password"] = self.password_box.GetValue()
         val_dict["client_id"] = self.client_id_box.GetValue()
