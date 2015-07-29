@@ -47,7 +47,7 @@ class SettingsPanel(wx.Panel):
         self.ICON_WIDTH = self.ICON_HEIGHT = 24
         self.CREDENTIALS_SPACE = 30
         self.PADDING_LEN = 5
-        self.ICON_TXT_FIELD_SPACE = 5
+        self.ICON_SPACE = 5
         self.TEXTBOX_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
@@ -81,13 +81,13 @@ class SettingsPanel(wx.Panel):
         self.id_secret_container = wx.StaticBoxSizer(
             self.id_secret_static_box, wx.VERTICAL)
 
-        self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.client_id_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_id_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.client_secret_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.client_secret_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_secret_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_container = wx.BoxSizer(wx.VERTICAL)
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -208,8 +208,8 @@ class SettingsPanel(wx.Panel):
             self.show_success_icon(self.base_URL_icon)
             self.show_success_icon(self.username_suc_icon)
             self.show_success_icon(self.password_suc_icon)
-            self.show_success_icon(self.client_id_icon)
-            self.show_success_icon(self.client_secret_icon)
+            self.show_success_icon(self.client_id_suc_icon)
+            self.show_success_icon(self.client_secret_suc_icon)
 
             self.Refresh()
 
@@ -298,7 +298,7 @@ class SettingsPanel(wx.Panel):
             err_labels = [self.client_id_err_label]
             err_boxes = [self.client_id_box]
 
-            err_icons = [self.client_id_icon]
+            err_icons = [self.client_id_warn_icon]
             icon_tooltip = err_description
 
             credentials_err = True
@@ -310,7 +310,7 @@ class SettingsPanel(wx.Panel):
             err_labels = [self.client_secret_err_label]
             err_boxes = [self.client_secret_box]
 
-            err_icons = [self.client_secret_icon]
+            err_icons = [self.client_secret_warn_icon]
             icon_tooltip = err_description
 
             credentials_err = True
@@ -426,8 +426,10 @@ class SettingsPanel(wx.Panel):
         self.hide_icon(self.username_warn_icon)
         self.hide_icon(self.password_suc_icon)
         self.hide_icon(self.password_warn_icon)
-        self.hide_icon(self.client_id_icon)
-        self.hide_icon(self.client_secret_icon)
+        self.hide_icon(self.client_id_suc_icon)
+        self.hide_icon(self.client_id_warn_icon)
+        self.hide_icon(self.client_secret_suc_icon)
+        self.hide_icon(self.client_secret_warn_icon)
 
     def add_URL_section(self):
 
@@ -468,7 +470,7 @@ class SettingsPanel(wx.Panel):
                                     flag=wx.EXPAND)
         self.url_box_icon_sizer.Add(self.base_URL_icon,
                                     flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT,
-                                    border=self.ICON_TXT_FIELD_SPACE)
+                                    border=self.ICON_SPACE)
         self.url_box_err_sizer.Add(self.url_box_icon_sizer, proportion=1,
                                    flag=wx.EXPAND)
         self.url_box_err_sizer.Add(self.url_err_label,
@@ -507,10 +509,12 @@ class SettingsPanel(wx.Panel):
         self.username_label_box_suc_icon.Add(self.username_suc_icon,
                                              flag=wx.ALIGN_CENTER_VERTICAL |
                                              wx.LEFT,
-                                             border=self.ICON_TXT_FIELD_SPACE)
+                                             border=self.ICON_SPACE)
 
         self.username_err_label_warn_icon.Add(self.username_warn_icon,
-                                              flag=wx.ALIGN_CENTER_VERTICAL)
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.RIGHT,
+                                              border=self.ICON_SPACE)
         self.username_err_label_warn_icon.Add(self.username_err_label,
                                               flag=wx.ALIGN_CENTER)
 
@@ -553,10 +557,12 @@ class SettingsPanel(wx.Panel):
         self.password_label_box_suc_icon.Add(self.password_suc_icon,
                                              flag=wx.ALIGN_CENTER_VERTICAL |
                                              wx.LEFT,
-                                             border=self.ICON_TXT_FIELD_SPACE)
+                                             border=self.ICON_SPACE)
 
         self.password_err_label_warn_icon.Add(self.password_warn_icon,
-                                              flag=wx.ALIGN_CENTER_VERTICAL)
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.RIGHT,
+                                              border=self.ICON_SPACE)
         self.password_err_label_warn_icon.Add(self.password_err_label,
                                               flag=wx.ALIGN_CENTER)
 
@@ -588,22 +594,31 @@ class SettingsPanel(wx.Panel):
         self.client_id_box.SetFont(self.TEXTBOX_FONT)
         self.client_id_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+        self.client_id_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_id_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
 
-        self.client_id_box_icon_sizer.Add(self.client_id_label,
-                                          flag=wx.ALIGN_CENTER_VERTICAL)
-        self.client_id_box_icon_sizer.Add(self.client_id_box)
-        self.client_id_box_icon_sizer.Add(self.client_id_icon,
-                                          flag=wx.ALIGN_CENTER_VERTICAL |
-                                          wx.LEFT,
-                                          border=self.ICON_TXT_FIELD_SPACE)
-        self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
-        self.client_id_box_err_sizer.Add(self.client_id_err_label,
-                                         flag=wx.ALIGN_CENTER)
+        self.client_id_label_box_suc_icon.Add(self.client_id_label,
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
+        self.client_id_label_box_suc_icon.Add(self.client_id_box)
+        self.client_id_label_box_suc_icon.Add(self.client_id_suc_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.LEFT,
+                                              border=self.ICON_SPACE)
+
+        self.client_id_err_label_warn_icon.Add(self.client_id_warn_icon,
+                                               flag=wx.ALIGN_CENTER_VERTICAL |
+                                               wx.RIGHT,
+                                               border=self.ICON_SPACE)
+        self.client_id_err_label_warn_icon.Add(self.client_id_err_label,
+                                               flag=wx.ALIGN_CENTER)
+
         self.client_id_container.Add(
-            self.client_id_box_err_sizer, flag=wx.TOP,
-            border=self.client_id_err_label.GetSize()[1])
+            self.client_id_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.client_id_container.Add(self.client_id_err_label_warn_icon,
+                                     flag=wx.ALIGN_CENTER)
 
     def add_client_secret_section(self):
 
@@ -627,20 +642,29 @@ class SettingsPanel(wx.Panel):
         self.client_secret_box.SetFont(self.TEXTBOX_FONT)
         self.client_secret_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_suc_icon = wx.StaticBitmap(
+            self, bitmap=wx.EmptyBitmap(self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_warn_icon = wx.StaticBitmap(
+            self, bitmap=wx.EmptyBitmap(self.ICON_WIDTH, self.ICON_HEIGHT))
 
-        self.client_secret_box_icon_sizer.Add(self.client_secret_label,
-                                              flag=wx.ALIGN_CENTER_VERTICAL)
-        self.client_secret_box_icon_sizer.Add(self.client_secret_box)
-        self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
-                                              flag=wx.ALIGN_CENTER_VERTICAL |
-                                              wx.LEFT,
-                                              border=self.ICON_TXT_FIELD_SPACE)
-        self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
-        self.client_secret_box_err_sizer.Add(self.client_secret_err_label,
-                                             flag=wx.ALIGN_CENTER)
-        self.client_secret_container.Add(self.client_secret_box_err_sizer)
+        self.client_secret_label_box_suc_icon.Add(
+            self.client_secret_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.client_secret_label_box_suc_icon.Add(self.client_secret_box)
+        self.client_secret_label_box_suc_icon.Add(
+            self.client_secret_suc_icon,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=self.ICON_SPACE)
+
+        self.client_secret_err_label_warn_icon.Add(
+            self.client_secret_warn_icon,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=self.ICON_SPACE)
+        self.client_secret_err_label_warn_icon.Add(
+            self.client_secret_err_label, flag=wx.ALIGN_CENTER)
+
+        self.client_secret_container.Add(
+            self.client_secret_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.client_secret_container.Add(
+            self.client_secret_err_label_warn_icon, flag=wx.ALIGN_CENTER)
 
     def add_debug_checkbox(self):
 
