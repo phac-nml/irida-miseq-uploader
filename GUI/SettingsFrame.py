@@ -438,8 +438,8 @@ class SettingsPanel(wx.Panel):
         """
 
         self.base_url_label = wx.StaticText(
-            parent=self, id=-1, size=(self.LABEL_TEXT_WIDTH, -1),
-            label="Base URL")
+            parent=self, id=-1, size=(80, -1),
+            label="Server URL")
         self.base_url_label.SetFont(self.LABEL_TXT_FONT)
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
