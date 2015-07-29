@@ -791,12 +791,14 @@ class SettingsPanel(wx.Panel):
         """
 
         if self.log_panel_checkbox.IsChecked():
-            wx.CallAfter(self.parent.SetSizeWH, self.WINDOW_SIZE[0], self.WINDOW_SIZE[1]+200)
+            wx.CallAfter(self.parent.SetSizeWH,
+                         self.WINDOW_SIZE[0], self.WINDOW_SIZE[1]+200)
             wx.CallAfter(self.log_panel.Show)
             wx.CallAfter(self.Layout)
             self.Refresh()
         else:
-            wx.CallAfter(self.parent.SetSizeWH, self.WINDOW_SIZE[0], self.WINDOW_SIZE[1])
+            wx.CallAfter(self.parent.SetSizeWH,
+                         self.WINDOW_SIZE[0], self.WINDOW_SIZE[1])
             wx.CallAfter(self.log_panel.Hide)
             wx.CallAfter(self.Layout)
             self.Refresh()
