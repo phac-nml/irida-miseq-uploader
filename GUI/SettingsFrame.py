@@ -106,7 +106,7 @@ class SettingsPanel(wx.Panel):
         self.add_client_secret_section()
         self.add_debug_checkbox()
         self.add_log_panel_section()
-        self.add_default_btn()
+
         self.add_save_btn()
         self.add_close_btn()
 
@@ -748,55 +748,6 @@ class SettingsPanel(wx.Panel):
         self.log_panel.AppendText("\n")
         self.log_panel_sizer.Add(self.log_panel)
 
-    def add_default_btn(self):
-
-        """
-        Add default button. Clicking it will call restore_default_settings().
-
-        no return value
-        """
-
-        self.default_btn = wx.Button(self, label="Restore to default")
-        self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, flag=wx.ALIGN_LEFT)
-        self.buttons_sizer.AddStretchSpacer()
-
-    def restore_default_settings(self, evt):
-
-        """
-        Restore settings to their default values and write them to the
-            config file
-        call load_curr_config() to reload the config_dict and show their values
-            in the log panel
-        update config box values
-        attempt to connect to api after restoring to default settings
-
-        no return value
-        """
-
-        default_settings_dict = {}
-        default_settings_dict["baseURL"] = DEFAULT_BASE_URL
-        default_settings_dict["username"] = DEFAULT_USERNAME
-        default_settings_dict["password"] = DEFAULT_PASSWORD
-        default_settings_dict["client_id"] = DEFAULT_CLIENT_ID
-        default_settings_dict["client_secret"] = DEFAULT_CLIENT_SECRET
-
-        targ_section = "apiCalls"
-        self.write_config_data(targ_section, default_settings_dict)
-
-        self.load_curr_config()
-        changes_dict = self.get_changes_dict()
-        self.log_panel.AppendText("\nSettings restored to default values:\n")
-        self.print_config_to_log_panel(changes_dict)
-
-        self.base_URL_box.SetValue(default_settings_dict["baseURL"])
-        self.username_box.SetValue(default_settings_dict["username"])
-        self.password_box.SetValue(default_settings_dict["password"])
-        self.client_id_box.SetValue(default_settings_dict["client_id"])
-        self.client_secret_box.SetValue(default_settings_dict["client_secret"])
-
-        self.attempt_connect_to_api()
-
     def print_config_to_log_panel(self, changes_dict):
 
         """
@@ -838,6 +789,7 @@ class SettingsPanel(wx.Panel):
 
         self.save_btn = wx.Button(self, label="Save")
         self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
+        self.buttons_sizer.AddStretchSpacer()
         self.buttons_sizer.Add(self.save_btn, flag=wx.ALIGN_RIGHT)
 
     def save_changes(self, evt):
