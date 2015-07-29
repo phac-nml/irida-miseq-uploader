@@ -38,7 +38,7 @@ class SettingsPanel(wx.Panel):
         self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
@@ -67,13 +67,13 @@ class SettingsPanel(wx.Panel):
         self.user_pass_container = wx.StaticBoxSizer(
             self.user_pass_static_box, wx.VERTICAL)
 
-        self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.username_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.username_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.password_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.password_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.password_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_container = wx.BoxSizer(wx.VERTICAL)
 
         self.id_secret_static_box = wx.StaticBox(
             self, label="Client authorization")
@@ -206,8 +206,8 @@ class SettingsPanel(wx.Panel):
                                  self.LOG_PNL_OK_TXT_COLOR)
 
             self.show_success_icon(self.base_URL_icon)
-            self.show_success_icon(self.username_icon)
-            self.show_success_icon(self.password_icon)
+            self.show_success_icon(self.username_suc_icon)
+            self.show_success_icon(self.password_suc_icon)
             self.show_success_icon(self.client_id_icon)
             self.show_success_icon(self.client_secret_icon)
 
@@ -283,7 +283,7 @@ class SettingsPanel(wx.Panel):
             err_labels = [self.username_err_label, self.password_err_label]
             err_boxes = [self.username_box, self.password_box]
 
-            err_icons = [self.username_icon, self.password_icon]
+            err_icons = [self.username_warn_icon, self.password_warn_icon]
             icon_tooltip = (
                 "The username and/or password you provided " +
                 "is incorrect. We can't let you know which one is incorrect " +
@@ -422,8 +422,10 @@ class SettingsPanel(wx.Panel):
         self.client_secret_err_label.SetLabel("")
 
         self.hide_icon(self.base_URL_icon, hide=True)
-        self.hide_icon(self.password_icon)
-        self.hide_icon(self.username_icon)
+        self.hide_icon(self.username_suc_icon)
+        self.hide_icon(self.username_warn_icon)
+        self.hide_icon(self.password_suc_icon)
+        self.hide_icon(self.password_warn_icon)
         self.hide_icon(self.client_id_icon)
         self.hide_icon(self.client_secret_icon)
 
@@ -494,22 +496,29 @@ class SettingsPanel(wx.Panel):
         self.username_box.SetFont(self.TEXTBOX_FONT)
         self.username_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+        self.username_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.username_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
 
-        self.username_box_icon_sizer.Add(self.username_label,
-                                         flag=wx.ALIGN_CENTER_VERTICAL)
-        self.username_box_icon_sizer.Add(self.username_box)
-        self.username_box_icon_sizer.Add(self.username_icon,
-                                         flag=wx.ALIGN_CENTER_VERTICAL |
-                                         wx.LEFT,
-                                         border=self.ICON_TXT_FIELD_SPACE)
-        self.username_box_err_sizer.Add(self.username_box_icon_sizer)
-        self.username_box_err_sizer.Add(self.username_err_label,
-                                        flag=wx.ALIGN_CENTER)
+        self.username_label_box_suc_icon.Add(self.username_label,
+                                             flag=wx.ALIGN_CENTER_VERTICAL)
+        self.username_label_box_suc_icon.Add(self.username_box)
+        self.username_label_box_suc_icon.Add(self.username_suc_icon,
+                                             flag=wx.ALIGN_CENTER_VERTICAL |
+                                             wx.LEFT,
+                                             border=self.ICON_TXT_FIELD_SPACE)
+
+        self.username_err_label_warn_icon.Add(self.username_warn_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
+        self.username_err_label_warn_icon.Add(self.username_err_label,
+                                              flag=wx.ALIGN_CENTER)
+
         self.username_container.Add(
-            self.username_box_err_sizer, flag=wx.TOP,
+            self.username_label_box_suc_icon, flag=wx.TOP,
             border=self.username_err_label.GetSize()[1])
+        self.username_container.Add(self.username_err_label_warn_icon,
+                                    flag=wx.ALIGN_CENTER)
 
     def add_password_section(self):
 
@@ -533,20 +542,29 @@ class SettingsPanel(wx.Panel):
         self.password_box.SetFont(self.TEXTBOX_FONT)
         self.password_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+        self.password_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.password_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
             self.ICON_WIDTH, self.ICON_HEIGHT))
 
-        self.password_box_icon_sizer.Add(self.password_label,
-                                         flag=wx.ALIGN_CENTER_VERTICAL)
-        self.password_box_icon_sizer.Add(self.password_box)
-        self.password_box_icon_sizer.Add(self.password_icon,
-                                         flag=wx.ALIGN_CENTER_VERTICAL |
-                                         wx.LEFT,
-                                         border=self.ICON_TXT_FIELD_SPACE)
-        self.password_box_err_sizer.Add(self.password_box_icon_sizer)
-        self.password_box_err_sizer.Add(self.password_err_label,
-                                        flag=wx.ALIGN_CENTER)
-        self.password_container.Add(self.password_box_err_sizer)
+        self.password_label_box_suc_icon.Add(self.password_label,
+                                             flag=wx.ALIGN_CENTER_VERTICAL)
+        self.password_label_box_suc_icon.Add(self.password_box)
+        self.password_label_box_suc_icon.Add(self.password_suc_icon,
+                                             flag=wx.ALIGN_CENTER_VERTICAL |
+                                             wx.LEFT,
+                                             border=self.ICON_TXT_FIELD_SPACE)
+
+        self.password_err_label_warn_icon.Add(self.password_warn_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
+        self.password_err_label_warn_icon.Add(self.password_err_label,
+                                              flag=wx.ALIGN_CENTER)
+
+        self.password_container.Add(
+            self.password_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.password_container.Add(self.password_err_label_warn_icon,
+                                    flag=wx.ALIGN_CENTER)
 
     def add_client_id_section(self):
 
