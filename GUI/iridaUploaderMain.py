@@ -27,17 +27,13 @@ if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class MainFrame(wx.Frame):
+class MainPanel(wx.Panel):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 750)
-        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
-                          title="IRIDA Uploader",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+        self.WINDOW_SIZE = self.parent.WINDOW_SIZE
+        wx.Panel.__init__(self, parent)
 
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
@@ -57,7 +53,6 @@ class MainFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -67,8 +62,6 @@ class MainFrame(wx.Frame):
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
-        self.add_options_menu()
-        self.add_settings_option()
         self.add_curr_file_progress_bar()
         self.add_overall_progress_bar()
         self.add_upload_button()
@@ -102,7 +95,6 @@ class MainFrame(wx.Frame):
         pub.subscribe(self.handle_send_seq_pair_files_error,
                       "handle_send_seq_pair_files_error")
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
-        self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
@@ -248,47 +240,6 @@ class MainFrame(wx.Frame):
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
         self.log_panel_sizer.Add(self.log_panel)
-
-    def open_settings(self, evt):
-
-        """
-        Open the settings menu(SettingsFrame)
-
-        no return value
-        """
-
-        self.settings_frame.Center()
-        self.settings_frame.Show()
-
-    def add_options_menu(self):
-
-        """
-        Adds Options menu on top of program
-        Shortcut / accelerator: Alt + T
-
-        no return value
-        """
-
-        self.menubar = wx.MenuBar()
-        self.options_menu = wx.Menu()
-        self.menubar.Append(self.options_menu, "Op&tions")
-        self.SetMenuBar(self.menubar)
-
-    def add_settings_option(self):
-
-        """
-        Add Settings on options menu
-        Clicking Settings will call self.open_settings()
-        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
-
-        no return value
-        """
-
-        self.settings_menu_item = wx.MenuItem(self.options_menu,
-                                              self.OPEN_SETTINGS_ID,
-                                              "&Settings\tCTRL+I")
-        self.options_menu.AppendItem(self.settings_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
 
     def display_warning(self, warn_msg, dlg_msg=""):
 
@@ -448,7 +399,7 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
-            if self.upload_id > 0 :
+            if self.upload_id > 0:
                 self.api.set_pair_seq_run_error(self.upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
@@ -833,9 +784,75 @@ class MainFrame(wx.Frame):
         self.seq_run_list.append(seq_run)
 
 
+class MainFrame(wx.Frame):
+
+    def __init__(self, parent=None):
+
+        self.parent = parent
+        self.WINDOW_SIZE = (900, 750)
+
+        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
+                          title="IRIDA Uploader",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
+
+        self.OPEN_SETTINGS_ID = 111  # arbitrary value
+
+        self.mp = MainPanel(self)
+        self.settings_frame = self.mp.settings_frame
+
+        self.add_options_menu()
+        self.add_settings_option()
+
+        self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
+        self.Center()
+
+    def add_options_menu(self):
+
+        """
+        Adds Options menu on top of program
+        Shortcut / accelerator: Alt + T
+
+        no return value
+        """
+
+        self.menubar = wx.MenuBar()
+        self.options_menu = wx.Menu()
+        self.menubar.Append(self.options_menu, "Op&tions")
+        self.SetMenuBar(self.menubar)
+
+    def add_settings_option(self):
+
+        """
+        Add Settings on options menu
+        Clicking Settings will call self.open_settings()
+        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
+
+        no return value
+        """
+
+        self.settings_menu_item = wx.MenuItem(self.options_menu,
+                                              self.OPEN_SETTINGS_ID,
+                                              "&Settings\tCTRL+I")
+        self.options_menu.AppendItem(self.settings_menu_item)
+        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
+
+    def open_settings(self, evt):
+
+        """
+        Open the settings menu(SettingsFrame)
+
+        no return value
+        """
+
+        self.settings_frame.Center()
+        self.settings_frame.Show()
+
+
 if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.api = frame.settings_frame.attempt_connect_to_api()
+    frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()
