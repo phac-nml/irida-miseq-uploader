@@ -448,7 +448,7 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
-            if self.upload_id > 0 :
+            if self.upload_id > 0:
                 self.api.set_pair_seq_run_error(self.upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
