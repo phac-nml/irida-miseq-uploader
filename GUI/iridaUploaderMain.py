@@ -51,7 +51,9 @@ class MainPanel(wx.Panel):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
+        self.PADDING_LEN = 10
 
+        self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -80,12 +82,14 @@ class MainPanel(wx.Panel):
             self.progress_bar_sizer, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER, border=5)
 
-        self.top_sizer.AddStretchSpacer()
-        self.top_sizer.Add(
+        self.padding.Add(
+            self.top_sizer, flag=wx.ALL | wx.EXPAND, border=self.PADDING_LEN)
+        self.padding.AddStretchSpacer()
+        self.padding.Add(
             self.upload_button_sizer, proportion=0,
-            flag=wx.BOTTOM | wx.ALIGN_CENTER, border=5)
+            flag=wx.BOTTOM | wx.ALIGN_CENTER, border=self.PADDING_LEN)
 
-        self.SetSizer(self.top_sizer)
+        self.SetSizer(self.padding)
         self.Layout()
 
         pub.subscribe(self.update_progress_bars, "update_progress_bars")
@@ -128,7 +132,7 @@ class MainPanel(wx.Panel):
 
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
-        self.dir_label = wx.StaticText( parent=self, id=-1, label="File path")
+        self.dir_label = wx.StaticText(parent=self, id=-1, label="File path")
         self.dir_box = wx.TextCtrl(
             self, size=(-1, self.browse_button.GetSize()[1]),
             style=wx.TE_PROCESS_ENTER)
