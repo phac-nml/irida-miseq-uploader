@@ -611,7 +611,11 @@ class ApiCalls:
             "workflow", "readLengths"]
 
         # currently sends just the larger readLengths
-        metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
+        if len(metadata_dict["readLengths"]) > 0:
+            metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
+        else:
+            metadata_dict["readLengths"] = ""
+
         metadata_dict["layoutType"] = "PAIRED_END"
         metadata_dict["uploadStatus"] = "UPLOADING"
 
