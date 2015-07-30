@@ -627,6 +627,24 @@ class ApiCalls:
         returns result of patch request
         """
 
+        status = "COMPLETE"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def _set_pair_seq_run_upload_status(self, identifier, status):
+
+        """
+        Update a sequencing run's upload status to the given status argument
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+            status     -- string that the sequencing run will be updated
+                          with
+
+        returns result of patch request
+        """
+
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
 
         url = self.get_link(seq_run_url, "self",
@@ -640,7 +658,7 @@ class ApiCalls:
             }
         }
 
-        update_dict = {"uploadStatus": "COMPLETE"}
+        update_dict = {"uploadStatus": status}
         json_obj = json.dumps(update_dict)
 
         response = self.session.patch(url, json_obj, **headers)
@@ -651,4 +669,5 @@ class ApiCalls:
             raise SampleSheetError("Error: " +
                                    str(response.status_code) + " " +
                                    response.reason)
+
         return json_res
