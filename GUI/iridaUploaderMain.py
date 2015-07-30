@@ -44,8 +44,6 @@ class MainPanel(wx.Panel):
         self.api = None
 
         self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
-        self.LONG_BOX_SIZE = (650, 32)  # choose directory
-        self.SHORT_BOX_SIZE = (200, 32)  # user and pass
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
@@ -69,7 +67,8 @@ class MainPanel(wx.Panel):
         self.top_sizer.AddSpacer(10)  # space between top and directory box
 
         self.top_sizer.Add(
-            self.directory_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+            self.directory_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER |
+            wx.EXPAND)
 
         self.top_sizer.AddSpacer(30)  # between directory box & credentials
 
@@ -127,17 +126,15 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        self.dir_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="File path")
-        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE,
-                                   style=wx.TE_PROCESS_ENTER)
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
+        self.dir_label = wx.StaticText( parent=self, id=-1, label="File path")
+        self.dir_box = wx.TextCtrl(
+            self, size=(-1, self.browse_button.GetSize()[1]),
+            style=wx.TE_PROCESS_ENTER)
 
-        self.directory_sizer.Add(self.dir_label)
-        self.directory_sizer.Add(self.dir_box)
+        self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
         self.directory_sizer.Add(self.browse_button)
 
         tip = "Select the directory containing the SampleSheet.csv file " + \
