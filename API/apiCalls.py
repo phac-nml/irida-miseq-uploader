@@ -343,7 +343,7 @@ class ApiCalls:
             not even reached.
         """
 
-        json_res = None
+        json_res = {}
         if len(project.get_name()) >= 5:
             url = self.get_link(self.base_URL, "projects")
             json_obj = json.dumps(project.get_dict())
@@ -490,6 +490,8 @@ class ApiCalls:
         returns result of post request.
         """
 
+        json_res = {}
+
         try:
             project_id = sample.get_project_id()
             proj_URL = self.get_link(self.base_URL, "projects")
@@ -545,15 +547,25 @@ class ApiCalls:
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
+        # response.status_code = 500
+
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
         else:
-            raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
-                                     "Upload data: {ud}").format(
-                                     status_code=str(response.status_code),
-                                     err_msg=response.text,
-                                     ud=str(files)))
+
+            err_msg = ("Error {status_code}: {err_msg}.\n" +
+                       "Upload data: {ud}").format(
+                       status_code=str(response.status_code),
+                       err_msg=response.text,
+                       ud=str(files))
+
+            pub.sendMessage("handle_send_seq_pair_files_error",
+                            exception_error=SequenceFileError,
+                            error_msg=err_msg)
+
+            # still raise the error here in order to stop the current thread
+            raise SequenceFileError(err_msg)
 
         return json_res
 
@@ -579,6 +591,8 @@ class ApiCalls:
 
         returns result of post request.
         """
+
+        json_res = {}
 
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
 
@@ -660,6 +674,8 @@ class ApiCalls:
 
         returns result of patch request
         """
+
+        json_res = {}
 
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
 
