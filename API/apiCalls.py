@@ -559,6 +559,27 @@ class ApiCalls:
 
     def create_paired_seq_run(self, metadata_dict):
 
+        """
+        Create a sequencing run for pair end sequence files.
+
+        the contents of metadata_dict are changed inside this method
+
+        layoutType = "PAIRED_END"
+        uploadStatus "UPLOADING"
+        readLengths = the largest number between the readLengths
+
+        There are some parsed metadata keys from the SampleSheet.csv that are
+        currently not accepted/used by the API so they are discarded.
+        Everything not in the acceptable_properties list below is discarded.
+
+        arguments:
+            metadata_dict -- SequencingRun's metadata parsed from
+                             a Samplesheet.csv file by
+                             miseqParser.parse_metadata()
+
+        returns result of post request.
+        """
+
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
 
         url = self.get_link(seq_run_url, "sequencingRun/miseq")
@@ -573,10 +594,10 @@ class ApiCalls:
             "layoutType", "chemistry", "projectName",
             "experimentName", "application", "uploadStatus",
             "investigatorName", "createdDate", "assay", "description",
-            "workflow"]
+            "workflow", "readLengths"]
 
-        # missing readLengths. Not sure which to send.
-
+        # currently sends just the larger readLengths
+        metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
         metadata_dict["layoutType"] = "PAIRED_END"
         metadata_dict["uploadStatus"] = "UPLOADING"
 
@@ -587,20 +608,28 @@ class ApiCalls:
         json_obj = json.dumps(metadata_dict)
 
         response = self.session.post(url, json_obj, **headers)
-
         if response.status_code == httplib.CREATED:  # 201
             json_res = json.loads(response.text)
         else:
             raise SampleSheetError("Error: " +
                                    str(response.status_code) + " " +
-                                   response.text)
+                                   response.reason)
         return json_res
 
     def set_pair_seq_run_complete(self, identifier):
 
+        """
+        Update a sequencing run's upload status to "COMPLETE"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
 
-        url = self.get_link(seq_run_url, "sequencingRun/miseq",
+        url = self.get_link(seq_run_url, "self",
                             targ_dict={
                                 "key": "identifier",
                                 "value": identifier
@@ -611,16 +640,15 @@ class ApiCalls:
             }
         }
 
-        update_dict = {"uploadStatus": "UPLOADING"}
+        update_dict = {"uploadStatus": "COMPLETE"}
         json_obj = json.dumps(update_dict)
 
-        response = self.session.put(seq_run_url, json_obj, **headers)
+        response = self.session.patch(url, json_obj, **headers)
 
-        if response.status_code == httplib.CREATED:  # 201
+        if response.status_code == httplib.OK:  # 200
             json_res = json.loads(response.text)
         else:
             raise SampleSheetError("Error: " +
                                    str(response.status_code) + " " +
-                                   response.text)
-
+                                   response.reason)
         return json_res
