@@ -16,6 +16,7 @@ from Model.Sample import Sample
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
+from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
@@ -342,7 +343,7 @@ class ApiCalls:
             not even reached.
         """
 
-        json_res = None
+        json_res = {}
         if len(project.get_name()) >= 5:
             url = self.get_link(self.base_URL, "projects")
             json_obj = json.dumps(project.get_dict())
@@ -489,6 +490,8 @@ class ApiCalls:
         returns result of post request.
         """
 
+        json_res = {}
+
         try:
             project_id = sample.get_project_id()
             proj_URL = self.get_link(self.base_URL, "projects")
@@ -544,14 +547,163 @@ class ApiCalls:
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
+        # response.status_code = 500
+
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
         else:
-            raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
-                                     "Upload data: {ud}").format(
-                                     status_code=str(response.status_code),
-                                     err_msg=response.text,
-                                     ud=str(files)))
+
+            err_msg = ("Error {status_code}: {err_msg}.\n" +
+                       "Upload data: {ud}").format(
+                       status_code=str(response.status_code),
+                       err_msg=response.text,
+                       ud=str(files))
+
+            pub.sendMessage("handle_send_seq_pair_files_error",
+                            exception_error=SequenceFileError,
+                            error_msg=err_msg)
+
+            # still raise the error here in order to stop the current thread
+            raise SequenceFileError(err_msg)
+
+        return json_res
+
+    def create_paired_seq_run(self, metadata_dict):
+
+        """
+        Create a sequencing run for pair end sequence files.
+
+        the contents of metadata_dict are changed inside this method
+
+        layoutType = "PAIRED_END"
+        uploadStatus "UPLOADING"
+        readLengths = the largest number between the readLengths
+
+        There are some parsed metadata keys from the SampleSheet.csv that are
+        currently not accepted/used by the API so they are discarded.
+        Everything not in the acceptable_properties list below is discarded.
+
+        arguments:
+            metadata_dict -- SequencingRun's metadata parsed from
+                             a Samplesheet.csv file by
+                             miseqParser.parse_metadata()
+
+        returns result of post request.
+        """
+
+        json_res = {}
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+
+        url = self.get_link(seq_run_url, "sequencingRun/miseq")
+
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        acceptable_properties = [
+            "layoutType", "chemistry", "projectName",
+            "experimentName", "application", "uploadStatus",
+            "investigatorName", "createdDate", "assay", "description",
+            "workflow", "readLengths"]
+
+        # currently sends just the larger readLengths
+        if len(metadata_dict["readLengths"]) > 0:
+            metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
+        else:
+            metadata_dict["readLengths"] = ""
+
+        metadata_dict["layoutType"] = "PAIRED_END"
+        metadata_dict["uploadStatus"] = "UPLOADING"
+
+        for key in metadata_dict.keys():
+            if key not in acceptable_properties:
+                del metadata_dict[key]
+
+        json_obj = json.dumps(metadata_dict)
+
+        response = self.session.post(url, json_obj, **headers)
+        if response.status_code == httplib.CREATED:  # 201
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.reason)
+        return json_res
+
+    def set_pair_seq_run_complete(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "COMPLETE"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "COMPLETE"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def set_pair_seq_run_error(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "ERROR"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "ERROR"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def _set_pair_seq_run_upload_status(self, identifier, status):
+
+        """
+        Update a sequencing run's upload status to the given status argument
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+            status     -- string that the sequencing run will be updated
+                          with
+
+        returns result of patch request
+        """
+
+        json_res = {}
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+
+        url = self.get_link(seq_run_url, "self",
+                            targ_dict={
+                                "key": "identifier",
+                                "value": identifier
+                            })
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        update_dict = {"uploadStatus": status}
+        json_obj = json.dumps(update_dict)
+
+        response = self.session.patch(url, json_obj, **headers)
+
+        if response.status_code == httplib.OK:  # 200
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.reason)
 
         return json_res
