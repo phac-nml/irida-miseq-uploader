@@ -1,5 +1,6 @@
 import wx
 import sys
+import logging
 from os import path
 from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
@@ -19,17 +20,13 @@ DEFAULT_CLIENT_ID = "testClient"
 DEFAULT_CLIENT_SECRET = "testClientSecret"
 
 
-class SettingsFrame(wx.Frame):
+class SettingsPanel(wx.Panel):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
 
         self.parent = parent
-        self.WINDOW_SIZE = (700, 550)
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title="Settings",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+        self.WINDOW_SIZE = self.parent.WINDOW_SIZE
+        wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
         self.config_file = path_to_module + "/../config.conf"
@@ -37,77 +34,87 @@ class SettingsFrame(wx.Frame):
         self.config_dict = OrderedDict()
         self.load_curr_config()
         self.prompt_dlg = None
-        self.show_debug_msg = False
 
-        self.LONG_BOX_SIZE = (400, 32)  # url
-        self.SHORT_BOX_SIZE = (200, 32)  # user, pass, id, secret
+        self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
-        self.LABEL_TEXT_HEIGHT = 32
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 230)
-        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 30
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
+        self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.NEUTRAL_BOX_COLOR = wx.WHITE
-        self.VALID_CONNECTION_COLOR = (50, 255, 50)
-        self.INVALID_CONNECTION_COLOR = (244, 66, 54)
-        self.ICON_WIDTH = self.ICON_HEIGHT = 32  # _SIZE =(32, 32) didn't work
+        self.ICON_WIDTH = self.ICON_HEIGHT = 24
+        self.CREDENTIALS_SPACE = 30
+        self.PADDING_LEN = 5
+        self.ICON_SPACE = 5
+        self.TEXTBOX_FONT = wx.Font(
+            pointSize=10, family=wx.FONTFAMILY_DEFAULT,
+            style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
+        self.LABEL_TXT_FONT = self.TEXTBOX_FONT
+        self.ERR_TXT_FONT = self.TEXTBOX_FONT
 
+        self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.url_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.url_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.url_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.url_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.user_pass_container = wx.BoxSizer(wx.VERTICAL)
+        self.user_pass_static_box = wx.StaticBox(
+            self, label="User authorization")
+        self.user_pass_static_box.SetFont(self.LABEL_TXT_FONT)
+        self.user_pass_container = wx.StaticBoxSizer(
+            self.user_pass_static_box, wx.VERTICAL)
 
-        self.username_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.username_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.username_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.username_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.password_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.password_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.password_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.password_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.id_secret_container = wx.BoxSizer(wx.VERTICAL)
+        self.id_secret_static_box = wx.StaticBox(
+            self, label="Client authorization")
+        self.id_secret_static_box.SetFont(self.LABEL_TXT_FONT)
+        self.id_secret_container = wx.StaticBoxSizer(
+            self.id_secret_static_box, wx.VERTICAL)
 
-        self.client_id_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.client_id_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_id_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_id_container = wx.BoxSizer(wx.VERTICAL)
 
-        self.client_secret_box_err_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.client_secret_box_icon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.client_secret_container = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_label_box_suc_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_err_label_warn_icon = wx.BoxSizer(wx.HORIZONTAL)
+        self.client_secret_container = wx.BoxSizer(wx.VERTICAL)
 
         self.credentials_container = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.lp_checkbox_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_log_container = wx.BoxSizer(wx.VERTICAL)
+        self.checkbox_log_container = wx.BoxSizer(wx.VERTICAL)
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.add_icons()
+        self.create_icon_images()
         self.add_URL_section()
         self.add_username_section()
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
-        self.add_debug_checkbox()
+        self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
-        self.add_default_btn()
-        self.add_save_btn()
+
         self.add_close_btn()
 
-        self.SetSizer(self.top_sizer)
+        self.SetSizer(self.padding)
 
-        self.top_sizer.Add(self.url_container, proportion=0,
-                           flag=wx.ALL | wx.ALIGN_CENTER,
-                           border=self.SIZER_BORDER)
+        self.top_sizer.Add(self.url_container, proportion=1,
+                           flag=wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER |
+                           wx.EXPAND, border=self.SIZER_BORDER*2)
 
         self.user_pass_container.Add(
             self.username_container, proportion=0,
@@ -124,32 +131,32 @@ class SettingsFrame(wx.Frame):
             flag=wx.ALL, border=self.SIZER_BORDER)
 
         self.credentials_container.Add(self.user_pass_container)
+        self.credentials_container.AddSpacer(self.CREDENTIALS_SPACE)
         self.credentials_container.Add(self.id_secret_container)
-
-        spacer_size = (self.WINDOW_SIZE[0] -
-                       self.credentials_container.GetMinSize()[0] -
-                       ((self.SIZER_BORDER + self.ICON_WIDTH)*2))
-        self.credentials_container.InsertSpacer(1, (spacer_size, -1))
 
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=self.SIZER_BORDER)
+            flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
-        self.top_sizer.AddSpacer(self.CREDENTIALS_CTNR_LOG_PNL_SPACE)
-        self.debug_log_container.Add(self.debug_sizer)
-        self.debug_log_container.Add(self.log_panel_sizer)
+        self.checkbox_log_container.Add(
+            self.lp_checkbox_sizer,
+            flag=wx.ALIGN_LEFT | wx.LEFT, border=self.SIZER_BORDER*2)
+        self.checkbox_log_container.Add(self.log_panel_sizer, flag=wx.CENTER)
 
         self.top_sizer.Add(
-            self.debug_log_container, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER)
+            self.checkbox_log_container, proportion=0,
+            flag=wx.ALIGN_CENTER | wx.EXPAND)
 
-        self.top_sizer.AddStretchSpacer()
-        self.top_sizer.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM)
+        self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND,
+                         border=self.PADDING_LEN)
+
+        self.padding.AddStretchSpacer()
+        self.padding.Add(
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
+            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*3)
 
         self.Center()
         self.Layout()
-        self.Bind(wx.EVT_CLOSE, self.close_handler)
 
     def load_curr_config(self):
 
@@ -197,21 +204,14 @@ class SettingsFrame(wx.Frame):
 
             self.reset_display()
 
-            self.base_URL_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.username_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.password_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.client_id_box.SetBackgroundColour(self.VALID_CONNECTION_COLOR)
-            self.client_secret_box.SetBackgroundColour(
-                                                self.VALID_CONNECTION_COLOR)
-
             self.log_color_print("\nSuccessfully connected to API.",
                                  self.LOG_PNL_OK_TXT_COLOR)
 
-            self.show_success_icon(self.base_URL_icon)
-            self.show_success_icon(self.username_icon)
-            self.show_success_icon(self.password_icon)
-            self.show_success_icon(self.client_id_icon)
-            self.show_success_icon(self.client_secret_icon)
+            self.show_success_icon(self.base_url_suc_icon)
+            self.show_success_icon(self.username_suc_icon)
+            self.show_success_icon(self.password_suc_icon)
+            self.show_success_icon(self.client_id_suc_icon)
+            self.show_success_icon(self.client_secret_suc_icon)
 
             self.Refresh()
 
@@ -248,13 +248,13 @@ class SettingsFrame(wx.Frame):
             self.handle_showing_server_msg(e)
 
         err_description = ("Cannot connect to url: {url}\n".format(
-                           url=self.base_URL_box.GetValue()))
+                           url=self.base_url_box.GetValue()))
 
         err_log_msgs = [err_description]
 
         err_labels = [self.url_err_label]
-        err_boxes = [self.base_URL_box]
-        err_icons = [self.base_URL_icon]
+        err_boxes = [self.base_url_box]
+        err_icons = [self.base_url_warn_icon]
         icon_tooltip = (err_description +
                         ("\nCheck for typos and if the IRIDA " +
                          "web server is running."))
@@ -285,7 +285,7 @@ class SettingsFrame(wx.Frame):
             err_labels = [self.username_err_label, self.password_err_label]
             err_boxes = [self.username_box, self.password_box]
 
-            err_icons = [self.username_icon, self.password_icon]
+            err_icons = [self.username_warn_icon, self.password_warn_icon]
             icon_tooltip = (
                 "The username and/or password you provided " +
                 "is incorrect. We can't let you know which one is incorrect " +
@@ -300,7 +300,7 @@ class SettingsFrame(wx.Frame):
             err_labels = [self.client_id_err_label]
             err_boxes = [self.client_id_box]
 
-            err_icons = [self.client_id_icon]
+            err_icons = [self.client_id_warn_icon]
             icon_tooltip = err_description
 
             credentials_err = True
@@ -312,7 +312,7 @@ class SettingsFrame(wx.Frame):
             err_labels = [self.client_secret_err_label]
             err_boxes = [self.client_secret_box]
 
-            err_icons = [self.client_secret_icon]
+            err_icons = [self.client_secret_warn_icon]
             icon_tooltip = err_description
 
             credentials_err = True
@@ -340,14 +340,14 @@ class SettingsFrame(wx.Frame):
         """
 
         err_description = ("Cannot connect to url: {url}\n".format(
-                           url=self.base_URL_box.GetValue()))
+                           url=self.base_url_box.GetValue()))
 
         err_log_msgs = [err_description,
                         "Value error message: " + str(e.message)]
 
         err_labels = [self.url_err_label]
-        err_boxes = [self.base_URL_box]
-        err_icons = [self.base_URL_icon]
+        err_boxes = [self.base_url_box]
+        err_icons = [self.base_url_warn_icon]
         icon_tooltip = err_description
 
         self.display_gui_errors(err_labels, err_boxes, err_log_msgs,
@@ -385,8 +385,9 @@ class SettingsFrame(wx.Frame):
         arguments:
             err_labels -- list of label text objects to have their label set
                           to err_description
-            err_boxes -- list of textbox objects to have their background set
-                         to self.INVALID_CONNECTION_COLOR
+            err_boxes -- used to be: list of textbox objects to have their
+                         background set to self.INVALID_CONNECTION_COLOR
+                         currently isn't used
             err_log_msgs -- list of string messages to display to the log_panel
             err_description -- description of error to be used for err_labels
             err_icons -- list of icons to be changed to show warning icon
@@ -398,11 +399,7 @@ class SettingsFrame(wx.Frame):
         self.reset_display()
 
         for label in err_labels:
-            label.Show()
             label.SetLabel(err_description)
-
-        for box in err_boxes:
-            box.SetBackgroundColour(self.INVALID_CONNECTION_COLOR)
 
         for log_msg in err_log_msgs:
             self.log_color_print(log_msg,
@@ -416,29 +413,26 @@ class SettingsFrame(wx.Frame):
 
         """
         set gui objects (box, label, icons) to initial state
-        set all box background color to self.NEUTRAL_BOX_COLOR
-        hide all error labels
-        hide all icons
+        hide all error labels - set to empty string
+        hide all icons - replace them with transparent icon
         """
 
-        self.base_URL_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.username_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.password_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.client_id_box.SetBackgroundColour(self.NEUTRAL_BOX_COLOR)
-        self.client_secret_box.SetBackgroundColour(
-            self.NEUTRAL_BOX_COLOR)
+        self.url_err_label.SetLabel("\n")
+        self.username_err_label.SetLabel("")
+        self.password_err_label.SetLabel("")
+        self.client_id_err_label.SetLabel("")
+        self.client_secret_err_label.SetLabel("")
 
-        self.url_err_label.Hide()
-        self.username_err_label.Hide()
-        self.password_err_label.Hide()
-        self.client_id_err_label.Hide()
-        self.client_secret_err_label.Hide()
-
-        self.hide_icon(self.base_URL_icon)
-        self.hide_icon(self.password_icon)
-        self.hide_icon(self.username_icon)
-        self.hide_icon(self.client_id_icon)
-        self.hide_icon(self.client_secret_icon)
+        self.hide_icon(self.base_url_suc_icon, hide=True)
+        self.hide_icon(self.base_url_warn_icon)
+        self.hide_icon(self.username_suc_icon)
+        self.hide_icon(self.username_warn_icon)
+        self.hide_icon(self.password_suc_icon)
+        self.hide_icon(self.password_warn_icon)
+        self.hide_icon(self.client_id_suc_icon)
+        self.hide_icon(self.client_id_warn_icon)
+        self.hide_icon(self.client_secret_suc_icon)
+        self.hide_icon(self.client_secret_warn_icon)
 
     def add_URL_section(self):
 
@@ -451,28 +445,51 @@ class SettingsFrame(wx.Frame):
         """
 
         self.base_url_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Base URL")
+            parent=self, id=-1, size=(80, -1),
+            label="Server URL")
+        self.base_url_label.SetFont(self.LABEL_TXT_FONT)
 
         self.url_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.url_err_label.SetFont(self.ERR_TXT_FONT)
         self.url_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
-        self.base_URL_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE)
+        self.base_url_box = wx.TextCtrl(self, size=(-1, self.ICON_HEIGHT),
+                                        style=wx.TE_RICH)
         self.orig_URL = self.config_dict["baseURL"]
-        self.base_URL_box.SetValue(self.orig_URL)
+        self.base_url_box.SetValue(self.orig_URL)
+        self.base_url_box.SetFont(self.TEXTBOX_FONT)
+        self.base_url_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+
+        self.base_url_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.base_url_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
 
         tip = "Enter the URL for the IRIDA server"
-        self.base_URL_box.SetToolTipString(tip)
+        self.base_url_box.SetToolTipString(tip)
         self.base_url_label.SetToolTipString(tip)
 
-        self.url_container.Add(self.base_url_label, flag=wx.TOP, border=5)
-        self.url_box_icon_sizer.Add(self.base_URL_box, flag=wx.TOP, border=5)
-        self.url_box_icon_sizer.Add(self.base_URL_icon, 0, flag=wx.LEFT |
-                                    wx.BOTTOM | wx.TOP, border=5)
-        self.url_box_err_sizer.Add(self.url_box_icon_sizer)
-        self.url_box_err_sizer.Add(self.url_err_label)
-        self.url_container.Add(self.url_box_err_sizer)
+        self.url_label_box_suc_icon.Add(self.base_url_label,
+                                        flag=wx.ALIGN_CENTER_VERTICAL)
+        self.url_label_box_suc_icon.Add(self.base_url_box, proportion=1,
+                                        flag=wx.EXPAND)
+        self.url_label_box_suc_icon.Add(self.base_url_suc_icon,
+                                        flag=wx.ALIGN_CENTER_VERTICAL |
+                                        wx.LEFT,
+                                        border=self.ICON_SPACE)
+
+        self.url_err_label_warn_icon.Add(self.base_url_warn_icon,
+                                         flag=wx.ALIGN_CENTER_VERTICAL |
+                                         wx.RIGHT,
+                                         border=self.ICON_SPACE)
+        self.url_err_label_warn_icon.Add(self.url_err_label, flag=wx.CENTER |
+                                         wx.TOP,
+                                         border=self.ICON_SPACE*2)
+
+        self.url_container.Add(
+            self.url_label_box_suc_icon, proportion=1, flag=wx.TOP | wx.EXPAND)
+        self.url_container.Add(self.url_err_label_warn_icon,
+                               flag=wx.ALIGN_CENTER)
 
     def add_username_section(self):
 
@@ -483,23 +500,43 @@ class SettingsFrame(wx.Frame):
         """
 
         self.username_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Username")
+            self, id=-1, label="Username", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.username_label.SetFont(self.LABEL_TXT_FONT)
 
         self.username_err_label = wx.StaticText(parent=self, id=-1, label="")
+        self.username_err_label.SetFont(self.ERR_TXT_FONT)
         self.username_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.username_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.username_box.SetValue(self.config_dict["username"])
+        self.username_box.SetFont(self.TEXTBOX_FONT)
+        self.username_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.username_container.Add(self.username_label)
-        self.username_box_icon_sizer.Add(self.username_box)
-        self.username_box_icon_sizer.Add(self.username_icon,
-                                         flag=wx.LEFT | wx.BOTTOM, border=5)
-        self.username_box_err_sizer.Add(self.username_box_icon_sizer)
-        self.username_box_err_sizer.Add(self.username_err_label)
-        self.username_container.Add(self.username_box_err_sizer)
+        self.username_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.username_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+
+        self.username_label_box_suc_icon.Add(self.username_label,
+                                             flag=wx.ALIGN_CENTER_VERTICAL)
+        self.username_label_box_suc_icon.Add(self.username_box)
+        self.username_label_box_suc_icon.Add(self.username_suc_icon,
+                                             flag=wx.ALIGN_CENTER_VERTICAL |
+                                             wx.LEFT,
+                                             border=self.ICON_SPACE)
+
+        self.username_err_label_warn_icon.Add(self.username_warn_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.RIGHT,
+                                              border=self.ICON_SPACE)
+        self.username_err_label_warn_icon.Add(self.username_err_label,
+                                              flag=wx.ALIGN_CENTER)
+
+        self.username_container.Add(
+            self.username_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.username_container.Add(self.username_err_label_warn_icon,
+                                    flag=wx.ALIGN_CENTER)
 
     def add_password_section(self):
 
@@ -510,24 +547,44 @@ class SettingsFrame(wx.Frame):
         """
 
         self.password_label = wx.StaticText(
-            self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Password")
+            self, id=-1, label="Password", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.password_label.SetFont(self.LABEL_TXT_FONT)
 
         self.password_err_label = wx.StaticText(self, id=-1, label="")
+        self.password_err_label.SetFont(self.ERR_TXT_FONT)
         self.password_err_label.SetForegroundColour(self.LOG_PNL_ERR_TXT_COLOR)
 
         self.password_box = wx.TextCtrl(
             self, size=self.SHORT_BOX_SIZE, style=wx.TE_PASSWORD)
         self.password_box.SetValue(self.config_dict["password"])
+        self.password_box.SetFont(self.TEXTBOX_FONT)
+        self.password_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.password_container.Add(self.password_label)
-        self.password_box_icon_sizer.Add(self.password_box)
-        self.password_box_icon_sizer.Add(self.password_icon,
-                                         flag=wx.LEFT | wx.BOTTOM, border=5)
-        self.password_box_err_sizer.Add(self.password_box_icon_sizer)
-        self.password_box_err_sizer.Add(self.password_err_label)
-        self.password_container.Add(self.password_box_err_sizer)
+        self.password_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.password_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+
+        self.password_label_box_suc_icon.Add(self.password_label,
+                                             flag=wx.ALIGN_CENTER_VERTICAL)
+        self.password_label_box_suc_icon.Add(self.password_box)
+        self.password_label_box_suc_icon.Add(self.password_suc_icon,
+                                             flag=wx.ALIGN_CENTER_VERTICAL |
+                                             wx.LEFT,
+                                             border=self.ICON_SPACE)
+
+        self.password_err_label_warn_icon.Add(self.password_warn_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.RIGHT,
+                                              border=self.ICON_SPACE)
+        self.password_err_label_warn_icon.Add(self.password_err_label,
+                                              flag=wx.ALIGN_CENTER)
+
+        self.password_container.Add(
+            self.password_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.password_container.Add(self.password_err_label_warn_icon,
+                                    flag=wx.ALIGN_CENTER)
 
     def add_client_id_section(self):
 
@@ -538,25 +595,44 @@ class SettingsFrame(wx.Frame):
         """
 
         self.client_id_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Client ID")
+            parent=self, id=-1, label="ID", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.client_id_label.SetFont(self.LABEL_TXT_FONT)
 
         self.client_id_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_id_err_label.SetFont(self.ERR_TXT_FONT)
         self.client_id_err_label.SetForegroundColour(
             self.LOG_PNL_ERR_TXT_COLOR)
 
         self.client_id_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_id_box.SetValue(self.config_dict["client_id"])
+        self.client_id_box.SetFont(self.TEXTBOX_FONT)
+        self.client_id_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.client_id_container.Add(self.client_id_label)
-        self.client_id_box_icon_sizer.Add(self.client_id_box)
-        self.client_id_box_icon_sizer.Add(self.client_id_icon,
-                                          flag=wx.LEFT | wx.BOTTOM,
-                                          border=5)
-        self.client_id_box_err_sizer.Add(self.client_id_box_icon_sizer)
-        self.client_id_box_err_sizer.Add(self.client_id_err_label)
-        self.client_id_container.Add(self.client_id_box_err_sizer)
+        self.client_id_suc_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_id_warn_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+            self.ICON_WIDTH, self.ICON_HEIGHT))
+
+        self.client_id_label_box_suc_icon.Add(self.client_id_label,
+                                              flag=wx.ALIGN_CENTER_VERTICAL)
+        self.client_id_label_box_suc_icon.Add(self.client_id_box)
+        self.client_id_label_box_suc_icon.Add(self.client_id_suc_icon,
+                                              flag=wx.ALIGN_CENTER_VERTICAL |
+                                              wx.LEFT,
+                                              border=self.ICON_SPACE)
+
+        self.client_id_err_label_warn_icon.Add(self.client_id_warn_icon,
+                                               flag=wx.ALIGN_CENTER_VERTICAL |
+                                               wx.RIGHT,
+                                               border=self.ICON_SPACE)
+        self.client_id_err_label_warn_icon.Add(self.client_id_err_label,
+                                               flag=wx.ALIGN_CENTER)
+
+        self.client_id_container.Add(
+            self.client_id_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.client_id_container.Add(self.client_id_err_label_warn_icon,
+                                     flag=wx.ALIGN_CENTER)
 
     def add_client_secret_section(self):
 
@@ -567,62 +643,66 @@ class SettingsFrame(wx.Frame):
         """
 
         self.client_secret_label = wx.StaticText(
-            self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Client Secret")
+            self, id=-1, label="Secret", size=(self.LABEL_TEXT_WIDTH, -1))
+        self.client_secret_label.SetFont(self.LABEL_TXT_FONT)
 
         self.client_secret_err_label = wx.StaticText(self, id=-1, label="")
+        self.client_secret_err_label.SetFont(self.ERR_TXT_FONT)
         self.client_secret_err_label.SetForegroundColour(
             self.LOG_PNL_ERR_TXT_COLOR)
 
         self.client_secret_box = wx.TextCtrl(self, size=self.SHORT_BOX_SIZE)
         self.client_secret_box.SetValue(self.config_dict["client_secret"])
+        self.client_secret_box.SetFont(self.TEXTBOX_FONT)
+        self.client_secret_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
-        self.client_secret_container.Add(self.client_secret_label)
-        self.client_secret_box_icon_sizer.Add(self.client_secret_box)
-        self.client_secret_box_icon_sizer.Add(self.client_secret_icon,
-                                              flag=wx.LEFT | wx.BOTTOM,
-                                              border=5)
-        self.client_secret_box_err_sizer.Add(self.client_secret_box_icon_sizer)
-        self.client_secret_box_err_sizer.Add(self.client_secret_err_label)
-        self.client_secret_container.Add(self.client_secret_box_err_sizer)
+        self.client_secret_suc_icon = wx.StaticBitmap(
+            self, bitmap=wx.EmptyBitmap(self.ICON_WIDTH, self.ICON_HEIGHT))
+        self.client_secret_warn_icon = wx.StaticBitmap(
+            self, bitmap=wx.EmptyBitmap(self.ICON_WIDTH, self.ICON_HEIGHT))
 
-    def add_debug_checkbox(self):
+        self.client_secret_label_box_suc_icon.Add(
+            self.client_secret_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.client_secret_label_box_suc_icon.Add(self.client_secret_box)
+        self.client_secret_label_box_suc_icon.Add(
+            self.client_secret_suc_icon,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=self.ICON_SPACE)
+
+        self.client_secret_err_label_warn_icon.Add(
+            self.client_secret_warn_icon,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=self.ICON_SPACE)
+        self.client_secret_err_label_warn_icon.Add(
+            self.client_secret_err_label, flag=wx.ALIGN_CENTER)
+
+        self.client_secret_container.Add(
+            self.client_secret_label_box_suc_icon, flag=wx.TOP,
+            border=self.username_err_label.GetSize()[1])
+        self.client_secret_container.Add(
+            self.client_secret_err_label_warn_icon, flag=wx.ALIGN_CENTER)
+
+    def add_show_log_panel_checkbox(self):
 
         """
-        Adds checkbox for debugging option which will display messages from
-        the server in to the log panel
+        Adds checkbox for showing log panel
 
         no return value
         """
 
-        self.debug_checkbox = wx.CheckBox(parent=self, id=-1,
-                                          label="Show messages from server")
-        self.debug_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_debug_checkbox)
-        self.debug_sizer.Add(self.debug_checkbox)
+        self.log_panel_checkbox = wx.CheckBox(parent=self, id=-1,
+                                              label="Show log panel")
+        self.log_panel_checkbox.Bind(wx.EVT_CHECKBOX, self.handle_lp_checkbox)
+        self.lp_checkbox_sizer.Add(self.log_panel_checkbox)
 
-    def add_icons(self):
+    def create_icon_images(self):
 
         """
-        Adds place holder StaticBitmap for each field and and hide it.
-        Will be used by show_warning_icon and show_success_icon when
-        they are going to display an icon
+        Creates success and warning icons to be used by show_warning_icon()
+        and show_success_icon() when they are going to display an icon
 
         no return value
         """
 
-        self.base_URL_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.username_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.password_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_id_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-        self.client_secret_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-            self.ICON_WIDTH, self.ICON_HEIGHT))
-
-        # success icon made by OCHA @ "http://www.unocha.org". CC BY 3.0
+        # success icon made by Google @ "http://www.google.com". CC BY 3.0
         suc_img_path = path.join(path_to_module, "images", "Success.png")
         self.suc_img = wx.Image(suc_img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
@@ -632,14 +712,10 @@ class SettingsFrame(wx.Frame):
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
-        self.base_URL_icon.Hide()
-        self.username_icon.Hide()
-        self.password_icon.Hide()
-        self.client_id_icon.Hide()
-        self.client_secret_icon.Hide()
-
-        self.url_container.Add(self.base_URL_icon, flag=wx.TOP,
-                               border=self.SIZER_BORDER)
+        placeholder_img_path = path.join(path_to_module, "images",
+                                         "Placeholder.png")
+        self.ph_img = wx.Image(placeholder_img_path,
+                               wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
     def show_warning_icon(self, targ, tooltip=""):
 
@@ -648,7 +724,7 @@ class SettingsFrame(wx.Frame):
 
         arguments:
             targ -- the icon place holder(s) to be shown
-                    (e.g self.base_URL_icon)
+                    (e.g self.base_url_warn_icon)
 
             tooltip -- message to be used as a tooltip
 
@@ -670,7 +746,7 @@ class SettingsFrame(wx.Frame):
         inserts success icon (self.suc_img) in to targ icon place holder
 
         arguments:
-            targ -- the icon place holder to be shown (e.g self.base_URL_icon)
+            targ -- icon place holder to be shown (e.g self.base_url_suc_icon)
             tooltip -- message to be used as a tooltip
 
         no return value
@@ -684,34 +760,48 @@ class SettingsFrame(wx.Frame):
         self.Layout()
         self.Refresh()
 
-    def hide_icon(self, targ):
+    def hide_icon(self, targ, hide=False):
 
         """
         hide icon for given targ
 
         arguments:
-            targ -- the icon place holder to be hidden (e.g self.base_URL_icon)
+            targ -- the icon place holder to be hidden
+            hide -- if True actually hide the icon object instead of placing
+                    a transparent placeholder icon in it
+                    used just for base_url_suc_icon because it's box expands
 
         no return value
         """
-
-        targ.Hide()
+        if hide:
+            targ.Hide()
+        else:
+            targ.SetBitmap(self.ph_img)
         targ.SetLabel("hidden")  # for tests
         self.Layout()
         self.Refresh()
 
-    def handle_debug_checkbox(self, evt):
+    def handle_lp_checkbox(self, evt):
 
         """
-        Funtion bound to self.debug_checkbox being clicked
+        Funtion bound to self.log_panel_checkbox being clicked
+        if checkbox is checked show the log panel otherwise hide it
 
         no return value
         """
 
-        if self.debug_checkbox.IsChecked():
-            self.show_debug_msg = True
+        if self.log_panel_checkbox.IsChecked():
+            wx.CallAfter(self.parent.SetSizeWH,
+                         self.WINDOW_SIZE[0], self.WINDOW_SIZE[1]+200)
+            wx.CallAfter(self.log_panel.Show)
+            wx.CallAfter(self.Layout)
+            self.Refresh()
         else:
-            self.show_debug_msg = False
+            wx.CallAfter(self.parent.SetSizeWH,
+                         self.WINDOW_SIZE[0], self.WINDOW_SIZE[1])
+            wx.CallAfter(self.log_panel.Hide)
+            wx.CallAfter(self.Layout)
+            self.Refresh()
 
     def add_log_panel_section(self):
 
@@ -730,60 +820,12 @@ class SettingsFrame(wx.Frame):
                  "Click 'Close' to go back to uploader window.\n" +
                  "Click 'Default' to restore settings to default values.\n")
 
+        self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
         self.log_panel.AppendText("\n")
+        self.log_panel.Hide()
         self.log_panel_sizer.Add(self.log_panel)
-
-    def add_default_btn(self):
-
-        """
-        Add default button. Clicking it will call restore_default_settings().
-
-        no return value
-        """
-
-        self.default_btn = wx.Button(self, label="Restore to default")
-        self.default_btn.Bind(wx.EVT_BUTTON, self.restore_default_settings)
-        self.buttons_sizer.Add(self.default_btn, 3,
-                               flag=wx.ALIGN_LEFT | wx.LEFT, border=5)
-        self.buttons_sizer.AddStretchSpacer(8)
-
-    def restore_default_settings(self, evt):
-
-        """
-        Restore settings to their default values and write them to the
-            config file
-        call load_curr_config() to reload the config_dict and show their values
-            in the log panel
-        update config box values
-        attempt to connect to api after restoring to default settings
-
-        no return value
-        """
-
-        default_settings_dict = {}
-        default_settings_dict["baseURL"] = DEFAULT_BASE_URL
-        default_settings_dict["username"] = DEFAULT_USERNAME
-        default_settings_dict["password"] = DEFAULT_PASSWORD
-        default_settings_dict["client_id"] = DEFAULT_CLIENT_ID
-        default_settings_dict["client_secret"] = DEFAULT_CLIENT_SECRET
-
-        targ_section = "apiCalls"
-        self.write_config_data(targ_section, default_settings_dict)
-
-        self.load_curr_config()
-        changes_dict = self.get_changes_dict()
-        self.log_panel.AppendText("\nSettings restored to default values:\n")
-        self.print_config_to_log_panel(changes_dict)
-
-        self.base_URL_box.SetValue(default_settings_dict["baseURL"])
-        self.username_box.SetValue(default_settings_dict["username"])
-        self.password_box.SetValue(default_settings_dict["password"])
-        self.client_id_box.SetValue(default_settings_dict["client_id"])
-        self.client_secret_box.SetValue(default_settings_dict["client_secret"])
-
-        self.attempt_connect_to_api()
 
     def print_config_to_log_panel(self, changes_dict):
 
@@ -816,19 +858,6 @@ class SettingsFrame(wx.Frame):
 
         self.log_panel.AppendText("\n")
 
-    def add_save_btn(self):
-
-        """
-        Adds save button. Clicking it will call save_changes().
-
-        no return value
-        """
-
-        self.save_btn = wx.Button(self, label="Save")
-        self.save_btn.Bind(wx.EVT_BUTTON, self.save_changes)
-        self.buttons_sizer.Add(self.save_btn, 0,
-                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
-
     def save_changes(self, evt):
 
         """
@@ -838,9 +867,9 @@ class SettingsFrame(wx.Frame):
         no return value
         """
 
-        self.log_panel.Clear()
         changes_dict = self.get_changes_dict()
         if len(changes_dict) > 0:
+            self.log_panel.Clear()
             self.log_panel.AppendText("Saving...\n")
 
             targ_section = "apiCalls"
@@ -849,11 +878,7 @@ class SettingsFrame(wx.Frame):
             self.load_curr_config()
             self.print_config_to_log_panel(changes_dict)
 
-        else:
-            self.log_color_print("No changes to save.",
-                                 self.LOG_PNL_ERR_TXT_COLOR)
-
-        self.attempt_connect_to_api()
+            self.attempt_connect_to_api()
 
     def add_close_btn(self):
 
@@ -865,13 +890,14 @@ class SettingsFrame(wx.Frame):
 
         self.close_btn = wx.Button(self, label="Close")
         self.close_btn.Bind(wx.EVT_BUTTON, self.close_handler)
-        self.buttons_sizer.Add(self.close_btn, 0,
-                               flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
+        self.buttons_sizer.AddStretchSpacer()
+        self.buttons_sizer.Add(self.close_btn, flag=wx.ALIGN_RIGHT)
 
     def close_handler(self, event):
 
         """
-        Function bound to window/MainFrame being closed (close button/alt+f4)
+        Function bound to window/SettingsFrame being closed
+            (close button/alt+f4)
         Destroy self if running alone or hide self if running
             attached to iridaUploaderMain
         Check if any changes have been made that weren't saved and prompt user
@@ -904,9 +930,10 @@ class SettingsFrame(wx.Frame):
             if user_choice == wx.ID_YES:
                 targ_section = "apiCalls"
                 self.write_config_data(targ_section, changes_dict)
+                self.load_curr_config()
 
             else:
-                self.base_URL_box.SetValue(self.config_dict["baseURL"])
+                self.base_url_box.SetValue(self.config_dict["baseURL"])
                 self.username_box.SetValue(self.config_dict["username"])
                 self.password_box.SetValue(self.config_dict["password"])
                 self.client_id_box.SetValue(self.config_dict["client_id"])
@@ -915,10 +942,14 @@ class SettingsFrame(wx.Frame):
 
                 self.prompt_dlg.Destroy()
 
-        if self.parent is None:  # if running SettingsFrame by itself for tests
-            self.Destroy()
+        if self.parent.parent is None:  # standalone
+            self.parent.Destroy()
+
         else:
-            self.Hide()  # running attached to iridaUploaderMain
+            self.parent.Hide()  # running attached to iridaUploaderMain
+
+        self.log_panel.Clear()
+        self.attempt_connect_to_api()
 
     def log_color_print(self, msg, color, add_new_line=True):
 
@@ -970,7 +1001,7 @@ class SettingsFrame(wx.Frame):
         """
 
         val_dict = {}
-        val_dict["baseURL"] = self.base_URL_box.GetValue()
+        val_dict["baseURL"] = self.base_url_box.GetValue()
         val_dict["username"] = self.username_box.GetValue()
         val_dict["password"] = self.password_box.GetValue()
         val_dict["client_id"] = self.client_id_box.GetValue()
@@ -1000,9 +1031,30 @@ class SettingsFrame(wx.Frame):
 
     def handle_showing_server_msg(self, err):
 
-        if self.show_debug_msg:
-            self.log_color_print("Message from server: " + str(err.message),
-                                 self.LOG_PNL_ERR_TXT_COLOR)
+        logging.basicConfig(filename='server_msg.log',
+                            level=logging.DEBUG,
+                            format="%(asctime)s %(message)s",
+                            datefmt='%d/%m/%Y %I:%M:%S %p')
+        logging.debug(err)
+
+
+class SettingsFrame(wx.Frame):
+
+    def __init__(self, parent=None):
+
+        self.WINDOW_SIZE = (700, 350)
+        self.parent = parent
+        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
+                          title="Settings",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
+
+        self.sf = SettingsPanel(self)
+        self.Center()
+        self.attempt_connect_to_api = self.sf.attempt_connect_to_api
+        self.Bind(wx.EVT_CLOSE, self.sf.close_handler)
+        self.close_btn = self.sf.close_btn  # test_iridaUploaderMain.py
 
 
 if __name__ == "__main__":
