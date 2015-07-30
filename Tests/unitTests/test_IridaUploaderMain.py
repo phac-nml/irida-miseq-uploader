@@ -384,7 +384,9 @@ class TestIridaUploaderMain(unittest.TestCase):
 
     def test_open_settings(self):
 
-        push_button(self.frame.settings_button)
+        menu_evt = wx.PyCommandEvent(wx.EVT_MENU.typeId,
+                                     self.frame.OPEN_SETTINGS_ID)
+        self.frame.GetEventHandler().ProcessEvent(menu_evt)
         self.assertTrue(self.frame.settings_frame.IsShown())
 
         push_button(self.frame.settings_frame.close_btn)
