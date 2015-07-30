@@ -282,9 +282,10 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        settings_item = wx.MenuItem(self.options_menu, self.OPEN_SETTINGS_ID,
-                                    "&Settings\tCTRL+I")
-        self.options_menu.AppendItem(settings_item)
+        self.settings_menu_item = wx.MenuItem(self.options_menu,
+                                              self.OPEN_SETTINGS_ID,
+                                              "&Settings\tCTRL+I")
+        self.options_menu.AppendItem(self.settings_menu_item)
         self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
 
     def display_warning(self, warn_msg):
