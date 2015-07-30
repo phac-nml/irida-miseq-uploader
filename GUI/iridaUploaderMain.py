@@ -468,6 +468,8 @@ class MainFrame(wx.Frame):
             error_name=exception_error.__name__,
             error_msg=error_msg), dlg_msg="Server error")
 
+        self.api.set_pair_seq_run_error(self.upload_id)
+
     def pair_seq_files_upload_complete(self):
 
         """
