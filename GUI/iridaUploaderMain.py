@@ -418,6 +418,7 @@ class MainFrame(wx.Frame):
                 self.upload_id = json_res["resource"]["identifier"]
 
                 for sample in sr.get_sample_list():
+
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = "Project ID: {id} doesn't exist".format(
                                id=sample.get_project_id())
@@ -437,6 +438,7 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.cf_progress_bar.SetValue(0)
             self.display_warning(e.message)
+            self.api.set_pair_seq_run_error(self.upload_id)
 
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
@@ -445,6 +447,7 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
+            self.api.set_pair_seq_run_error(self.upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
 
@@ -467,6 +470,8 @@ class MainFrame(wx.Frame):
         wx.CallAfter(self.display_warning, "{error_name}: {error_msg}".format(
             error_name=exception_error.__name__,
             error_msg=error_msg), dlg_msg="Server error")
+
+        self.api.set_pair_seq_run_error(self.upload_id)
 
     def pair_seq_files_upload_complete(self):
 
