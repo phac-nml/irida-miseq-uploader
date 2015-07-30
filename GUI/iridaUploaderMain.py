@@ -410,6 +410,7 @@ class MainFrame(wx.Frame):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
+        self.upload_id = -1
 
         try:
             for sr in self.seq_run_list:
@@ -447,7 +448,8 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
-            self.api.set_pair_seq_run_error(self.upload_id)
+            if self.upload_id > 0 :
+                self.api.set_pair_seq_run_error(self.upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
 
