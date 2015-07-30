@@ -942,14 +942,14 @@ class SettingsPanel(wx.Panel):
 
                 self.prompt_dlg.Destroy()
 
+        self.log_panel.Clear()
+
         if self.parent.parent is None:  # standalone
             self.parent.Destroy()
 
         else:
+            self.parent.parent.api = self.attempt_connect_to_api()
             self.parent.Hide()  # running attached to iridaUploaderMain
-
-        self.log_panel.Clear()
-        self.attempt_connect_to_api()
 
     def log_color_print(self, msg, color, add_new_line=True):
 
