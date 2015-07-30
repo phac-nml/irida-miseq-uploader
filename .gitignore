@@ -3,3 +3,4 @@
 *.coverage
 *.bak
 Tests/integrationTests/repos/*
+*.log
