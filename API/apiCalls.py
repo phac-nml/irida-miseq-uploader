@@ -560,8 +560,8 @@ class ApiCalls:
     def create_paired_seq_run(self, metadata_dict):
 
         seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
-        # constructing manually tempoarily until Tom adds rel
-        seq_run_url = seq_run_url+"/miseqrun/"
+
+        url = self.get_link(seq_run_url, "sequencingRun/miseq")
 
         headers = {
             "headers": {
@@ -586,7 +586,35 @@ class ApiCalls:
 
         json_obj = json.dumps(metadata_dict)
 
-        response = self.session.post(seq_run_url, json_obj, **headers)
+        response = self.session.post(url, json_obj, **headers)
+
+        if response.status_code == httplib.CREATED:  # 201
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.text)
+        return json_res
+
+    def set_pair_seq_run_complete(self, identifier):
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+
+        url = self.get_link(seq_run_url, "sequencingRun/miseq",
+                            targ_dict={
+                                "key": "identifier",
+                                "value": identifier
+                            })
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        update_dict = {"uploadStatus": "UPLOADING"}
+        json_obj = json.dumps(update_dict)
+
+        response = self.session.put(seq_run_url, json_obj, **headers)
 
         if response.status_code == httplib.CREATED:  # 201
             json_res = json.loads(response.text)

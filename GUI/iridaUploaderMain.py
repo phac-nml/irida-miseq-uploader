@@ -404,7 +404,10 @@ class MainFrame(wx.Frame):
 
         try:
             for sr in self.seq_run_list:
-                api.create_paired_seq_run(sr.get_all_metadata())
+
+                json_res = api.create_paired_seq_run(sr.get_all_metadata())
+                self.upload_id = json_res["resource"]["identifier"]
+
                 for sample in sr.get_sample_list():
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = "Project ID: {id} doesn't exist".format(
@@ -536,6 +539,7 @@ class MainFrame(wx.Frame):
         displays "Upload Complete" to log panel.
         """
 
+        self.api.set_pair_seq_run_complete(self.upload_id)
         self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
