@@ -33,11 +33,16 @@ def method_decorator(fn):
         """
 
         try:
-            fn(*args, **kwargs)
+            res = fn(*args, **kwargs)
         except Exception, e:
-            pub.sendMessage("handle_send_seq_pair_files_error",
-                            exception_error=SequenceFileError,
-                            error_msg=e.message)
+            if "callback" in repr(args[len(args)-1]):
+                pub.sendMessage("handle_send_seq_pair_files_error",
+                                exception_error=SequenceFileError,
+                                error_msg=e.message)
+            else:
+                raise
+        return res
+
     return decorator
 
 
