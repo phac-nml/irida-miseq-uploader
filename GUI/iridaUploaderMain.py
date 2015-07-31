@@ -43,7 +43,7 @@ class MainPanel(wx.Panel):
         self.dir_dlg = None
         self.api = None
 
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
+        self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
@@ -51,7 +51,7 @@ class MainPanel(wx.Panel):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.PADDING_LEN = 10
+        self.PADDING_LEN = 20
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -69,21 +69,22 @@ class MainPanel(wx.Panel):
         self.top_sizer.AddSpacer(10)  # space between top and directory box
 
         self.top_sizer.Add(
-            self.directory_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER |
+            self.directory_sizer, proportion=0, flag=wx.ALIGN_CENTER |
             wx.EXPAND)
 
         self.top_sizer.AddSpacer(30)  # between directory box & credentials
 
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+            self.log_panel_sizer, proportion=0, flag=wx.EXPAND | wx.ALIGN_CENTER)
 
-        self.top_sizer.AddStretchSpacer()
+        #self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER, border=5)
 
         self.padding.Add(
-            self.top_sizer, flag=wx.ALL | wx.EXPAND, border=self.PADDING_LEN)
+            self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
+            border=self.PADDING_LEN)
         self.padding.AddStretchSpacer()
         self.padding.Add(
             self.upload_button_sizer, proportion=0,
@@ -232,15 +233,14 @@ class MainPanel(wx.Panel):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="",
-            size=self.LOG_PANEL_SIZE,
+            value="", size=(-1, self.LOG_PANEL_HEIGHT),
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
-        self.log_panel_sizer.Add(self.log_panel)
+        self.log_panel_sizer.Add(self.log_panel, proportion=1, flag=wx.EXPAND)
 
     def display_warning(self, warn_msg, dlg_msg=""):
 
