@@ -77,9 +77,10 @@ class MainPanel(wx.Panel):
         self.top_sizer.AddSpacer(30)  # between directory box & credentials
 
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.EXPAND | wx.ALIGN_CENTER)
+            self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
+            wx.ALIGN_CENTER)
 
-        #self.top_sizer.AddStretchSpacer()
+        # self.top_sizer.AddStretchSpacer()
         self.top_sizer.AddSpacer(30)
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
