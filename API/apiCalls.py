@@ -20,7 +20,44 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
-class ApiCalls:
+# https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/
+def method_decorator(fn):
+
+    def decorator(*args, **kwargs):
+
+        """
+        Run the function (fn) and if any errors are raised then
+        the publisher sends a messaage which calls
+        handle_send_seq_pair_files_error() in
+        iridaUploaderMain.MainPanel
+        """
+
+        try:
+            fn(*args, **kwargs)
+        except Exception, e:
+            pub.sendMessage("handle_send_seq_pair_files_error",
+                            exception_error=SequenceFileError,
+                            error_msg=e.message)
+    return decorator
+
+
+def class_decorator(*method_names):
+    def class_rebuilder(cls):
+
+        class NewClass(cls):
+
+            def __getattribute__(self, attr_name):
+                obj = super(NewClass, self).__getattribute__(attr_name)
+                if hasattr(obj, '__call__') and attr_name in method_names:
+                    return method_decorator(obj)
+                return obj
+
+        return NewClass
+    return class_rebuilder
+
+
+@class_decorator("send_pair_sequence_files")
+class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
                  base_URL, username, password, max_wait_time=20):
@@ -560,11 +597,6 @@ class ApiCalls:
                        err_msg=response.text,
                        ud=str(files))
 
-            pub.sendMessage("handle_send_seq_pair_files_error",
-                            exception_error=SequenceFileError,
-                            error_msg=err_msg)
-
-            # still raise the error here in order to stop the current thread
             raise SequenceFileError(err_msg)
 
         return json_res
