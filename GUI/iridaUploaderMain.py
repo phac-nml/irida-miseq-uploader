@@ -446,6 +446,7 @@ class MainFrame(wx.Frame):
             # it won't catch send_pair_sequence_files because it's threaded
             # handle_send_seq_pair_files_error takes care of that
             self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
             if self.upload_id > -1:
@@ -469,6 +470,7 @@ class MainFrame(wx.Frame):
         """
 
         wx.CallAfter(self.pulse_timer.Stop)
+        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
         wx.CallAfter(self.display_warning, "{error_name}: {error_msg}".format(
             error_name=exception_error.__name__,
             error_msg=error_msg), dlg_msg="Server error")
