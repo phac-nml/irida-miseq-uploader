@@ -408,9 +408,11 @@ class MainPanel(wx.Panel):
             # it won't catch send_pair_sequence_files because it's threaded
             # handle_send_seq_pair_files_error takes care of that
             self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
-            if self.upload_id > 0:
+
+            if self.upload_id > -1:
                 self.api.set_pair_seq_run_error(self.upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
@@ -431,6 +433,7 @@ class MainPanel(wx.Panel):
         """
 
         wx.CallAfter(self.pulse_timer.Stop)
+        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
         wx.CallAfter(self.display_warning, "{error_name}: {error_msg}".format(
             error_name=exception_error.__name__,
             error_msg=error_msg), dlg_msg="Server error")
@@ -653,7 +656,7 @@ class MainPanel(wx.Panel):
                         "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
                     break  # stop processing sheets if validation fails
 
-        except (SampleSheetError, OSError), e:
+        except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):
