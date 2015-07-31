@@ -52,6 +52,10 @@ class MainPanel(wx.Panel):
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.PADDING_LEN = 20
+        self.TEXTBOX_FONT = wx.Font(
+            pointSize=10, family=wx.FONTFAMILY_DEFAULT,
+            style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
+        self.LABEL_TXT_FONT = self.TEXTBOX_FONT
 
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -66,8 +70,6 @@ class MainPanel(wx.Panel):
         self.add_overall_progress_bar()
         self.add_upload_button()
 
-        self.top_sizer.AddSpacer(10)  # space between top and directory box
-
         self.top_sizer.Add(
             self.directory_sizer, proportion=0, flag=wx.ALIGN_CENTER |
             wx.EXPAND)
@@ -78,6 +80,7 @@ class MainPanel(wx.Panel):
             self.log_panel_sizer, proportion=0, flag=wx.EXPAND | wx.ALIGN_CENTER)
 
         #self.top_sizer.AddStretchSpacer()
+        self.top_sizer.AddSpacer(30)
         self.top_sizer.Add(
             self.progress_bar_sizer, proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER, border=5)
@@ -134,9 +137,11 @@ class MainPanel(wx.Panel):
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
         self.dir_label = wx.StaticText(parent=self, id=-1, label="File path")
+        self.dir_label.SetFont(self.LABEL_TXT_FONT)
         self.dir_box = wx.TextCtrl(
             self, size=(-1, self.browse_button.GetSize()[1]),
             style=wx.TE_PROCESS_ENTER)
+        self.dir_box.SetFont(self.TEXTBOX_FONT)
 
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
@@ -177,6 +182,7 @@ class MainPanel(wx.Panel):
         self.cf_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="File: 0%")
+        self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
         self.cf_progress_bar = wx.Gauge(self, range=100, size=(
             self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
         self.progress_bar_sizer.Add(self.cf_progress_label, flag=wx.BOTTOM,
@@ -197,6 +203,8 @@ class MainPanel(wx.Panel):
         self.ov_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
             label="Overall: 0%")
+        self.ov_progress_label.SetFont(self.LABEL_TXT_FONT)
+
         self.ov_progress_bar = wx.Gauge(self, range=100, size=(
             self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
         self.progress_bar_sizer.Add(self.ov_progress_label, flag=wx.TOP,
@@ -238,6 +246,8 @@ class MainPanel(wx.Panel):
 
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
+
+        self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
         self.log_panel_sizer.Add(self.log_panel, proportion=1, flag=wx.EXPAND)
