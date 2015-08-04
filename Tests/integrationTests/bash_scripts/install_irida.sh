@@ -17,7 +17,7 @@ then
     exit 1
 else
   pushd irida
-  git checkout master
+  git checkout development
   git fetch
   git reset --hard
   git clean -fd
