@@ -143,6 +143,29 @@ class TestApiIntegration(unittest.TestCase):
         for key in sample_dict.keys():
             self.assertEqual(sample[key], added_sample[key])
 
+    def test_create_paired_seq_run(self):
+
+        api = ApiCalls(
+            client_id=client_id,
+            client_secret=client_secret,
+            base_URL=base_URL,
+            username=username,
+            password=password
+        )
+
+        metadata_dict = {
+            "workflow": "test_workflow",
+            "readLengths": [1]
+
+        }
+
+        json_res = api.create_paired_seq_run(metadata_dict)
+
+        upload_id = json_res["resource"]["identifier"]
+        upload_status = json_res["resource"]["uploadStatus"]
+        self.assertEqual(upload_id, "1")
+        self.assertEqual(upload_status, "UPLOADING")
+
     def test_get_and_send_sequence_files(self):
 
         api = ApiCalls(
@@ -204,6 +227,8 @@ def load_test_suite():
         TestApiIntegration("test_get_and_send_project"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_samples"))
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_create_paired_seq_run"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_sequence_files"))
 
