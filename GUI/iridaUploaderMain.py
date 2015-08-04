@@ -57,17 +57,18 @@ class MainFrame(wx.Frame):
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
+        self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.settings_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
-        self.add_settings_button()
+        self.add_options_menu()
+        self.add_settings_option()
         self.add_curr_file_progress_bar()
         self.add_overall_progress_bar()
         self.add_upload_button()
@@ -81,10 +82,6 @@ class MainFrame(wx.Frame):
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
-
-        self.top_sizer.Add(
-            self.settings_button_sizer, proportion=0,
-            flag=wx.RIGHT | wx.ALIGN_RIGHT, border=20)
 
         self.top_sizer.AddStretchSpacer()
         self.top_sizer.Add(
@@ -102,6 +99,8 @@ class MainFrame(wx.Frame):
         pub.subscribe(self.update_progress_bars, "update_progress_bars")
         pub.subscribe(self.pair_seq_files_upload_complete,
                       "pair_seq_files_upload_complete")
+        pub.subscribe(self.handle_send_seq_pair_files_error,
+                      "handle_send_seq_pair_files_error")
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
@@ -118,8 +117,14 @@ class MainFrame(wx.Frame):
         no return value
         """
 
+        kwargs = {
+            "samples_list": evt.sample_list,
+            "callback": evt.send_pairs_callback,
+            "upload_id": self.curr_upload_id
+        }
+
         t = Thread(target=self.api.send_pair_sequence_files,
-                   args=(evt.sample_list, evt.send_pairs_callback,))
+                   kwargs=kwargs)
         t.daemon = True
         t.start()
 
@@ -261,19 +266,37 @@ class MainFrame(wx.Frame):
         self.settings_frame.Center()
         self.settings_frame.Show()
 
-    def add_settings_button(self):
+    def add_options_menu(self):
 
         """
-        Adds settings button to open settings menu
+        Adds Options menu on top of program
+        Shortcut / accelerator: Alt + T
 
         no return value
         """
 
-        self.settings_button = wx.Button(self, label="Settings")
-        self.settings_button.Bind(wx.EVT_BUTTON, self.open_settings)
-        self.settings_button_sizer.Add(self.settings_button)
+        self.menubar = wx.MenuBar()
+        self.options_menu = wx.Menu()
+        self.menubar.Append(self.options_menu, "Op&tions")
+        self.SetMenuBar(self.menubar)
 
-    def display_warning(self, warn_msg):
+    def add_settings_option(self):
+
+        """
+        Add Settings on options menu
+        Clicking Settings will call self.open_settings()
+        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
+
+        no return value
+        """
+
+        self.settings_menu_item = wx.MenuItem(self.options_menu,
+                                              self.OPEN_SETTINGS_ID,
+                                              "&Settings\tCTRL+I")
+        self.options_menu.AppendItem(self.settings_menu_item)
+        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
+
+    def display_warning(self, warn_msg, dlg_msg=""):
 
         """
         Displays warning message as a popup and writes it in to log_panel
@@ -285,8 +308,14 @@ class MainFrame(wx.Frame):
         """
 
         self.log_color_print(warn_msg + "\n", self.LOG_PNL_ERR_TXT_COLOR)
+
+        if len(dlg_msg) > 0:
+            msg = dlg_msg
+        else:
+            msg = warn_msg
+
         self.warn_dlg = GMD(
-            parent=self, message=warn_msg, caption="Warning!",
+            parent=self, message=msg, caption="Warning!",
             agwStyle=wx.OK | wx.ICON_EXCLAMATION)
 
         self.warn_dlg.Message = warn_msg  # for testing
@@ -387,17 +416,23 @@ class MainFrame(wx.Frame):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
+        self.curr_upload_id = -1
+
         try:
             for sr in self.seq_run_list:
 
+                json_res = api.create_paired_seq_run(sr.get_all_metadata())
+                self.curr_upload_id = json_res["resource"]["identifier"]
+
                 for sample in sr.get_sample_list():
+
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = "Project ID: {id} doesn't exist".format(
                                id=sample.get_project_id())
                         raise ProjectError(msg)
 
                     if sample_exists(api, sample) is False:
-                        api.send_samples(sr.get_sample_list())
+                        api.send_samples([sample])
 
                 evt = self.send_seq_files_evt(
                     sample_list=sr.get_sample_list(),
@@ -410,11 +445,44 @@ class MainFrame(wx.Frame):
             self.pulse_timer.Stop()
             self.cf_progress_bar.SetValue(0)
             self.display_warning(e.message)
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         except Exception, e:
+            # this catches all api errors except send_pair_sequence_files
+            # it won't catch send_pair_sequence_files because it's threaded
+            # handle_send_seq_pair_files_error takes care of that
             self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
+            if self.curr_upload_id > -1:
+                self.api.set_pair_seq_run_error(self.curr_upload_id)
+
+    def handle_send_seq_pair_files_error(self, exception_error, error_msg):
+
+        """
+
+        Subscribed to "handle_send_seq_pair_files_error"
+        Called by api.send_pair_sequence_files() when an error occurs
+        It's set up this way because send_pair_sequence_files() is running
+        in a different thread so the regular try-except block wasn't catching
+        errors from this function
+
+        arguments:
+            exception_error -- Exception object
+            error_msg -- message string to be displayed in log panel
+
+        no return value
+        """
+
+        wx.CallAfter(self.pulse_timer.Stop)
+        wx.CallAfter(
+            self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
+            " {error_name}: {error_msg}".format(
+                error_name=exception_error.__name__,
+                error_msg=error_msg), dlg_msg="Server error")
+
+        self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def pair_seq_files_upload_complete(self):
 
@@ -521,6 +589,7 @@ class MainFrame(wx.Frame):
         displays "Upload Complete" to log panel.
         """
 
+        self.api.set_pair_seq_run_complete(self.curr_upload_id)
         self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
@@ -631,7 +700,7 @@ class MainFrame(wx.Frame):
                         "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
                     break  # stop processing sheets if validation fails
 
-        except (SampleSheetError, IOError), e:
+        except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):

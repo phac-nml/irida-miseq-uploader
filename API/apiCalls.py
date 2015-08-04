@@ -16,10 +16,55 @@ from Model.Sample import Sample
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
+from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
-class ApiCalls:
+# https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/
+def method_decorator(fn):
+
+    def decorator(*args, **kwargs):
+
+        """
+        Run the function (fn) and if any errors are raised then
+        the publisher sends a messaage which calls
+        handle_send_seq_pair_files_error() in
+        iridaUploaderMain.MainPanel
+        """
+
+        res = None
+        try:
+            res = fn(*args, **kwargs)
+        except Exception, e:
+
+            if "callback" in kwargs.keys():
+                pub.sendMessage("handle_send_seq_pair_files_error",
+                                exception_error=e.__class__,
+                                error_msg=e.message)
+            else:
+                raise
+        return res
+
+    return decorator
+
+
+def class_decorator(*method_names):
+    def class_rebuilder(cls):
+
+        class NewClass(cls):
+
+            def __getattribute__(self, attr_name):
+                obj = super(NewClass, self).__getattribute__(attr_name)
+                if hasattr(obj, '__call__') and attr_name in method_names:
+                    return method_decorator(obj)
+                return obj
+
+        return NewClass
+    return class_rebuilder
+
+
+@class_decorator("send_pair_sequence_files")
+class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
                  base_URL, username, password, max_wait_time=20):
@@ -342,7 +387,7 @@ class ApiCalls:
             not even reached.
         """
 
-        json_res = None
+        json_res = {}
         if len(project.get_name()) >= 5:
             url = self.get_link(self.base_URL, "projects")
             json_obj = json.dumps(project.get_dict())
@@ -437,7 +482,8 @@ class ApiCalls:
 
         return file_size_list
 
-    def send_pair_sequence_files(self, samples_list, callback=None):
+    def send_pair_sequence_files(self, samples_list, callback=None,
+                                 upload_id=1):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -464,7 +510,8 @@ class ApiCalls:
         self.total_bytes_read = 0
 
         for sample in samples_list:
-            json_res = self._send_pair_sequence_files(sample, callback)
+            json_res = self._send_pair_sequence_files(sample, callback,
+                                                      upload_id)
             json_res_list.append(json_res)
 
         if callback is not None:
@@ -472,7 +519,7 @@ class ApiCalls:
 
         return json_res_list
 
-    def _send_pair_sequence_files(self, sample, callback):
+    def _send_pair_sequence_files(self, sample, callback, upload_id):
 
         """
         post request to send pair sequence files found in given sample argument
@@ -488,6 +535,8 @@ class ApiCalls:
 
         returns result of post request.
         """
+
+        json_res = {}
 
         try:
             project_id = sample.get_project_id()
@@ -514,15 +563,27 @@ class ApiCalls:
 
         url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
+        miseqRunId_key = "miseqRunId"
+
+        parameters1 = ("\"{key1}\": \"{value1}\"," +
+                       "\"{key2}\": \"{value2}\"").format(
+                        key1=miseqRunId_key, value1=str(upload_id),
+                        key2="parameter1", value2="p1")
+        parameters1 = "{" + parameters1 + "}"
+
+        parameters2 = ("\"{key1}\": \"{value1}\", " +
+                       "\"{key2}\": \"{value2}\"").format(
+                        key1=miseqRunId_key, value1=str(upload_id),
+                        key2="parameter2", value2="p2")
+        parameters2 = "{" + parameters2 + "}"
+
         files = ({
                 "file1": (sample.get_pair_files()[0].replace("\\", "/"),
                           open(sample.get_pair_files()[0], "rb")),
-                "parameters1": ("", "{\"parameters1\": \"p1\"}",
-                                "application/json"),
+                "parameters1": ("", parameters1, "application/json"),
                 "file2": (sample.get_pair_files()[1].replace("\\", "/"),
                           open(sample.get_pair_files()[1], "rb")),
-                "parameters2": ("", "{\"parameters2\": \"p2\"}",
-                                "application/json")
+                "parameters2": ("", parameters2, "application/json")
         })
 
         e = encoder.MultipartEncoder(fields=files)
@@ -544,14 +605,180 @@ class ApiCalls:
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
+        # response.status_code = 500
+
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
         else:
-            raise SequenceFileError(("Error {status_code}: {err_msg}.\n" +
-                                     "Upload data: {ud}").format(
-                                     status_code=str(response.status_code),
-                                     err_msg=response.text,
-                                     ud=str(files)))
+
+            err_msg = ("Error {status_code}: {err_msg}\n" +
+                       "Upload data: {ud}").format(
+                       status_code=str(response.status_code),
+                       err_msg=response.reason,
+                       ud=str(files))
+
+            raise SequenceFileError(err_msg)
+
+        return json_res
+
+    def create_paired_seq_run(self, metadata_dict):
+
+        """
+        Create a sequencing run for pair end sequence files.
+
+        the contents of metadata_dict are changed inside this method
+
+        layoutType = "PAIRED_END"
+        uploadStatus "UPLOADING"
+        readLengths = the largest number between the readLengths
+
+        There are some parsed metadata keys from the SampleSheet.csv that are
+        currently not accepted/used by the API so they are discarded.
+        Everything not in the acceptable_properties list below is discarded.
+
+        arguments:
+            metadata_dict -- SequencingRun's metadata parsed from
+                             a Samplesheet.csv file by
+                             miseqParser.parse_metadata()
+
+        returns result of post request.
+        """
+
+        json_res = {}
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+
+        url = self.get_link(seq_run_url, "sequencingRun/miseq")
+
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        acceptable_properties = [
+            "layoutType", "chemistry", "projectName",
+            "experimentName", "application", "uploadStatus",
+            "investigatorName", "createdDate", "assay", "description",
+            "workflow", "readLengths"]
+
+        # currently sends just the larger readLengths
+        if len(metadata_dict["readLengths"]) > 0:
+            metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
+        else:
+            metadata_dict["readLengths"] = ""
+
+        metadata_dict["layoutType"] = "PAIRED_END"
+        metadata_dict["uploadStatus"] = "UPLOADING"
+
+        for key in metadata_dict.keys():
+            if key not in acceptable_properties:
+                del metadata_dict[key]
+
+        json_obj = json.dumps(metadata_dict)
+
+        response = self.session.post(url, json_obj, **headers)
+        if response.status_code == httplib.CREATED:  # 201
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.reason)
+        return json_res
+
+    def get_pair_seq_runs(self):
+
+        """
+        Get list of pair files SequencingRuns
+        /api/sequencingRuns returns all SequencingRuns so this method
+        checks each SequencingRuns's layoutType to be equal to "PAIRED_END"
+        if it is add it to the list
+
+        return list of paired files SequencingRuns
+        """
+
+        url = self.get_link(self.base_URL, "sequencingRuns")
+        response = self.session.get(url)
+
+        json_res_list = response.json()["resource"]["resources"]
+
+        pair_seq_run_list = [json_res
+                             for json_res in json_res_list
+                             if json_res["layoutType"] == "PAIRED_END"]
+
+        return pair_seq_run_list
+
+    def set_pair_seq_run_complete(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "COMPLETE"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "COMPLETE"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def set_pair_seq_run_error(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "ERROR"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "ERROR"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def _set_pair_seq_run_upload_status(self, identifier, status):
+
+        """
+        Update a sequencing run's upload status to the given status argument
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+            status     -- string that the sequencing run will be updated
+                          with
+
+        returns result of patch request
+        """
+
+        json_res = {}
+
+        seq_run_url = self.get_link(self.base_URL, "sequencingRuns")
+
+        url = self.get_link(seq_run_url, "self",
+                            targ_dict={
+                                "key": "identifier",
+                                "value": identifier
+                            })
+        headers = {
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+
+        update_dict = {"uploadStatus": status}
+        json_obj = json.dumps(update_dict)
+
+        response = self.session.patch(url, json_obj, **headers)
+
+        if response.status_code == httplib.OK:  # 200
+            json_res = json.loads(response.text)
+        else:
+            raise SampleSheetError("Error: " +
+                                   str(response.status_code) + " " +
+                                   response.reason)
 
         return json_res
