@@ -686,6 +686,28 @@ class ApiCalls(object):
                                    response.reason)
         return json_res
 
+    def get_pair_seq_runs(self):
+
+        """
+        Get list of pair files SequencingRuns
+        /api/sequencingRuns returns all SequencingRuns so this method
+        checks each SequencingRuns's layoutType to be equal to "PAIRED_END"
+        if it is add it to the list
+
+        return list of paired files SequencingRuns
+        """
+
+        url = self.get_link(self.base_URL, "sequencingRuns")
+        response = self.session.get(url)
+
+        json_res_list = response.json()["resource"]["resources"]
+
+        pair_seq_run_list = [json_res
+                             for json_res in json_res_list
+                             if json_res["layoutType"] == "PAIRED_END"]
+
+        return pair_seq_run_list
+
     def set_pair_seq_run_complete(self, identifier):
 
         """
