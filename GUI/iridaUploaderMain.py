@@ -46,12 +46,14 @@ class MainPanel(wx.Panel):
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
+        self.CF_LABEL_TEXT_HEIGHT = 52
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
         self.PADDING_LEN = 20
+        self.SECTION_SPACE = 20
         self.TEXTBOX_FONT = wx.Font(
             pointSize=10, family=wx.FONTFAMILY_DEFAULT,
             style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
@@ -74,17 +76,17 @@ class MainPanel(wx.Panel):
             self.directory_sizer, proportion=0, flag=wx.ALIGN_CENTER |
             wx.EXPAND)
 
-        self.top_sizer.AddSpacer(30)  # between directory box & credentials
+        self.top_sizer.AddSpacer(self.SECTION_SPACE)
+        # between directory box & credentials
 
         self.top_sizer.Add(
             self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
             wx.ALIGN_CENTER)
 
-        # self.top_sizer.AddStretchSpacer()
-        self.top_sizer.AddSpacer(30)
+        self.top_sizer.AddSpacer(self.SECTION_SPACE)
         self.top_sizer.Add(
-            self.progress_bar_sizer, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=5)
+            self.progress_bar_sizer,
+            flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
 
         self.padding.Add(
             self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
@@ -188,15 +190,17 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        self.cf_init_label = "\n\nFile: 0%"
         self.cf_progress_label = wx.StaticText(
-            self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="File: 0%")
+            self, id=-1,
+            size=(self.LABEL_TEXT_WIDTH, self.CF_LABEL_TEXT_HEIGHT),
+            label=self.cf_init_label)
         self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
-        self.cf_progress_bar = wx.Gauge(self, range=100, size=(
-            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.cf_progress_label, flag=wx.BOTTOM,
-                                    border=20)
-        self.progress_bar_sizer.Add(self.cf_progress_bar)
+        self.cf_progress_bar = wx.Gauge(self, range=100,
+                                        size=(-1, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.cf_progress_label)
+        self.progress_bar_sizer.Add(self.cf_progress_bar, proportion=1,
+                                    flag=wx.EXPAND)
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
 
@@ -209,16 +213,17 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        self.ov_init_label = "\nOverall: 0%"
         self.ov_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Overall: 0%")
+            label=self.ov_init_label)
         self.ov_progress_label.SetFont(self.LABEL_TXT_FONT)
 
-        self.ov_progress_bar = wx.Gauge(self, range=100, size=(
-            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.ov_progress_label, flag=wx.TOP,
-                                    border=5)
-        self.progress_bar_sizer.Add(self.ov_progress_bar)
+        self.ov_progress_bar = wx.Gauge(self, range=100,
+                                        size=(-1, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.ov_progress_label)
+        self.progress_bar_sizer.Add(self.ov_progress_bar, proportion=1,
+                                    flag=wx.EXPAND)
         self.ov_progress_label.Hide()
         self.ov_progress_bar.Hide()
 
@@ -551,7 +556,7 @@ class MainPanel(wx.Panel):
 
             self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
-            self.ov_progress_label.SetLabel("Overall: {pct}%".format(
+            self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
                 pct=str(progress_data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
@@ -590,12 +595,12 @@ class MainPanel(wx.Panel):
 
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
-        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
 
         self.ov_progress_label.Hide()
         self.ov_progress_bar.Hide()
-        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_label.SetLabel(self.ov_init_label)
         self.ov_progress_bar.SetValue(0)
 
         self.seq_run = None
@@ -638,9 +643,9 @@ class MainPanel(wx.Panel):
     def start_sample_sheet_processing(self):
 
         self.dir_box.SetValue(self.browse_path)
-        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
-        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_label.SetLabel(self.ov_init_label)
         self.ov_progress_bar.SetValue(0)
 
         try:
