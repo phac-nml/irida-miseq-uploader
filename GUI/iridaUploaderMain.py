@@ -19,7 +19,7 @@ from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-from SettingsFrame import SettingsFrame
+from SettingsFrame import SettingsFrame, ConnectionError
 
 
 path_to_module = path.dirname(__file__)
@@ -382,7 +382,13 @@ class MainPanel(wx.Panel):
         self.curr_upload_id = -1
 
         try:
-            for sr in self.seq_run_list:
+
+            if api is None:
+                raise ConnectionError(
+                    "Unable to connect to IRIDA. " +
+                    "View Options -> Settings for more info.")
+
+            for sr in self.seq_run_list[:]:
 
                 json_res = api.create_paired_seq_run(sr.get_all_metadata())
                 self.curr_upload_id = json_res["resource"]["identifier"]
@@ -451,7 +457,10 @@ class MainPanel(wx.Panel):
     def pair_seq_files_upload_complete(self):
 
         """
-        Subscribed to "pair_seq_files_upload_complete"
+        Subscribed to message "pair_seq_files_upload_complete".
+        This message is going to be sent by ApiCalls.send_pair_sequence_files()
+        once all the sequence files have been uploaded.
+
         Adds to wx events queue: publisher send a message that uploading
         sequence files is complete
         """
