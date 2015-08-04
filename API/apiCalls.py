@@ -482,7 +482,7 @@ class ApiCalls(object):
         return file_size_list
 
     def send_pair_sequence_files(self, samples_list, callback=None,
-                                 upload_id=-1):
+                                 upload_id=1):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -562,15 +562,17 @@ class ApiCalls(object):
 
         url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
+        miseqRunId_key = "miseqRunId"
+
         parameters1 = ("\"{key1}\": \"{value1}\"," +
                        "\"{key2}\": \"{value2}\"").format(
-                        key1="miseqRunId", value1=str(upload_id),
+                        key1=miseqRunId_key, value1=str(upload_id),
                         key2="parameter1", value2="p1")
         parameters1 = "{" + parameters1 + "}"
 
         parameters2 = ("\"{key1}\": \"{value1}\", " +
                        "\"{key2}\": \"{value2}\"").format(
-                        key1="miseqRunId", value1=str(upload_id),
+                        key1=miseqRunId_key, value1=str(upload_id),
                         key2="parameter2", value2="p2")
         parameters2 = "{" + parameters2 + "}"
 
