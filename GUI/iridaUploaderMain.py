@@ -117,9 +117,14 @@ class MainFrame(wx.Frame):
         no return value
         """
 
+        kwargs = {
+            "samples_list": evt.sample_list,
+            "callback": evt.send_pairs_callback,
+            "upload_id": self.curr_upload_id
+        }
+
         t = Thread(target=self.api.send_pair_sequence_files,
-                   args=(evt.sample_list, evt.send_pairs_callback,
-                         self.curr_upload_id))
+                   kwargs=kwargs)
         t.daemon = True
         t.start()
 
@@ -471,7 +476,6 @@ class MainFrame(wx.Frame):
         """
 
         wx.CallAfter(self.pulse_timer.Stop)
-        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
         wx.CallAfter(
             self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
             " {error_name}: {error_msg}".format(
