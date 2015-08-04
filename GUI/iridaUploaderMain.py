@@ -503,6 +503,10 @@ class MainPanel(wx.Panel):
                                  (monitor.size_of_all_seq_files * 1.0))
         monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
 
+        for i in range(0,len(monitor.files)):
+            file = monitor.files[i]
+            monitor.files[i] = path.split(file)[1]
+
         progress_data = {
             "curr_file_upload_pct": monitor.cf_upload_pct,
             "overall_upload_pct": monitor.ov_upload_pct,
