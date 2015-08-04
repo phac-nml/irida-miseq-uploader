@@ -1,6 +1,7 @@
 import ast
 import json
 import httplib
+from inspect import getargspec
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 
@@ -36,7 +37,8 @@ def method_decorator(fn):
         try:
             res = fn(*args, **kwargs)
         except Exception, e:
-            if "callback" in repr(args[len(args)-2]):  # second last arg passed
+
+            if "callback" in getargspec(fn).args:
                 pub.sendMessage("handle_send_seq_pair_files_error",
                                 exception_error=e.__class__,
                                 error_msg=e.message)
