@@ -102,6 +102,8 @@ class MainPanel(wx.Panel):
                       "pair_seq_files_upload_complete")
         pub.subscribe(self.handle_send_seq_pair_files_error,
                       "handle_send_seq_pair_files_error")
+        pub.subscribe(self.set_updated_api,
+                      "set_updated_api")
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
@@ -813,6 +815,23 @@ class MainPanel(wx.Panel):
                 raise SequenceFileError(v_res.get_errors())
 
         self.seq_run_list.append(seq_run)
+
+    def set_updated_api(self, api):
+
+        """
+        Subscribed to message "set_updated_api".
+        This message is sent by SettingsPanel.close_handler().
+        When SettingsPanel is closed update self.api to equal the newly created
+        ApiCalls object from SettingsPanel
+
+        if the updated self.api is not None re-enable the upload button
+
+        no return value
+        """
+
+        self.api = api
+        if self.api is not None:
+            self.upload_button.Enable()
 
 
 class MainFrame(wx.Frame):

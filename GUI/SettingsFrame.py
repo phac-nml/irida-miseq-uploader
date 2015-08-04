@@ -6,6 +6,7 @@ from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from pubsub import pub
 
 from API.apiCalls import ApiCalls
 
@@ -948,7 +949,9 @@ class SettingsPanel(wx.Panel):
             self.parent.Destroy()
 
         else:
-            self.parent.parent.api = self.attempt_connect_to_api()
+            api = self.attempt_connect_to_api()
+            pub.sendMessage("set_updated_api", api=api)
+
             self.parent.Hide()  # running attached to iridaUploaderMain
 
     def log_color_print(self, msg, color, add_new_line=True):
