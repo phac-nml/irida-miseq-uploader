@@ -237,6 +237,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(len(pair_seq_run_list), 1)
         self.assertEqual(pair_seq_run_list[0]["uploadStatus"], "COMPLETE")
 
+
 def load_test_suite():
 
     api_integration_test_suite = unittest.TestSuite()
@@ -253,7 +254,6 @@ def load_test_suite():
         TestApiIntegration("test_get_and_send_sequence_files"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_set_pair_seq_run_complete"))
-
 
     return api_integration_test_suite
 
