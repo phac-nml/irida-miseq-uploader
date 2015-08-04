@@ -1021,7 +1021,11 @@ class TestApiCalls(unittest.TestCase):
                       "03-3333_S1_L001_R2_001.fastq.gz"]
         seq_file = SequenceFile({}, pair_files)
         sample.set_seq_file(seq_file)
-        json_res_list = api.send_pair_sequence_files([sample])
+
+        kwargs = {
+            "samples_list": [sample]
+        }
+        json_res_list = api.send_pair_sequence_files(**kwargs)
 
         self.assertEqual(len(json_res_list), 1)
 

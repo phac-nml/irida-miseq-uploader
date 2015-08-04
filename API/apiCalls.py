@@ -32,12 +32,14 @@ def method_decorator(fn):
         iridaUploaderMain.MainPanel
         """
 
+        res = None
         try:
             res = fn(*args, **kwargs)
         except Exception, e:
-            if "callback" in repr(args[len(args)-1]):
+
+            if "callback" in kwargs.keys():
                 pub.sendMessage("handle_send_seq_pair_files_error",
-                                exception_error=SequenceFileError,
+                                exception_error=e.__class__,
                                 error_msg=e.message)
             else:
                 raise
@@ -480,7 +482,8 @@ class ApiCalls(object):
 
         return file_size_list
 
-    def send_pair_sequence_files(self, samples_list, callback=None):
+    def send_pair_sequence_files(self, samples_list, callback=None,
+                                 upload_id=1):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -507,7 +510,8 @@ class ApiCalls(object):
         self.total_bytes_read = 0
 
         for sample in samples_list:
-            json_res = self._send_pair_sequence_files(sample, callback)
+            json_res = self._send_pair_sequence_files(sample, callback,
+                                                      upload_id)
             json_res_list.append(json_res)
 
         if callback is not None:
@@ -515,7 +519,7 @@ class ApiCalls(object):
 
         return json_res_list
 
-    def _send_pair_sequence_files(self, sample, callback):
+    def _send_pair_sequence_files(self, sample, callback, upload_id):
 
         """
         post request to send pair sequence files found in given sample argument
@@ -559,15 +563,27 @@ class ApiCalls(object):
 
         url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
 
+        miseqRunId_key = "miseqRunId"
+
+        parameters1 = ("\"{key1}\": \"{value1}\"," +
+                       "\"{key2}\": \"{value2}\"").format(
+                        key1=miseqRunId_key, value1=str(upload_id),
+                        key2="parameter1", value2="p1")
+        parameters1 = "{" + parameters1 + "}"
+
+        parameters2 = ("\"{key1}\": \"{value1}\", " +
+                       "\"{key2}\": \"{value2}\"").format(
+                        key1=miseqRunId_key, value1=str(upload_id),
+                        key2="parameter2", value2="p2")
+        parameters2 = "{" + parameters2 + "}"
+
         files = ({
                 "file1": (sample.get_pair_files()[0].replace("\\", "/"),
                           open(sample.get_pair_files()[0], "rb")),
-                "parameters1": ("", "{\"parameters1\": \"p1\"}",
-                                "application/json"),
+                "parameters1": ("", parameters1, "application/json"),
                 "file2": (sample.get_pair_files()[1].replace("\\", "/"),
                           open(sample.get_pair_files()[1], "rb")),
-                "parameters2": ("", "{\"parameters2\": \"p2\"}",
-                                "application/json")
+                "parameters2": ("", parameters2, "application/json")
         })
 
         e = encoder.MultipartEncoder(fields=files)
@@ -596,10 +612,10 @@ class ApiCalls(object):
 
         else:
 
-            err_msg = ("Error {status_code}: {err_msg}.\n" +
+            err_msg = ("Error {status_code}: {err_msg}\n" +
                        "Upload data: {ud}").format(
                        status_code=str(response.status_code),
-                       err_msg=response.text,
+                       err_msg=response.reason,
                        ud=str(files))
 
             raise SequenceFileError(err_msg)
@@ -670,6 +686,28 @@ class ApiCalls(object):
                                    str(response.status_code) + " " +
                                    response.reason)
         return json_res
+
+    def get_pair_seq_runs(self):
+
+        """
+        Get list of pair files SequencingRuns
+        /api/sequencingRuns returns all SequencingRuns so this method
+        checks each SequencingRuns's layoutType to be equal to "PAIRED_END"
+        if it is add it to the list
+
+        return list of paired files SequencingRuns
+        """
+
+        url = self.get_link(self.base_URL, "sequencingRuns")
+        response = self.session.get(url)
+
+        json_res_list = response.json()["resource"]["resources"]
+
+        pair_seq_run_list = [json_res
+                             for json_res in json_res_list
+                             if json_res["layoutType"] == "PAIRED_END"]
+
+        return pair_seq_run_list
 
     def set_pair_seq_run_complete(self, identifier):
 

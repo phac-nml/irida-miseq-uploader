@@ -117,8 +117,14 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        kwargs = {
+            "samples_list": evt.sample_list,
+            "callback": evt.send_pairs_callback,
+            "upload_id": self.curr_upload_id
+        }
+
         t = Thread(target=self.api.send_pair_sequence_files,
-                   args=(evt.sample_list, evt.send_pairs_callback,))
+                   kwargs=kwargs)
         t.daemon = True
         t.start()
 
@@ -373,13 +379,13 @@ class MainPanel(wx.Panel):
         self.start_cf_progress_bar_pulse()
 
         api = self.api
-        self.upload_id = -1
+        self.curr_upload_id = -1
 
         try:
             for sr in self.seq_run_list:
 
                 json_res = api.create_paired_seq_run(sr.get_all_metadata())
-                self.upload_id = json_res["resource"]["identifier"]
+                self.curr_upload_id = json_res["resource"]["identifier"]
 
                 for sample in sr.get_sample_list():
 
@@ -402,7 +408,7 @@ class MainPanel(wx.Panel):
             self.pulse_timer.Stop()
             self.cf_progress_bar.SetValue(0)
             self.display_warning(e.message)
-            self.api.set_pair_seq_run_error(self.upload_id)
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
@@ -413,8 +419,8 @@ class MainPanel(wx.Panel):
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
 
-            if self.upload_id > -1:
-                self.api.set_pair_seq_run_error(self.upload_id)
+            if self.curr_upload_id > -1:
+                self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
 
@@ -434,12 +440,13 @@ class MainPanel(wx.Panel):
         """
 
         wx.CallAfter(self.pulse_timer.Stop)
-        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-        wx.CallAfter(self.display_warning, "{error_name}: {error_msg}".format(
-            error_name=exception_error.__name__,
-            error_msg=error_msg), dlg_msg="Server error")
+        wx.CallAfter(
+            self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
+            " {error_name}: {error_msg}".format(
+                error_name=exception_error.__name__,
+                error_msg=error_msg), dlg_msg="Server error")
 
-        self.api.set_pair_seq_run_error(self.upload_id)
+        self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def pair_seq_files_upload_complete(self):
 
@@ -546,7 +553,7 @@ class MainPanel(wx.Panel):
         displays "Upload Complete" to log panel.
         """
 
-        self.api.set_pair_seq_run_complete(self.upload_id)
+        self.api.set_pair_seq_run_complete(self.curr_upload_id)
         self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):

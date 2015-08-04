@@ -143,6 +143,35 @@ class TestApiIntegration(unittest.TestCase):
         for key in sample_dict.keys():
             self.assertEqual(sample[key], added_sample[key])
 
+    def test_create_paired_seq_run(self):
+
+        api = ApiCalls(
+            client_id=client_id,
+            client_secret=client_secret,
+            base_URL=base_URL,
+            username=username,
+            password=password
+        )
+
+        metadata_dict = {
+            "workflow": "test_workflow",
+            "readLengths": [1]
+
+        }
+
+        pair_seq_run_list = api.get_pair_seq_runs()
+        self.assertEqual(len(pair_seq_run_list), 0)
+
+        json_res = api.create_paired_seq_run(metadata_dict)
+
+        pair_seq_run_list = api.get_pair_seq_runs()
+        self.assertEqual(len(pair_seq_run_list), 1)
+
+        upload_id = json_res["resource"]["identifier"]
+        upload_status = json_res["resource"]["uploadStatus"]
+        self.assertEqual(upload_id, "1")
+        self.assertEqual(upload_status, "UPLOADING")
+
     def test_get_and_send_sequence_files(self):
 
         api = ApiCalls(
@@ -193,6 +222,21 @@ class TestApiIntegration(unittest.TestCase):
 
         self.assertEqual(len(serv_res_list), len(samples_list))
 
+    def test_set_pair_seq_run_complete(self):
+
+        api = ApiCalls(
+            client_id=client_id,
+            client_secret=client_secret,
+            base_URL=base_URL,
+            username=username,
+            password=password
+        )
+
+        api.set_pair_seq_run_complete(identifier="1")
+        pair_seq_run_list = api.get_pair_seq_runs()
+        self.assertEqual(len(pair_seq_run_list), 1)
+        self.assertEqual(pair_seq_run_list[0]["uploadStatus"], "COMPLETE")
+
 
 def load_test_suite():
 
@@ -205,7 +249,11 @@ def load_test_suite():
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_samples"))
     api_integration_test_suite.addTest(
+        TestApiIntegration("test_create_paired_seq_run"))
+    api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_sequence_files"))
+    api_integration_test_suite.addTest(
+        TestApiIntegration("test_set_pair_seq_run_complete"))
 
     return api_integration_test_suite
 
