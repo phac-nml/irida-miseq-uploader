@@ -224,8 +224,22 @@ class TestOfflineValidation(unittest.TestCase):
 
         self.assertFalse(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 1)
-        self.assertTrue(
-            "No sampleProject found for sample" in v_res.get_errors())
+        self.assertIn("No Sample_Project found for sample", v_res.get_errors())
+
+    def test_validateSampleList_invalid_name_and_id_mismatch(self):
+
+        csv_file = path.join(
+            path_to_module, "testSeqPairFiles", "id_name_mismatch",
+            "SampleSheet.csv")
+
+        sample_list = parse_samples(csv_file)
+
+        self.assertEqual(len(sample_list), 3)
+        v_res = validate_sample_list(sample_list)
+        
+        self.assertFalse(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 1)
+        self.assertIn("does not match Sample_Name", v_res.get_errors())
 
     def test_validateSampleList_invalid_empty(self):
 
@@ -270,8 +284,9 @@ def load_test_suite():
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_sheet_valid_sheet"))
 
-    short_name1 = "test_validate_sample_sheet_missing_data_header"
-    off_validation_test_suite.addTest(TestOfflineValidation(short_name1))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation(
+            "test_validate_sample_sheet_missing_data_header"))
 
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
@@ -290,8 +305,12 @@ def load_test_suite():
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_list_valid"))
 
-    short_name2 = "test_validateSampleList_invalid_no_sample_proj"
-    off_validation_test_suite.addTest(TestOfflineValidation(short_name2))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation(
+            "test_validateSampleList_invalid_no_sample_proj"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation(
+            "test_validateSampleList_invalid_name_and_id_mismatch"))
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validateSampleList_invalid_empty"))
 
