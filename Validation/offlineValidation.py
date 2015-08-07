@@ -166,14 +166,13 @@ def validate_sample_list(sample_list):
                     sample.get_id())
                 break
 
-            # Sample_ID and Sample_Name must be equal - else Sample_Name empty
-            if len(sample.get("sampleName")) > 0:
-                if sample.get("sampleName") != sample.get_id():
-                    v_res.add_error_msg(sample.get_id() +
-                                        " does not match Sample_Name: " +
-                                        sample.get("sampleName"))
-                    valid = False
-                    break
+            # Sample_ID and Sample_Name must be equal
+            if sample.get_id() != sample.get("sampleName"):
+                v_res.add_error_msg(sample.get_id() +
+                                    " does not match Sample_Name: " +
+                                    sample.get("sampleName"))
+                valid = False
+                break
 
     else:
         v_res.add_error_msg(
