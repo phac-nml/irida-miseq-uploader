@@ -42,6 +42,8 @@ class MainPanel(wx.Panel):
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.api = None
+        self.upload_complete = None
+        self.curr_upload_id = None
 
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
@@ -322,10 +324,27 @@ class MainPanel(wx.Panel):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
+
+        if self.upload_complete is False that means the program was closed
+        while an upload was still running.
+        Set that SequencingRun's uploadStatus to ERROR.
+
         Destroy SettingsFrame and then destroy self
 
         no return value
         """
+
+        self.log_color_print("Closing")
+
+        if all([self.upload_complete is not None,
+                self.curr_upload_id is not None,
+                self.upload_complete is False]):
+            self.log_color_print("Updating sequencing run upload status. " +
+                                 "Please wait.", self.LOG_PNL_ERR_TXT_COLOR)
+            wx.CallAfter(wx.Yield)
+            t = Thread(target=self.api.set_pair_seq_run_error,
+                       args=(self.curr_upload_id,))
+            t.start()
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -359,7 +378,7 @@ class MainPanel(wx.Panel):
         """
 
         api = self.api
-        self.curr_upload_id = -1
+        self.curr_upload_id = None
 
         try:
 
@@ -367,6 +386,12 @@ class MainPanel(wx.Panel):
                 raise ConnectionError(
                     "Unable to connect to IRIDA. " +
                     "View Options -> Settings for more info.")
+
+            self.upload_complete = False
+            # used in close_handler() to determine if program was closed
+            # while an upload is still happening in which case set
+            # the sequencing run uploadStatus to ERROR
+            # set to true in handle_upload_complete()
 
             for sr in self.seq_run_list[:]:
 
@@ -405,7 +430,7 @@ class MainPanel(wx.Panel):
             self.display_warning("{error_name}: {error_msg}".format(
                 error_name=e.__class__.__name__, error_msg=e.message))
 
-            if self.curr_upload_id > -1:
+            if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def upload_to_server(self, event):
@@ -589,6 +614,7 @@ class MainPanel(wx.Panel):
                    args=(self.curr_upload_id,))
         t.daemon = True
         t.start()
+        self.upload_complete = True
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
 
