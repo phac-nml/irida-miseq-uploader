@@ -164,7 +164,7 @@ def validate_sample_list(sample_list):
                 valid = False
                 v_res.add_error_msg(
                     ("{sid} is missing at least one of the required values: " +
-                    "Sample_Name, Sample_Project or Sample_Id").format(
+                     "Sample_Name, Sample_Project or Sample_Id").format(
                         sid=sample.get_id()))
                 break
 
@@ -194,6 +194,7 @@ def sample_id_name_match(sample):
 
     return sample.get_id() == sample.get("sampleName")
 
+
 def sample_has_req_keys(sample):
 
     """
@@ -210,6 +211,7 @@ def sample_has_req_keys(sample):
             len(sample_name) > 0 and
             sample_id is not None and
             len(sample_id) > 0)
+
 
 def validate_URL_form(url):
 
