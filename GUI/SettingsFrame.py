@@ -1053,11 +1053,11 @@ class SettingsFrame(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
 
-        self.sf = SettingsPanel(self)
+        self.sp = SettingsPanel(self)
         self.Center()
-        self.attempt_connect_to_api = self.sf.attempt_connect_to_api
-        self.Bind(wx.EVT_CLOSE, self.sf.close_handler)
-        self.close_btn = self.sf.close_btn  # test_iridaUploaderMain.py
+        self.attempt_connect_to_api = self.sp.attempt_connect_to_api
+        self.Bind(wx.EVT_CLOSE, self.sp.close_handler)
+        self.close_btn = self.sp.close_btn  # test_iridaUploaderMain.py
 
 
 if __name__ == "__main__":
