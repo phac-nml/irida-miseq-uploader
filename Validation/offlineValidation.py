@@ -158,20 +158,23 @@ def validate_sample_list(sample_list):
     if len(sample_list) > 0:
         valid = True
         for sample in sample_list:
-            res = validate_sample(sample)
+
+            res = sample_has_req_keys(sample)
             if res is False:
                 valid = False
                 v_res.add_error_msg(
-                    "No Sample_Project found for sample with ID: " +
-                    sample.get_id())
+                    ("{sid} is missing at least one of the required values: " +
+                    "Sample_Name, Sample_Project or Sample_Id").format(
+                        sid=sample.get_id()))
                 break
 
             # Sample_ID and Sample_Name must be equal
-            if sample.get_id() != sample.get("sampleName"):
+            res = sample_id_name_match(sample)
+            if res is False:
+                valid = False
                 v_res.add_error_msg(sample.get_id() +
                                     " does not match Sample_Name: " +
                                     sample.get("sampleName"))
-                valid = False
                 break
 
     else:
@@ -183,19 +186,30 @@ def validate_sample_list(sample_list):
     return v_res
 
 
-def validate_sample(sample):
+def sample_id_name_match(sample):
 
     """
-    Checks if sample has project identifier attached to it
+    returns status of Sample_ID and Sample_Name being equal
     """
 
-    valid = False
+    return sample.get_id() == sample.get("sampleName")
+
+def sample_has_req_keys(sample):
+
+    """
+    Checks if sample has the required keys
+    Sample_Name, Sample_Project and Sample_Id
+    """
 
     sample_proj = sample.get("sampleProject")
-    if sample_proj is not None and len(sample_proj) > 0:
-        valid = True
-    return valid
-
+    sample_name = sample.get("sampleName")
+    sample_id = sample.get_id()
+    return (sample_proj is not None and
+            len(sample_proj) > 0 and
+            sample_name is not None and
+            len(sample_name) > 0 and
+            sample_id is not None and
+            len(sample_id) > 0)
 
 def validate_URL_form(url):
 
