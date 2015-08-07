@@ -224,7 +224,8 @@ class TestOfflineValidation(unittest.TestCase):
 
         self.assertFalse(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 1)
-        self.assertIn("No Sample_Project found for sample", v_res.get_errors())
+        self.assertIn("missing at least one of the required values",
+                      v_res.get_errors())
 
     def test_validateSampleList_invalid_name_and_id_mismatch(self):
 
@@ -236,7 +237,7 @@ class TestOfflineValidation(unittest.TestCase):
 
         self.assertEqual(len(sample_list), 3)
         v_res = validate_sample_list(sample_list)
-        
+
         self.assertFalse(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 1)
         self.assertIn("does not match Sample_Name", v_res.get_errors())
