@@ -6,6 +6,7 @@ import sys
 from os import path, listdir
 
 from GUI.iridaUploaderMain import MainFrame
+from mock import patch
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))
 POLL_INTERVAL = 100  # milliseconds
@@ -381,7 +382,9 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
-    def test_open_settings(self):
+    @patch("GUI.SettingsFrame.pub")
+    @patch("GUI.SettingsFrame.SettingsPanel.attempt_connect_to_api")
+    def test_open_settings(self, mock_connect_api, mock_pub_sub):
 
         menu_evt = wx.PyCommandEvent(wx.EVT_MENU.typeId,
                                      self.frame.OPEN_SETTINGS_ID)
