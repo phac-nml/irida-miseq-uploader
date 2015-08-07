@@ -349,41 +349,14 @@ class MainPanel(wx.Panel):
                   self.pulse_timer)
         self.pulse_timer.Start(pulse_interval)
 
-    def upload_to_server(self, event):
+    def _upload_to_server(self):
 
         """
-        Function bound to upload_button being clicked
-
-        uploads each SequencingRun in self.seq_run_list to irida web server
-
-        each SequencingRun will contain a list of samples and each sample
-        from the list of samples will contain a pair of sequence files
-
-        for each sample in the sample list, we check if the project_id
-        that it's supposed to be uploaded to already exists and
-        raises an error if it doesn't
-
-        we then check if the sample's id exists for it's given project_id
-        if it doesn't exist then create it
-
-        finally we create an UploadThread which runs
-        api.send_pair_sequence_files() and send it the list of samples and
-        our callback function:
-        self.pair_upload_callback()
-
-        arguments:
-                event -- EVT_BUTTON when upload button is clicked
-
-        no return value
+        Threaded function from upload_to_server.
+        Running on a different thread so that the GUI thread doesn't get
+        blocked (i.e the progress bar pulsing doesn't stop/"freeze" when
+        making api calls)
         """
-
-        self.upload_button.Disable()
-        # disable upload button to prevent accidental double-click
-
-        self.log_color_print("Starting upload")
-        self.log_color_print("Calculating file sizes")
-
-        self.start_cf_progress_bar_pulse()
 
         api = self.api
         self.curr_upload_id = -1
@@ -434,6 +407,45 @@ class MainPanel(wx.Panel):
 
             if self.curr_upload_id > -1:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
+
+    def upload_to_server(self, event):
+
+        """
+        Function bound to upload_button being clicked
+
+        uploads each SequencingRun in self.seq_run_list to irida web server
+
+        each SequencingRun will contain a list of samples and each sample
+        from the list of samples will contain a pair of sequence files
+
+        for each sample in the sample list, we check if the project_id
+        that it's supposed to be uploaded to already exists and
+        raises an error if it doesn't
+
+        we then check if the sample's id exists for it's given project_id
+        if it doesn't exist then create it
+
+        finally we create an UploadThread which runs
+        api.send_pair_sequence_files() and send it the list of samples and
+        our callback function:
+        self.pair_upload_callback()
+
+        arguments:
+                event -- EVT_BUTTON when upload button is clicked
+
+        no return value
+        """
+
+        self.upload_button.Disable()
+        # disable upload button to prevent accidental double-click
+
+        self.log_color_print("Starting upload")
+        self.log_color_print("Calculating file sizes")
+
+        self.start_cf_progress_bar_pulse()
+        t = Thread(target=self._upload_to_server)
+        t.daemon = True
+        t.start()
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
 
@@ -573,8 +585,12 @@ class MainPanel(wx.Panel):
         displays "Upload Complete" to log panel.
         """
 
-        self.api.set_pair_seq_run_complete(self.curr_upload_id)
-        self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
+        t = Thread(target=self.api.set_pair_seq_run_complete,
+                   args=(self.curr_upload_id,))
+        t.daemon = True
+        t.start()
+        wx.CallAfter(self.log_color_print, "Upload complete\n",
+                     self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
