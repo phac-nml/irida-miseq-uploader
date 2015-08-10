@@ -101,13 +101,24 @@ class MainPanel(wx.Panel):
         self.SetSizer(self.padding)
         self.Layout()
 
+        # Updates boths progress bars and progress labels
         pub.subscribe(self.update_progress_bars, "update_progress_bars")
+
+        # publisher sends a message that uploading sequence files is complete
+        # basically places a call to self.update_progress_bars in the event q
         pub.subscribe(self.pair_seq_files_upload_complete,
                       "pair_seq_files_upload_complete")
+
+        # Called by api.send_pair_sequence_files() when an error occurs
+        # display error message and update sequencing run uploadStatus to ERROR
         pub.subscribe(self.handle_send_seq_pair_files_error,
                       "handle_send_seq_pair_files_error")
+
+        # update self.api when Settings is closed
+        # if it's not None (i.e can connect to API) enable the submit button
         pub.subscribe(self.set_updated_api,
                       "set_updated_api")
+
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
@@ -130,7 +141,6 @@ class MainPanel(wx.Panel):
         }
 
         self.api.send_pair_sequence_files(**kwargs)
-
 
     def add_select_sample_sheet_section(self):
 
