@@ -4,6 +4,8 @@ from pprint import pprint
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
+from time import time
+
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
@@ -528,6 +530,15 @@ class MainFrame(wx.Frame):
             "overall_upload_pct": monitor.ov_upload_pct,
             "curr_files_uploading": "\n".join(monitor.files)
         }
+
+        elapsed_time = time() - monitor.start_time
+        upload_speed = (monitor.total_bytes_read / elapsed_time)  # bytes
+        estimated_remaining_time = (
+            (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
+            upload_speed)
+        print "Elapsed: ", elapsed_time
+        print "Upload speed: ", upload_speed, "bytes per second"
+        print "Estimated time left: ", estimated_remaining_time
 
         # only call update_progress_bars if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
