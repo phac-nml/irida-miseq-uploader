@@ -21,7 +21,7 @@ from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-from SettingsFrame import SettingsFrame
+from SettingsFrame import SettingsFrame, ConnectionError
 
 
 path_to_module = path.dirname(__file__)
@@ -29,17 +29,13 @@ if len(path_to_module) == 0:
     path_to_module = '.'
 
 
-class MainFrame(wx.Frame):
+class MainPanel(wx.Panel):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 750)
-        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
-                          title="IRIDA Uploader",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+        self.WINDOW_SIZE = self.parent.WINDOW_SIZE
+        wx.Panel.__init__(self, parent)
 
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
@@ -48,19 +44,26 @@ class MainFrame(wx.Frame):
         self.browse_path = getcwd()
         self.dir_dlg = None
         self.api = None
+        self.upload_complete = None
+        self.curr_upload_id = None
 
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 450)
-        self.LONG_BOX_SIZE = (650, 32)  # choose directory
-        self.SHORT_BOX_SIZE = (200, 32)  # user and pass
+        self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
+        self.CF_LABEL_TEXT_HEIGHT = 52
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_ERR_TXT_COLOR = wx.RED
         self.LOG_PNL_OK_TXT_COLOR = (0, 102, 0)  # dark green
-        self.OPEN_SETTINGS_ID = 111  # arbitrary value
+        self.PADDING_LEN = 20
+        self.SECTION_SPACE = 20
+        self.TEXTBOX_FONT = wx.Font(
+            pointSize=10, family=wx.FONTFAMILY_DEFAULT,
+            style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
+        self.LABEL_TXT_FONT = self.TEXTBOX_FONT
 
+        self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -69,42 +72,56 @@ class MainFrame(wx.Frame):
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
-        self.add_options_menu()
-        self.add_settings_option()
         self.add_curr_file_progress_bar()
         self.add_overall_progress_bar()
         self.add_upload_button()
 
-        self.top_sizer.AddSpacer(10)  # space between top and directory box
+        self.top_sizer.Add(
+            self.directory_sizer, proportion=0, flag=wx.ALIGN_CENTER |
+            wx.EXPAND)
+
+        self.top_sizer.AddSpacer(self.SECTION_SPACE)
+        # between directory box & credentials
 
         self.top_sizer.Add(
-            self.directory_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+            self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
+            wx.ALIGN_CENTER)
 
-        self.top_sizer.AddSpacer(30)  # between directory box & credentials
-
+        self.top_sizer.AddSpacer(self.SECTION_SPACE)
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER)
+            self.progress_bar_sizer,
+            flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
 
-        self.top_sizer.AddStretchSpacer()
-        self.top_sizer.Add(
-            self.progress_bar_sizer, proportion=0,
-            flag=wx.ALL | wx.ALIGN_CENTER, border=5)
-
-        self.top_sizer.AddStretchSpacer()
-        self.top_sizer.Add(
+        self.padding.Add(
+            self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
+            border=self.PADDING_LEN)
+        self.padding.AddStretchSpacer()
+        self.padding.Add(
             self.upload_button_sizer, proportion=0,
-            flag=wx.BOTTOM | wx.ALIGN_CENTER, border=5)
+            flag=wx.BOTTOM | wx.ALIGN_CENTER, border=self.PADDING_LEN)
 
-        self.SetSizer(self.top_sizer)
+        self.SetSizer(self.padding)
         self.Layout()
 
+        # Updates boths progress bars and progress labels
         pub.subscribe(self.update_progress_bars, "update_progress_bars")
+
+        # publisher sends a message that uploading sequence files is complete
+        # basically places a call to self.update_progress_bars in the event q
         pub.subscribe(self.pair_seq_files_upload_complete,
                       "pair_seq_files_upload_complete")
+
+        # Called by api.send_pair_sequence_files() when an error occurs
+        # display error message and update sequencing run uploadStatus to ERROR
         pub.subscribe(self.handle_send_seq_pair_files_error,
                       "handle_send_seq_pair_files_error")
+
+        # update self.api when Settings is closed
+        # if it's not None (i.e can connect to API) enable the submit button
+        pub.subscribe(self.set_updated_api,
+                      "set_updated_api")
+
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
-        self.Bind(wx.EVT_CLOSE, self.close_handler)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
@@ -125,10 +142,7 @@ class MainFrame(wx.Frame):
             "upload_id": self.curr_upload_id
         }
 
-        t = Thread(target=self.api.send_pair_sequence_files,
-                   kwargs=kwargs)
-        t.daemon = True
-        t.start()
+        self.api.send_pair_sequence_files(**kwargs)
 
     def add_select_sample_sheet_section(self):
 
@@ -143,17 +157,17 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        self.dir_label = wx.StaticText(
-            parent=self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="File path")
-        self.dir_box = wx.TextCtrl(self, size=self.LONG_BOX_SIZE,
-                                   style=wx.TE_PROCESS_ENTER)
         self.browse_button = wx.Button(self, label="Choose directory")
         self.browse_button.SetFocus()
+        self.dir_label = wx.StaticText(parent=self, id=-1, label="File path")
+        self.dir_label.SetFont(self.LABEL_TXT_FONT)
+        self.dir_box = wx.TextCtrl(
+            self, size=(-1, self.browse_button.GetSize()[1]),
+            style=wx.TE_PROCESS_ENTER)
+        self.dir_box.SetFont(self.TEXTBOX_FONT)
 
-        self.directory_sizer.Add(self.dir_label)
-        self.directory_sizer.Add(self.dir_box)
+        self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
         self.directory_sizer.Add(self.browse_button)
 
         tip = "Select the directory containing the SampleSheet.csv file " + \
@@ -188,14 +202,17 @@ class MainFrame(wx.Frame):
         no return value
         """
 
+        self.cf_init_label = "\n\nFile: 0%"
         self.cf_progress_label = wx.StaticText(
-            self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="File: 0%")
-        self.cf_progress_bar = wx.Gauge(self, range=100, size=(
-            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.cf_progress_label, flag=wx.BOTTOM,
-                                    border=20)
-        self.progress_bar_sizer.Add(self.cf_progress_bar)
+            self, id=-1,
+            size=(self.LABEL_TEXT_WIDTH, self.CF_LABEL_TEXT_HEIGHT),
+            label=self.cf_init_label)
+        self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
+        self.cf_progress_bar = wx.Gauge(self, range=100,
+                                        size=(-1, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.cf_progress_label)
+        self.progress_bar_sizer.Add(self.cf_progress_bar, proportion=1,
+                                    flag=wx.EXPAND)
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
 
@@ -208,14 +225,17 @@ class MainFrame(wx.Frame):
         no return value
         """
 
+        self.ov_init_label = "\nOverall: 0%"
         self.ov_progress_label = wx.StaticText(
             self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
-            label="Overall: 0%")
-        self.ov_progress_bar = wx.Gauge(self, range=100, size=(
-            self.WINDOW_SIZE[0] * 0.95, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.ov_progress_label, flag=wx.TOP,
-                                    border=5)
-        self.progress_bar_sizer.Add(self.ov_progress_bar)
+            label=self.ov_init_label)
+        self.ov_progress_label.SetFont(self.LABEL_TXT_FONT)
+
+        self.ov_progress_bar = wx.Gauge(self, range=100,
+                                        size=(-1, self.LABEL_TEXT_HEIGHT))
+        self.progress_bar_sizer.Add(self.ov_progress_label)
+        self.progress_bar_sizer.Add(self.ov_progress_bar, proportion=1,
+                                    flag=wx.EXPAND)
         self.ov_progress_label.Hide()
         self.ov_progress_bar.Hide()
 
@@ -247,56 +267,16 @@ class MainFrame(wx.Frame):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="",
-            size=self.LOG_PANEL_SIZE,
+            value="", size=(-1, self.LOG_PANEL_HEIGHT),
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
+
+        self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
-        self.log_panel_sizer.Add(self.log_panel)
-
-    def open_settings(self, evt):
-
-        """
-        Open the settings menu(SettingsFrame)
-
-        no return value
-        """
-
-        self.settings_frame.Center()
-        self.settings_frame.Show()
-
-    def add_options_menu(self):
-
-        """
-        Adds Options menu on top of program
-        Shortcut / accelerator: Alt + T
-
-        no return value
-        """
-
-        self.menubar = wx.MenuBar()
-        self.options_menu = wx.Menu()
-        self.menubar.Append(self.options_menu, "Op&tions")
-        self.SetMenuBar(self.menubar)
-
-    def add_settings_option(self):
-
-        """
-        Add Settings on options menu
-        Clicking Settings will call self.open_settings()
-        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
-
-        no return value
-        """
-
-        self.settings_menu_item = wx.MenuItem(self.options_menu,
-                                              self.OPEN_SETTINGS_ID,
-                                              "&Settings\tCTRL+I")
-        self.options_menu.AppendItem(self.settings_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
+        self.log_panel_sizer.Add(self.log_panel, proportion=1, flag=wx.EXPAND)
 
     def display_warning(self, warn_msg, dlg_msg=""):
 
@@ -354,10 +334,27 @@ class MainFrame(wx.Frame):
 
         """
         Function bound to window/MainFrame being closed (close button/alt+f4)
+
+        if self.upload_complete is False that means the program was closed
+        while an upload was still running.
+        Set that SequencingRun's uploadStatus to ERROR.
+
         Destroy SettingsFrame and then destroy self
 
         no return value
         """
+
+        self.log_color_print("Closing")
+
+        if all([self.upload_complete is not None,
+                self.curr_upload_id is not None,
+                self.upload_complete is False]):
+            self.log_color_print("Updating sequencing run upload status. " +
+                                 "Please wait.", self.LOG_PNL_ERR_TXT_COLOR)
+            wx.CallAfter(wx.Yield)
+            t = Thread(target=self.api.set_pair_seq_run_error,
+                       args=(self.curr_upload_id,))
+            t.start()
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -380,6 +377,72 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_TIMER, lambda evt: self.cf_progress_bar.Pulse(),
                   self.pulse_timer)
         self.pulse_timer.Start(pulse_interval)
+
+    def _upload_to_server(self):
+
+        """
+        Threaded function from upload_to_server.
+        Running on a different thread so that the GUI thread doesn't get
+        blocked (i.e the progress bar pulsing doesn't stop/"freeze" when
+        making api calls)
+        """
+
+        api = self.api
+        self.curr_upload_id = None
+
+        try:
+
+            if api is None:
+                raise ConnectionError(
+                    "Unable to connect to IRIDA. " +
+                    "View Options -> Settings for more info.")
+
+            self.upload_complete = False
+            # used in close_handler() to determine if program was closed
+            # while an upload is still happening in which case set
+            # the sequencing run uploadStatus to ERROR
+            # set to true in handle_upload_complete()
+
+            for sr in self.seq_run_list[:]:
+
+                json_res = api.create_paired_seq_run(sr.get_all_metadata())
+                self.curr_upload_id = json_res["resource"]["identifier"]
+
+                for sample in sr.get_sample_list():
+
+                    if project_exists(api, sample.get_project_id()) is False:
+                        msg = "Project ID: {id} doesn't exist".format(
+                               id=sample.get_project_id())
+                        raise ProjectError(msg)
+
+                    if sample_exists(api, sample) is False:
+                        api.send_samples([sample])
+
+                evt = self.send_seq_files_evt(
+                    sample_list=sr.get_sample_list(),
+                    send_pairs_callback=self.pair_upload_callback)
+                self.GetEventHandler().ProcessEvent(evt)
+
+                self.seq_run_list.remove(sr)
+
+        except ProjectError, e:
+            wx.CallAfter(self.pulse_timer.Stop)
+            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
+            wx.CallAfter(self.display_warning, e.message)
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
+
+        except Exception, e:
+            # this catches all api errors except send_pair_sequence_files
+            # it won't catch send_pair_sequence_files because it's threaded
+            # handle_send_seq_pair_files_error takes care of that
+            wx.CallAfter(self.pulse_timer.Stop)
+            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
+            wx.CallAfter(
+                self.display_warning, "{error_name}: {error_msg}".format(
+                    error_name=e.__class__.__name__, error_msg=e.message))
+
+            if self.curr_upload_id is not None:
+                self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def upload_to_server(self, event):
 
@@ -416,49 +479,9 @@ class MainFrame(wx.Frame):
         self.log_color_print("Calculating file sizes")
 
         self.start_cf_progress_bar_pulse()
-
-        api = self.api
-        self.curr_upload_id = -1
-
-        try:
-            for sr in self.seq_run_list:
-
-                json_res = api.create_paired_seq_run(sr.get_all_metadata())
-                self.curr_upload_id = json_res["resource"]["identifier"]
-
-                for sample in sr.get_sample_list():
-
-                    if project_exists(api, sample.get_project_id()) is False:
-                        msg = "Project ID: {id} doesn't exist".format(
-                               id=sample.get_project_id())
-                        raise ProjectError(msg)
-
-                    if sample_exists(api, sample) is False:
-                        api.send_samples([sample])
-
-                evt = self.send_seq_files_evt(
-                    sample_list=sr.get_sample_list(),
-                    send_pairs_callback=self.pair_upload_callback)
-                self.GetEventHandler().ProcessEvent(evt)
-
-                self.seq_run_list.remove(sr)
-
-        except ProjectError, e:
-            self.pulse_timer.Stop()
-            self.cf_progress_bar.SetValue(0)
-            self.display_warning(e.message)
-            self.api.set_pair_seq_run_error(self.curr_upload_id)
-
-        except Exception, e:
-            # this catches all api errors except send_pair_sequence_files
-            # it won't catch send_pair_sequence_files because it's threaded
-            # handle_send_seq_pair_files_error takes care of that
-            self.pulse_timer.Stop()
-            self.cf_progress_bar.SetValue(0)
-            self.display_warning("{error_name}: {error_msg}".format(
-                error_name=e.__class__.__name__, error_msg=e.message))
-            if self.curr_upload_id > -1:
-                self.api.set_pair_seq_run_error(self.curr_upload_id)
+        t = Thread(target=self._upload_to_server)
+        t.daemon = True
+        t.start()
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg):
 
@@ -489,7 +512,10 @@ class MainFrame(wx.Frame):
     def pair_seq_files_upload_complete(self):
 
         """
-        Subscribed to "pair_seq_files_upload_complete"
+        Subscribed to message "pair_seq_files_upload_complete".
+        This message is going to be sent by ApiCalls.send_pair_sequence_files()
+        once all the sequence files have been uploaded.
+
         Adds to wx events queue: publisher send a message that uploading
         sequence files is complete
         """
@@ -524,6 +550,10 @@ class MainFrame(wx.Frame):
         monitor.ov_upload_pct = (monitor.total_bytes_read /
                                  (monitor.size_of_all_seq_files * 1.0))
         monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
+
+        for i in range(0, len(monitor.files)):
+            file = monitor.files[i]
+            monitor.files[i] = path.split(file)[1]
 
         progress_data = {
             "curr_file_upload_pct": monitor.cf_upload_pct,
@@ -587,7 +617,7 @@ class MainFrame(wx.Frame):
 
             self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
-            self.ov_progress_label.SetLabel("Overall: {pct}%".format(
+            self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
                 pct=str(progress_data["overall_upload_pct"])))
             wx.Yield()
             self.Refresh()
@@ -600,8 +630,13 @@ class MainFrame(wx.Frame):
         displays "Upload Complete" to log panel.
         """
 
-        self.api.set_pair_seq_run_complete(self.curr_upload_id)
-        self.log_color_print("Upload complete\n", self.LOG_PNL_OK_TXT_COLOR)
+        t = Thread(target=self.api.set_pair_seq_run_complete,
+                   args=(self.curr_upload_id,))
+        t.daemon = True
+        t.start()
+        self.upload_complete = True
+        wx.CallAfter(self.log_color_print, "Upload complete\n",
+                     self.LOG_PNL_OK_TXT_COLOR)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
@@ -626,12 +661,12 @@ class MainFrame(wx.Frame):
 
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
-        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
 
         self.ov_progress_label.Hide()
         self.ov_progress_bar.Hide()
-        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_label.SetLabel(self.ov_init_label)
         self.ov_progress_bar.SetValue(0)
 
         self.seq_run = None
@@ -674,9 +709,9 @@ class MainFrame(wx.Frame):
     def start_sample_sheet_processing(self):
 
         self.dir_box.SetValue(self.browse_path)
-        self.cf_progress_label.SetLabel("0%")
+        self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
-        self.ov_progress_label.SetLabel("0%")
+        self.ov_progress_label.SetLabel(self.ov_init_label)
         self.ov_progress_bar.SetValue(0)
 
         try:
@@ -852,10 +887,93 @@ class MainFrame(wx.Frame):
 
         self.seq_run_list.append(seq_run)
 
+    def set_updated_api(self, api):
+
+        """
+        Subscribed to message "set_updated_api".
+        This message is sent by SettingsPanel.close_handler().
+        When SettingsPanel is closed update self.api to equal the newly created
+        ApiCalls object from SettingsPanel
+
+        if the updated self.api is not None re-enable the upload button
+
+        no return value
+        """
+
+        self.api = api
+        if self.api is not None:
+            self.upload_button.Enable()
+
+
+class MainFrame(wx.Frame):
+
+    def __init__(self, parent=None):
+
+        self.parent = parent
+        self.WINDOW_SIZE = (900, 750)
+
+        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
+                          title="IRIDA Uploader",
+                          size=self.WINDOW_SIZE,
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
+                          wx.MAXIMIZE_BOX)
+
+        self.OPEN_SETTINGS_ID = 111  # arbitrary value
+
+        self.mp = MainPanel(self)
+        self.settings_frame = self.mp.settings_frame
+
+        self.add_options_menu()
+        self.add_settings_option()
+
+        self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
+        self.Center()
+
+    def add_options_menu(self):
+
+        """
+        Adds Options menu on top of program
+        Shortcut / accelerator: Alt + T
+
+        no return value
+        """
+
+        self.menubar = wx.MenuBar()
+        self.options_menu = wx.Menu()
+        self.menubar.Append(self.options_menu, "Op&tions")
+        self.SetMenuBar(self.menubar)
+
+    def add_settings_option(self):
+
+        """
+        Add Settings on options menu
+        Clicking Settings will call self.open_settings()
+        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
+
+        no return value
+        """
+
+        self.settings_menu_item = wx.MenuItem(self.options_menu,
+                                              self.OPEN_SETTINGS_ID,
+                                              "&Settings\tCTRL+I")
+        self.options_menu.AppendItem(self.settings_menu_item)
+        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
+
+    def open_settings(self, evt):
+
+        """
+        Open the settings menu(SettingsFrame)
+
+        no return value
+        """
+
+        self.settings_frame.Center()
+        self.settings_frame.Show()
+
 
 if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.api = frame.settings_frame.attempt_connect_to_api()
+    frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()

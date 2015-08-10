@@ -6,6 +6,7 @@ from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from pubsub import pub
 
 from API.apiCalls import ApiCalls
 
@@ -942,14 +943,16 @@ class SettingsPanel(wx.Panel):
 
                 self.prompt_dlg.Destroy()
 
+        self.log_panel.Clear()
+
         if self.parent.parent is None:  # standalone
             self.parent.Destroy()
 
         else:
-            self.parent.Hide()  # running attached to iridaUploaderMain
+            api = self.attempt_connect_to_api()
+            pub.sendMessage("set_updated_api", api=api)
 
-        self.log_panel.Clear()
-        self.attempt_connect_to_api()
+            self.parent.Hide()  # running attached to iridaUploaderMain
 
     def log_color_print(self, msg, color, add_new_line=True):
 
@@ -1050,11 +1053,11 @@ class SettingsFrame(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
                           wx.MAXIMIZE_BOX)
 
-        self.sf = SettingsPanel(self)
+        self.sp = SettingsPanel(self)
         self.Center()
-        self.attempt_connect_to_api = self.sf.attempt_connect_to_api
-        self.Bind(wx.EVT_CLOSE, self.sf.close_handler)
-        self.close_btn = self.sf.close_btn  # test_iridaUploaderMain.py
+        self.attempt_connect_to_api = self.sp.attempt_connect_to_api
+        self.Bind(wx.EVT_CLOSE, self.sp.close_handler)
+        self.close_btn = self.sp.close_btn  # test_iridaUploaderMain.py
 
 
 if __name__ == "__main__":
