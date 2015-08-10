@@ -561,14 +561,19 @@ class MainPanel(wx.Panel):
             "curr_files_uploading": "\n".join(monitor.files)
         }
 
-        elapsed_time = time() - monitor.start_time
-        upload_speed = (monitor.total_bytes_read / elapsed_time)  # bytes
-        estimated_remaining_time = (
-            (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
-            upload_speed)
-        print "Elapsed: ", elapsed_time
-        print "Upload speed: ", upload_speed, "bytes per second"
-        print "Estimated time left: ", estimated_remaining_time
+        # only update estimated remaining time when elapsed_time changes
+        elapsed_time = round(time() - monitor.start_time)
+        if elapsed_time != monitor.prev_elapsed_time:
+
+            upload_speed = (monitor.total_bytes_read / elapsed_time)  # bytes
+            estimated_remaining_time = (
+                (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
+                upload_speed)
+
+            wx.CallAfter(self.update_remaining_time, upload_speed,
+                         estimated_remaining_time)
+
+        monitor.prev_elapsed_time = elapsed_time
 
         # only call update_progress_bars if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
@@ -580,6 +585,12 @@ class MainPanel(wx.Panel):
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
         monitor.prev_ov_pct = monitor.ov_upload_pct
+
+    def update_remaining_time(self, upload_speed, estimated_remaining_time):
+
+        print "Upload speed: ", upload_speed, "bytes per second"
+        print "Estimated time left: ", estimated_remaining_time
+        print "\n"
 
     def update_progress_bars(self, progress_data):
 

@@ -601,6 +601,7 @@ class ApiCalls(object):
         monitor.prev_cf_pct = 0.0
         monitor.prev_ov_pct = 0.0
         monitor.prev_bytes = 0
+        monitor.prev_elapsed_time = 0
 
         monitor.start_time = self.start_time
 
