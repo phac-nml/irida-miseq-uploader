@@ -189,6 +189,9 @@ def validate_sample_list(sample_list):
 def sample_id_name_match(sample):
 
     """
+    arguments:
+            sample -- Sample object
+
     returns status of Sample_ID and Sample_Name being equal
     """
 
@@ -198,8 +201,13 @@ def sample_id_name_match(sample):
 def sample_has_req_keys(sample):
 
     """
-    Checks if sample has the required keys
+    Checks if sample has the required keys:
     Sample_Name, Sample_Project and Sample_Id
+
+    arguments:
+            sample -- Sample object
+
+    return True if all required keys exist else False
     """
 
     sample_proj = sample.get("sampleProject")
