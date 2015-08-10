@@ -461,7 +461,6 @@ class MainPanel(wx.Panel):
                 self.display_warning, "{error_name}: {error_msg}".format(
                     error_name=e.__class__.__name__, error_msg=e.message))
 
-
     def upload_to_server(self, event):
 
         """
@@ -636,7 +635,6 @@ class MainPanel(wx.Panel):
 
         return str(eta) + " " + rep
 
-
     def update_remaining_time(self, upload_speed, estimated_remaining_time):
 
         upload_speed_str = self.get_upload_speed_str(upload_speed)
@@ -647,7 +645,6 @@ class MainPanel(wx.Panel):
                      "Estimated time left: {eta_str}").format(
                         up_str=upload_speed_str,
                         eta_str=estimated_remaining_time_str)
-
 
         wx.CallAfter(self.ov_estimated_time_label.SetLabel,
                      label_str)
