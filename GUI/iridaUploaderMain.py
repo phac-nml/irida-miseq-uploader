@@ -129,10 +129,8 @@ class MainPanel(wx.Panel):
             "upload_id": self.curr_upload_id
         }
 
-        t = Thread(target=self.api.send_pair_sequence_files,
-                   kwargs=kwargs)
-        t.daemon = True
-        t.start()
+        self.api.send_pair_sequence_files(**kwargs)
+
 
     def add_select_sample_sheet_section(self):
 
