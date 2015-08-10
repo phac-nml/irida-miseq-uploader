@@ -108,11 +108,6 @@ class MainPanel(wx.Panel):
                       "handle_send_seq_pair_files_error")
         pub.subscribe(self.set_updated_api,
                       "set_updated_api")
-        pub.subscribe(self.handle_upload_exception_error,
-                      "handle_upload_exception_error")
-        pub.subscribe(self.handle_upload_project_error,
-                      "handle_upload_project_error")
-
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
@@ -421,58 +416,22 @@ class MainPanel(wx.Panel):
                 self.seq_run_list.remove(sr)
 
         except ProjectError, e:
-            pub.sendMessage("handle_upload_project_error", exception_error=e)
+            self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
+            self.display_warning(e.message)
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
             # it won't catch send_pair_sequence_files because it's threaded
             # handle_send_seq_pair_files_error takes care of that
-            pub.sendMessage("handle_upload_exception_error", exception_error=e)
+            self.pulse_timer.Stop()
+            self.cf_progress_bar.SetValue(0)
+            self.display_warning("{error_name}: {error_msg}".format(
+                error_name=e.__class__.__name__, error_msg=e.message))
 
-    def handle_upload_project_error(self, exception_error):
-
-        """
-        Subscribed to message "handle_upload_project_error"
-        Called by self._upload_to_server when a sample's Sample_Project
-        doesn't exist in IRIDA
-        It's set up this way because self._upload_to_server() is running
-        in a different thread from the main GUI thread
-
-        argument:
-            exception_error -- ProjectError object
-
-        no return value
-        """
-
-        wx.CallAfter(self.pulse_timer.Stop)
-        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-        wx.CallAfter(self.display_warning, exception_error.message)
-        self.api.set_pair_seq_run_error(self.curr_upload_id)
-
-    def handle_upload_exception_error(self, exception_error):
-
-        """
-        Subscribed to message "handle_upload_exception_error"
-        Called by self._upload_to_server when any error other than ProjectError
-        occurs
-        It's set up this way because self._upload_to_server() is running
-        in a different thread from the main GUI thread
-
-        argument:
-            exception_error -- Exception object
-
-        no return value
-        """
-
-        wx.CallAfter(self.pulse_timer.Stop)
-        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-        wx.CallAfter(self.display_warning,
-                     "{error_name}: {error_msg}".format(
-                        error_name=exception_error.__class__.__name__,
-                        error_msg=exception_error.message))
-
-        if self.curr_upload_id is not None:
-            self.api.set_pair_seq_run_error(self.curr_upload_id)
+            if self.curr_upload_id is not None:
+                self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def upload_to_server(self, event):
 
@@ -517,7 +476,7 @@ class MainPanel(wx.Panel):
 
         """
 
-        Subscribed to message "handle_send_seq_pair_files_error"
+        Subscribed to "handle_send_seq_pair_files_error"
         Called by api.send_pair_sequence_files() when an error occurs
         It's set up this way because send_pair_sequence_files() is running
         in a different thread so the regular try-except block wasn't catching
