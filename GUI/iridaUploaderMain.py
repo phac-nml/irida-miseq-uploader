@@ -5,6 +5,7 @@ from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
+from math import ceil
 
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
@@ -67,6 +68,7 @@ class MainPanel(wx.Panel):
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.ov_label_container = wx.BoxSizer(wx.HORIZONTAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -205,7 +207,7 @@ class MainPanel(wx.Panel):
         self.cf_init_label = "\n\nFile: 0%"
         self.cf_progress_label = wx.StaticText(
             self, id=-1,
-            size=(self.LABEL_TEXT_WIDTH, self.CF_LABEL_TEXT_HEIGHT),
+            size=(-1, self.CF_LABEL_TEXT_HEIGHT),
             label=self.cf_init_label)
         self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
         self.cf_progress_bar = wx.Gauge(self, range=100,
@@ -226,17 +228,31 @@ class MainPanel(wx.Panel):
         """
 
         self.ov_init_label = "\nOverall: 0%"
+        self.ov_est_time_init_label = ("Upload speed: ...\n" +
+                                       "Estimated time remaining: ...")
         self.ov_progress_label = wx.StaticText(
-            self, id=-1, size=(self.LABEL_TEXT_WIDTH, self.LABEL_TEXT_HEIGHT),
+            self, id=-1,
             label=self.ov_init_label)
+        self.ov_estimated_time_label = wx.StaticText(
+            self, id=-1,
+            label=self.ov_est_time_init_label)
         self.ov_progress_label.SetFont(self.LABEL_TXT_FONT)
+        self.ov_estimated_time_label.SetFont(self.LABEL_TXT_FONT)
 
         self.ov_progress_bar = wx.Gauge(self, range=100,
                                         size=(-1, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.ov_progress_label)
+
+        self.ov_label_container.Add(self.ov_progress_label)
+        self.ov_label_container.AddStretchSpacer()
+        self.ov_label_container.Add(self.ov_estimated_time_label,
+                                    flag=wx.ALIGN_RIGHT)
+        self.progress_bar_sizer.AddSpacer(self.SECTION_SPACE)
+        self.progress_bar_sizer.Add(self.ov_label_container, flag=wx.EXPAND)
         self.progress_bar_sizer.Add(self.ov_progress_bar, proportion=1,
                                     flag=wx.EXPAND)
+
         self.ov_progress_label.Hide()
+        self.ov_estimated_time_label.Hide()
         self.ov_progress_bar.Hide()
 
     def add_upload_button(self):
@@ -351,7 +367,7 @@ class MainPanel(wx.Panel):
                 self.upload_complete is False]):
             self.log_color_print("Updating sequencing run upload status. " +
                                  "Please wait.", self.LOG_PNL_ERR_TXT_COLOR)
-            wx.CallAfter(wx.Yield)
+            wx.Yield()
             t = Thread(target=self.api.set_pair_seq_run_error,
                        args=(self.curr_upload_id,))
             t.start()
@@ -426,23 +442,25 @@ class MainPanel(wx.Panel):
                 self.seq_run_list.remove(sr)
 
         except ProjectError, e:
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
+
             wx.CallAfter(self.pulse_timer.Stop)
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(self.display_warning, e.message)
-            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
             # it won't catch send_pair_sequence_files because it's threaded
             # handle_send_seq_pair_files_error takes care of that
+            if self.curr_upload_id is not None:
+                self.api.set_pair_seq_run_error(self.curr_upload_id)
+
             wx.CallAfter(self.pulse_timer.Stop)
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(
                 self.display_warning, "{error_name}: {error_msg}".format(
                     error_name=e.__class__.__name__, error_msg=e.message))
 
-            if self.curr_upload_id is not None:
-                self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def upload_to_server(self, event):
 
@@ -500,14 +518,14 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        self.api.set_pair_seq_run_error(self.curr_upload_id)
+
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(
             self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
             " {error_name}: {error_msg}".format(
                 error_name=exception_error.__name__,
                 error_msg=error_msg), dlg_msg="Server error")
-
-        self.api.set_pair_seq_run_error(self.curr_upload_id)
 
     def pair_seq_files_upload_complete(self):
 
@@ -566,9 +584,9 @@ class MainPanel(wx.Panel):
         if elapsed_time != monitor.prev_elapsed_time:
 
             upload_speed = (monitor.total_bytes_read / elapsed_time)  # bytes
-            estimated_remaining_time = (
+            estimated_remaining_time = ceil(abs(
                 (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
-                upload_speed)
+                upload_speed))
 
             wx.CallAfter(self.update_remaining_time, upload_speed,
                          estimated_remaining_time)
@@ -586,11 +604,54 @@ class MainPanel(wx.Panel):
         monitor.prev_cf_pct = monitor.cf_upload_pct
         monitor.prev_ov_pct = monitor.ov_upload_pct
 
+    def get_upload_speed_str(self, upload_speed):
+
+        metrics = [
+            "B/s", "KB/s", "MB/s", "GB/s", "TB/s", "PB/s", "EB/s", "ZB/s"
+        ]
+
+        metric_count = 0
+        while upload_speed >= 1024.0:
+            upload_speed = upload_speed / 1024.0
+            metric_count += 1
+
+        upload_speed = round(upload_speed, 2)
+
+        return str(upload_speed) + " " + metrics[metric_count]
+
+    def get_eta_str(self, eta):
+
+        decimal_time = [
+            (1, "seconds"), (60, "minutes"), (60, "hours"), (24, "days")
+        ]
+
+        for d in decimal_time:
+            if eta >= d[0]:
+                eta = eta / d[0]
+                rep = d[1]
+            else:
+                break
+
+        eta = round(eta, 2)
+
+        return str(eta) + " " + rep
+
+
     def update_remaining_time(self, upload_speed, estimated_remaining_time):
 
-        print "Upload speed: ", upload_speed, "bytes per second"
-        print "Estimated time left: ", estimated_remaining_time
-        print "\n"
+        upload_speed_str = self.get_upload_speed_str(upload_speed)
+        estimated_remaining_time_str = self.get_eta_str(
+            estimated_remaining_time)
+
+        label_str = ("Upload speed: {up_str}\n" +
+                     "Estimated time left: {eta_str}").format(
+                        up_str=upload_speed_str,
+                        eta_str=estimated_remaining_time_str)
+
+
+        wx.CallAfter(self.ov_estimated_time_label.SetLabel,
+                     label_str)
+        wx.CallAfter(self.Layout)
 
     def update_progress_bars(self, progress_data):
 
@@ -630,8 +691,6 @@ class MainPanel(wx.Panel):
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
                 pct=str(progress_data["overall_upload_pct"])))
-            wx.Yield()
-            self.Refresh()
 
     def handle_upload_complete(self):
 
@@ -676,8 +735,10 @@ class MainPanel(wx.Panel):
         self.cf_progress_bar.SetValue(0)
 
         self.ov_progress_label.Hide()
+        self.ov_estimated_time_label.Hide()
         self.ov_progress_bar.Hide()
         self.ov_progress_label.SetLabel(self.ov_init_label)
+        self.ov_estimated_time_label.SetLabel(self.ov_est_time_init_label)
         self.ov_progress_bar.SetValue(0)
 
         self.seq_run = None
@@ -723,6 +784,7 @@ class MainPanel(wx.Panel):
         self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
         self.ov_progress_label.SetLabel(self.ov_init_label)
+        self.ov_estimated_time_label.SetLabel(self.ov_est_time_init_label)
         self.ov_progress_bar.SetValue(0)
 
         try:
@@ -787,6 +849,7 @@ class MainPanel(wx.Panel):
                 self.cf_progress_label.Show()
                 self.cf_progress_bar.Show()
                 self.ov_progress_label.Show()
+                self.ov_estimated_time_label.Show()
                 self.ov_progress_bar.Show()
                 self.Layout()
 
