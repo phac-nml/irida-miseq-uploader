@@ -605,6 +605,18 @@ class MainPanel(wx.Panel):
 
     def get_upload_speed_str(self, upload_speed):
 
+        """
+        Constructs upload speed string
+        Converts the given upload_speed argument to the largest possible
+        metric ((bytes, kilobytes, megabytes, ...) per second) rounded to
+        two decimal places
+
+        arguments:
+            upload_speed -- float upload speed in bytes per second
+
+        return upload speed string
+        """
+
         metrics = [
             "B/s", "KB/s", "MB/s", "GB/s", "TB/s", "PB/s", "EB/s", "ZB/s"
         ]
@@ -618,33 +630,62 @@ class MainPanel(wx.Panel):
 
         return str(upload_speed) + " " + metrics[metric_count]
 
-    def get_eta_str(self, eta):
+    def get_ert_str(self, ert):
+
+        """
+        Constructs estimated remaining time string
+        Converts the given ert argument to largest possible decimal time
+        (seconds, minutes, hours, days)
+        Seconds and minutes are rounded to one decimal because the second
+        decimal isn't significant compared to hours or days
+        Hours or days are rounded to two decimal places
+
+        arguments:
+            ert -- float estimated remaining time in seconds
+                   must be >= 1
+
+        returns estimated remaining time string
+        """
 
         decimal_time = [
             (1, "seconds"), (60, "minutes"), (60, "hours"), (24, "days")
         ]
 
         for d in decimal_time:
-            if eta >= d[0]:
-                eta = eta / d[0]
+            if ert >= d[0]:
+                ert = ert / d[0]
                 rep = d[1]
             else:
                 break
 
-        eta = round(eta, 2)
+        if rep == "minutes" or rep == "seconds":
+            ert = int(round(ert))
+        else:
+            ert = round(ert, 2)
 
-        return str(eta) + " " + rep
+        return str(ert) + " " + rep
 
     def update_remaining_time(self, upload_speed, estimated_remaining_time):
 
+        """
+        Update the labels for upload speed and estimated remaining time.
+
+        arguments:
+            upload_speed -- float upload speed in bytes per second
+            estimated_remaining_time -- float est remaining time in seconds
+                                        must be >= 1
+
+        no return value
+        """
+
         upload_speed_str = self.get_upload_speed_str(upload_speed)
-        estimated_remaining_time_str = self.get_eta_str(
+        estimated_remaining_time_str = self.get_ert_str(
             estimated_remaining_time)
 
         label_str = ("Upload speed: {up_str}\n" +
-                     "Estimated time left: {eta_str}").format(
+                     "Estimated time left: {ert_str}").format(
                         up_str=upload_speed_str,
-                        eta_str=estimated_remaining_time_str)
+                        ert_str=estimated_remaining_time_str)
 
         wx.CallAfter(self.ov_estimated_time_label.SetLabel,
                      label_str)
@@ -664,7 +705,7 @@ class MainPanel(wx.Panel):
         re-enables the upload button.
 
         arguments:
-            progress_data -- object containing dictionary that holds data
+            progress_data -- dictionary that holds data
                              to be used by the progress bars and labels
 
         no return value
