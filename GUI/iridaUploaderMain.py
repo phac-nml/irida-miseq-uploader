@@ -451,6 +451,8 @@ class MainPanel(wx.Panel):
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(self.display_warning, e.message)
 
+            self.seq_run_list.remove(sr)
+
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
             # it won't catch send_pair_sequence_files because it's threaded
