@@ -617,28 +617,27 @@ class MainPanel(wx.Panel):
             "curr_files_uploading": "\n".join(monitor.files)
         }
 
-        # only update estimated remaining time when elapsed_time changes
-        elapsed_time = round(time() - monitor.start_time)
-        if elapsed_time != monitor.prev_elapsed_time:
-
-            upload_speed = (monitor.total_bytes_read / elapsed_time)  # bytes
-            estimated_remaining_time = ceil(abs(
-                (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
-                upload_speed))
-
-            wx.CallAfter(pub.sendMessage,
-                         "update_remaining_time",
-                         upload_speed=upload_speed,
-                         estimated_remaining_time=estimated_remaining_time)
-
-        monitor.prev_elapsed_time = elapsed_time
-
         # only call update_progress_bars if one of the % values have changed
+        # update estimated remaining time if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
                 monitor.prev_ov_pct != monitor.ov_upload_pct):
             wx.CallAfter(pub.sendMessage,
                          "update_progress_bars",
                          progress_data=progress_data)
+
+            elapsed_time = round(time() - monitor.start_time)
+            if elapsed_time > 0:
+
+                # bytes
+                upload_speed = (monitor.total_bytes_read / elapsed_time)
+
+                ert = ceil(abs((monitor.size_of_all_seq_files -
+                               monitor.total_bytes_read) / upload_speed))
+
+                wx.CallAfter(pub.sendMessage,
+                             "update_remaining_time",
+                             upload_speed=upload_speed,
+                             estimated_remaining_time=ert)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
