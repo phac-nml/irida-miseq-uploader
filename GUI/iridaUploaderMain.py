@@ -123,6 +123,9 @@ class MainPanel(wx.Panel):
         pub.subscribe(self.set_updated_api,
                       "set_updated_api")
 
+        # Updates upload speed and estimated remaining time labels
+        pub.subscribe(self.update_remaining_time, "update_remaining_time")
+
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
@@ -587,8 +590,10 @@ class MainPanel(wx.Panel):
                 (monitor.size_of_all_seq_files - monitor.total_bytes_read) /
                 upload_speed))
 
-            wx.CallAfter(self.update_remaining_time, upload_speed,
-                         estimated_remaining_time)
+            wx.CallAfter(pub.sendMessage,
+                         "update_remaining_time",
+                         upload_speed=upload_speed,
+                         estimated_remaining_time=estimated_remaining_time)
 
         monitor.prev_elapsed_time = elapsed_time
 
