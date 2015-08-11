@@ -197,6 +197,22 @@ class TestOfflineValidation(unittest.TestCase):
             "doesn't contain either 'R1' or 'R2' in filename"
             in v_res3.get_errors())
 
+    def test_validate_pair_files_invalid_no_seq_files(self):
+
+        data_dir = path.join(path_to_module, "fake_ngs_data")
+        fastq_files = get_all_fastq_files(data_dir)
+
+        sample_id = "404"
+        pf_list1 = get_pair_files(fastq_files, sample_id)
+
+        self.assertEqual(len(pf_list1), 0)
+        v_res1 = validate_pair_files(pf_list1, sample_id)
+
+        self.assertFalse(v_res1.is_valid())
+        self.assertEqual(v_res1.error_count(), 1)
+        self.assertIn("No pair files found for Sample_ID: 404",
+                      v_res1.get_errors())
+
     def test_validate_sample_list_valid(self):
 
         csv_file = path.join(path_to_module, "fake_ngs_data",
@@ -302,6 +318,8 @@ def load_test_suite():
         TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
+    off_validation_test_suite.addTest(
+        TestOfflineValidation("test_validate_pair_files_invalid_no_seq_files"))
 
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_list_valid"))
