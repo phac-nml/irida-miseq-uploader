@@ -1083,7 +1083,7 @@ class MainFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 750)
+        self.WINDOW_SIZE = (900, 800)
 
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
