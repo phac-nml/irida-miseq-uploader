@@ -704,6 +704,9 @@ class MainPanel(wx.Panel):
         else:
             ert = round(ert, 2)
 
+        if ert == 1:  # if value is 1 then remove "s" (e.g minutes to minute)
+            rep = rep[:-1]
+
         return str(ert) + " " + rep
 
     def update_remaining_time(self, upload_speed, estimated_remaining_time):
@@ -722,11 +725,6 @@ class MainPanel(wx.Panel):
         upload_speed_str = self.get_upload_speed_str(upload_speed)
         estimated_remaining_time_str = self.get_ert_str(
             estimated_remaining_time)
-
-        label_str = ("Upload speed: {up_str}\n" +
-                     "Estimated time left: {ert_str}").format(
-                        up_str=upload_speed_str,
-                        ert_str=estimated_remaining_time_str)
 
         wx.CallAfter(self.ov_upload_label.SetLabel, upload_speed_str)
         wx.CallAfter(self.ov_est_time_label.SetLabel,
