@@ -84,7 +84,7 @@ def validate_sample_sheet(sample_sheet_file):
     return v_res
 
 
-def validate_pair_files(file_list):
+def validate_pair_files(file_list, sample):
 
     """
     Validate files in file_list to have a matching pair file.
@@ -92,7 +92,8 @@ def validate_pair_files(file_list):
     All files in file_list must have a pair to be valid.
 
     arguments:
-            file_list -- list containing fastq.gz files
+            file_list -- list containing pair files paths
+            sample -- sample Object
             doesn't alter file_list
 
     returns ValidationResult object - stores bool valid and
@@ -102,39 +103,47 @@ def validate_pair_files(file_list):
     v_res = ValidationResult()
     validation_file_list = deepcopy(file_list)
     valid = False
-    if len(validation_file_list) > 0 and len(validation_file_list) % 2 == 0:
-        valid = True
+    if len(validation_file_list) > 0:
 
-        for file in validation_file_list:
-            if 'R1' in file:
-                matching_pair_file = file.replace('R1', 'R2')
-            elif 'R2' in file:
-                matching_pair_file = file.replace('R2', 'R1')
-            else:
-                valid = False
-                v_res.add_error_msg(
-                    file + " doesn't contain either 'R1' or 'R2' in filename" +
-                    ".\nRequired for identifying sequence files.")
-                break
+        if len(validation_file_list) % 2 == 0:
+            valid = True
 
-            if matching_pair_file in validation_file_list:
-                validation_file_list.remove(matching_pair_file)
-                validation_file_list.remove(file)
+            for file in validation_file_list:
+                if 'R1' in file:
+                    matching_pair_file = file.replace('R1', 'R2')
+                elif 'R2' in file:
+                    matching_pair_file = file.replace('R2', 'R1')
+                else:
+                    valid = False
+                    v_res.add_error_msg(
+                        file +
+                        " doesn't contain either 'R1' or 'R2' in filename" +
+                        ".\nRequired for identifying sequence files.")
+                    break
 
-            else:
-                valid = False
-                v_res.add_error_msg("No pair sequence file found for: " +
-                                    file +
-                                    "\nRequired matching sequence file: " +
-                                    matching_pair_file)
-                break
+                if matching_pair_file in validation_file_list:
+                    validation_file_list.remove(matching_pair_file)
+                    validation_file_list.remove(file)
+
+                else:
+                    valid = False
+                    v_res.add_error_msg("No pair sequence file found for: " +
+                                        file +
+                                        "\nRequired matching sequence file: " +
+                                        matching_pair_file)
+                    break
+
+        else:
+            v_res.add_error_msg(
+                "The given file list has an odd number of files." +
+                "\nRequires an even number of files in order for each " +
+                "sequence file to have a pair.\n" +
+                "Given file list:\n " + "\n ".join(file_list))
 
     else:
-        v_res.add_error_msg(
-            "The given file list has an odd number of files." +
-            "\nRequires an even number of files in order for each " +
-            "sequence file to have a pair.\n" +
-            "Given file list:\n " + "\n ".join(file_list))
+        v_res.add_error_msg("No pair files found for Sample_ID: {sid}".format(
+            sid=sample.get_id())
+        )
 
     v_res.set_valid(valid)
     return v_res
