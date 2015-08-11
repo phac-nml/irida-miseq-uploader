@@ -437,6 +437,7 @@ class MainPanel(wx.Panel):
                     if sample_exists(api, sample) is False:
                         api.send_samples([sample])
 
+                wx.CallAfter(self.log_color_print, "Uploading")
                 evt = self.send_seq_files_evt(
                     sample_list=sr.get_sample_list(),
                     send_pairs_callback=self.pair_upload_callback)
@@ -497,7 +498,7 @@ class MainPanel(wx.Panel):
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
 
-        self.log_color_print("Starting upload")
+        self.log_color_print("Starting upload process")
         self.log_color_print("Calculating file sizes")
 
         self.start_cf_progress_bar_pulse()
@@ -752,6 +753,8 @@ class MainPanel(wx.Panel):
         self.upload_complete = True
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
+        wx.CallAfter(self.ov_estimated_time_label.SetLabel, "\nComplete")
+        wx.CallAfter(self.Layout)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
