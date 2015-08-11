@@ -870,7 +870,7 @@ class MainPanel(wx.Panel):
         for sample in seq_run.get_sample_list():
             pf_list = seq_run.get_pair_files(sample.get_id())
 
-            v_res = validate_pair_files(pf_list, sample)
+            v_res = validate_pair_files(pf_list, sample.get_id())
             if v_res.is_valid() is False:
                 raise SequenceFileError(v_res.get_errors())
 

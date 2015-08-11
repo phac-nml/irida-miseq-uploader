@@ -84,7 +84,7 @@ def validate_sample_sheet(sample_sheet_file):
     return v_res
 
 
-def validate_pair_files(file_list, sample):
+def validate_pair_files(file_list, sample_id):
 
     """
     Validate files in file_list to have a matching pair file.
@@ -93,7 +93,7 @@ def validate_pair_files(file_list, sample):
 
     arguments:
             file_list -- list containing pair files paths
-            sample -- sample Object
+            sample_id -- Sample_Id of Sample object
             doesn't alter file_list
 
     returns ValidationResult object - stores bool valid and
@@ -142,7 +142,7 @@ def validate_pair_files(file_list, sample):
 
     else:
         v_res.add_error_msg("No pair files found for Sample_ID: {sid}".format(
-            sid=sample.get_id())
+            sid=sample_id)
         )
 
     v_res.set_valid(valid)
