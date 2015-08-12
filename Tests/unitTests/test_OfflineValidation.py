@@ -1,7 +1,7 @@
 import unittest
 from os import path
 
-from Parsers.miseqParser import (parse_samples, get_pair_files,
+from Parsers.miseqParser import (get_pair_files,
                                  get_all_fastq_files)
 from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
@@ -216,11 +216,46 @@ class TestOfflineValidation(unittest.TestCase):
 
     def test_validate_sample_list_valid(self):
 
-        csv_file = path.join(path_to_module, "fake_ngs_data",
-                             "SampleSheet.csv")
+        sample1 = Sample({
+            "sequencerSampleId": "01-1111",
+            "sampleName": "01-1111",
+            "Sample_Plate": "1",
+            "Sample_Well": "01",
+            "I7_Index_ID": "N01",
+            "index": "AAAAAAAA",
+            "I5_Index_ID": "S01",
+            "index2": "TTTTTTTT",
+            "sampleProject": "6",
+            "description": "Super bug"
+        })
 
-        sample_list = parse_samples(csv_file)
-        self.assertEqual(len(sample_list), 3)
+        sample2 = Sample({
+            "sequencerSampleId": "02-2222",
+            "sampleName": "02-2222",
+            "Sample_Plate": "2",
+            "Sample_Well": "02",
+            "I7_Index_ID": "N02",
+            "index": "GGGGGGGG",
+            "I5_Index_ID": "S02",
+            "index2": "CCCCCCCC",
+            "sampleProject": "6",
+            "description": "Scary bug"
+        })
+
+        sample3 = Sample({
+            "sequencerSampleId": "03-3333",
+            "sampleName": "03-3333",
+            "Sample_Plate": "3",
+            "Sample_Well": "03",
+            "I7_Index_ID": "N03",
+            "index": "CCCCCCCC",
+            "I5_Index_ID": "S03",
+            "index2": "GGGGGGGG",
+            "sampleProject": "6",
+            "description": "Deadly bug"
+        })
+
+        sample_list = [sample1, sample2, sample3]
 
         v_res = validate_sample_list(sample_list)
         self.assertTrue(v_res.is_valid())
@@ -241,42 +276,105 @@ class TestOfflineValidation(unittest.TestCase):
                          "description": ""})
 
         sample_list = [sample]
+
         v_res = validate_sample_list(sample_list)
         self.assertTrue(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 0)
         self.assertTrue("No error messages" in v_res.get_errors())
 
-    def test_validateSampleList_invalid_no_sample_proj(self):
+    def test_validateSampleList_invalid_missing_req_values(self):
 
-        # missing Sample_Project
-        csv_file = path.join(
-            path_to_module, "testSeqPairFiles", "noSampleProj",
-            "SampleSheet.csv")
+        sample1 = Sample({
+            "sequencerSampleId": "01-1111",
+            "sampleName": "01-1111",
+            "Sample_Plate": "1",
+            "Sample_Well": "01",
+            "I7_Index_ID": "N01",
+            "index": "AAAAAAAA",
+            "I5_Index_ID": "S01",
+            "index2": "TTTTTTTT",
+            "sampleProject": "",
+            "description": "Super bug"
+        })
 
-        sample_list = parse_samples(csv_file)
+        sample2 = Sample({
+            "sequencerSampleId": "02-2222",
+            "sampleName": "",
+            "Sample_Plate": "2",
+            "Sample_Well": "02",
+            "I7_Index_ID": "N02",
+            "index": "GGGGGGGG",
+            "I5_Index_ID": "S02",
+            "index2": "CCCCCCCC",
+            "sampleProject": "6",
+            "description": "Scary bug"
+        })
 
-        self.assertEqual(len(sample_list), 3)
+        sample3 = Sample({
+            "sequencerSampleId": "",
+            "sampleName": "03-3333",
+            "Sample_Plate": "3",
+            "Sample_Well": "03",
+            "I7_Index_ID": "N03",
+            "index": "CCCCCCCC",
+            "I5_Index_ID": "S03",
+            "index2": "GGGGGGGG",
+            "sampleProject": "6",
+            "description": "Deadly bug"
+        })
+
+        sample_list = [sample1, sample2, sample3]
+
         v_res = validate_sample_list(sample_list)
-
         self.assertFalse(v_res.is_valid())
-        self.assertEqual(v_res.error_count(), 1)
-        self.assertIn("missing at least one of the required values",
-                      v_res.get_errors())
+        self.assertEqual(v_res.error_count(), 3)
+
+        for sample in sample_list:
+
+            expected_err_msg = (
+                "{sid} is missing at least one of the " +
+                "required values: " +
+                "Sample_Name, Sample_Project or Sample_Id"
+            ).format(sid=sample.get_id())
+
+            self.assertIn(expected_err_msg, v_res.get_errors())
 
     def test_validateSampleList_invalid_name_and_id_mismatch(self):
 
-        csv_file = path.join(
-            path_to_module, "testSeqPairFiles", "id_name_mismatch",
-            "SampleSheet.csv")
+        sample1 = Sample({
+            "sequencerSampleId": "01-1111",
+            "sampleName": "diff_name",
+            "Sample_Plate": "1",
+            "Sample_Well": "01",
+            "I7_Index_ID": "N01",
+            "index": "AAAAAAAA",
+            "I5_Index_ID": "S01",
+            "index2": "TTTTTTTT",
+            "sampleProject": "6",
+            "description": "Super bug"
+        })
 
-        sample_list = parse_samples(csv_file)
+        sample2 = Sample({
+            "sequencerSampleId": "02-2222",
+            "sampleName": "02-2222",
+            "Sample_Plate": "2",
+            "Sample_Well": "02",
+            "I7_Index_ID": "N02",
+            "index": "GGGGGGGG",
+            "I5_Index_ID": "S02",
+            "index2": "CCCCCCCC",
+            "sampleProject": "6",
+            "description": "Scary bug"
+        })
 
-        self.assertEqual(len(sample_list), 3)
+        sample_list = [sample1, sample2]
         v_res = validate_sample_list(sample_list)
 
         self.assertFalse(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 1)
-        self.assertIn("does not match Sample_Name", v_res.get_errors())
+        self.assertIn("{sid} does not match Sample_Name".format(
+                      sid=sample1.get_id()),
+                      v_res.get_errors())
 
     def test_validateSampleList_invalid_empty(self):
 
@@ -348,7 +446,7 @@ def load_test_suite():
             "test_validate_sample_list_valid_empty_description"))
     off_validation_test_suite.addTest(
         TestOfflineValidation(
-            "test_validateSampleList_invalid_no_sample_proj"))
+            "test_validateSampleList_invalid_missing_req_values"))
     off_validation_test_suite.addTest(
         TestOfflineValidation(
             "test_validateSampleList_invalid_name_and_id_mismatch"))
