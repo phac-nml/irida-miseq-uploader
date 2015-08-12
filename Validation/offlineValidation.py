@@ -175,16 +175,15 @@ def validate_sample_list(sample_list):
                     ("{sid} is missing at least one of the required values: " +
                      "Sample_Name, Sample_Project or Sample_Id").format(
                         sid=sample.get_id()))
-                break
 
             # Sample_ID and Sample_Name must be equal
-            res = sample_id_name_match(sample)
-            if res is False:
-                valid = False
-                v_res.add_error_msg(sample.get_id() +
-                                    " does not match Sample_Name: " +
-                                    sample.get("sampleName"))
-                break
+            else:
+                res = sample_id_name_match(sample)
+                if res is False:
+                    valid = False
+                    v_res.add_error_msg(sample.get_id() +
+                                        " does not match Sample_Name: " +
+                                        sample.get("sampleName"))
 
     else:
         v_res.add_error_msg(
