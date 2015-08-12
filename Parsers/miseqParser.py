@@ -148,10 +148,30 @@ def parse_samples(sample_sheet_file):
         if "[Data]" in line:
             set_attributes = True
 
-    # fill in values for keys
+    # fill in values for keys. line is currently below the [Data] headers
     for line in csv_reader:
 
         i = 0
+
+        if len(sample_dict.keys()) != len(line):
+
+            # if there is one more Data header compared to the length of
+            # data values then add an empty string to the end of data values
+            # i.e the Description will be empty string
+            # assumes the last Data header is going to be the Description
+            # this handles the case where the last trailing comma is trimmed
+            if len(sample_dict.keys()) - len(line) == 1:
+                line.append("")
+            else:
+                raise SampleSheetError(
+                    "Number of values doesn't match number of " +
+                    "[Data] headers. " +
+                    ("Number of [Data] headers: {data_len}. " +
+                    "Number of values: {val_len}").format(
+                        data_len=len(sample_dict.keys()),
+                        val_len=len(line)
+                    )
+                )
 
         for key in sample_dict.keys():
             sample_dict[key] = line[i]  # assumes values are never empty
