@@ -129,6 +129,8 @@ def parse_samples(sample_sheet_file):
         'Sample_Project': 'sampleProject'
     }
 
+    parse_samples.sample_key_translation_dict = sample_key_translation_dict
+
     # initilize dictionary keys from first line (data headers/attributes)
     set_attributes = False
     for line in csv_reader:
@@ -167,7 +169,7 @@ def parse_samples(sample_sheet_file):
                     "Number of values doesn't match number of " +
                     "[Data] headers. " +
                     ("Number of [Data] headers: {data_len}. " +
-                    "Number of values: {val_len}").format(
+                     "Number of values: {val_len}").format(
                         data_len=len(sample_dict.keys()),
                         val_len=len(line)
                     )
