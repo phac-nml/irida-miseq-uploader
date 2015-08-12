@@ -7,6 +7,7 @@ from Validation.offlineValidation import (validate_sample_sheet,
                                           validate_pair_files,
                                           validate_sample_list,
                                           validate_URL_form)
+from Model.Sample import Sample
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -226,6 +227,25 @@ class TestOfflineValidation(unittest.TestCase):
         self.assertEqual(v_res.error_count(), 0)
         self.assertTrue("No error messages" in v_res.get_errors())
 
+    def test_validate_sample_list_valid_empty_description(self):
+
+        sample = Sample({"Sample_Well": "03",
+                         "index": "CCCCCCCC",
+                         "Sample_Plate": "3",
+                         "I7_Index_ID": "N03",
+                         "sampleName": "03-3333",
+                         "sampleProject": "6",
+                         "sequencerSampleId": "03-3333",
+                         "I5_Index_ID": "S03",
+                         "index2": "GGGGGGGG",
+                         "description": ""})
+
+        sample_list = [sample]
+        v_res = validate_sample_list(sample_list)
+        self.assertTrue(v_res.is_valid())
+        self.assertEqual(v_res.error_count(), 0)
+        self.assertTrue("No error messages" in v_res.get_errors())
+
     def test_validateSampleList_invalid_no_sample_proj(self):
 
         # missing Sample_Project
@@ -323,7 +343,9 @@ def load_test_suite():
 
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_list_valid"))
-
+    off_validation_test_suite.addTest(
+        TestOfflineValidation(
+            "test_validate_sample_list_valid_empty_description"))
     off_validation_test_suite.addTest(
         TestOfflineValidation(
             "test_validateSampleList_invalid_no_sample_proj"))
