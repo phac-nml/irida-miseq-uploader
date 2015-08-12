@@ -3,6 +3,7 @@ import json
 import httplib
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
+from time import time
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -508,6 +509,7 @@ class ApiCalls(object):
         self.size_of_all_seq_files = sum(file_size_list)
 
         self.total_bytes_read = 0
+        self.start_time = time()
 
         for sample in samples_list:
             json_res = self._send_pair_sequence_files(sample, callback,
@@ -599,6 +601,8 @@ class ApiCalls(object):
         monitor.prev_cf_pct = 0.0
         monitor.prev_ov_pct = 0.0
         monitor.prev_bytes = 0
+
+        monitor.start_time = self.start_time
 
         headers = {"Content-Type": monitor.content_type}
 
