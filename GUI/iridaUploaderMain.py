@@ -430,6 +430,45 @@ class MainPanel(wx.Panel):
                   self.pulse_timer)
         self.pulse_timer.Start(pulse_interval)
 
+    def do_online_validation(self):
+
+        """
+        in each run check that each sample in the sample list has a
+        project_id that already exists in IRIDA
+        if project_id doesn't exist in IRIDA then the SequencingRun is removed
+        from the list of sequencing runs and an error message is dispalyed
+
+        if all samples in all SequencingRuns have a project_id
+        that exists in IRIDA
+            return True
+        else
+            return False
+        """
+
+        wx.CallAfter(self.log_color_print, "Performing online validation")
+        api = self.api
+
+        valid = True
+        try:
+            for sr in self.seq_run_list[:]:
+
+                for sample in sr.get_sample_list():
+
+                    if project_exists(api, sample.get_project_id()) is False:
+                        msg = "Project ID: {id} doesn't exist".format(
+                               id=sample.get_project_id())
+                        raise ProjectError(msg)
+
+        except ProjectError, e:
+            valid = False
+            wx.CallAfter(self.pulse_timer.Stop)
+            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
+            wx.CallAfter(self.display_warning, e.message)
+
+            self.seq_run_list.remove(sr)
+
+        return valid
+
     def _upload_to_server(self):
 
         """
@@ -437,6 +476,22 @@ class MainPanel(wx.Panel):
         Running on a different thread so that the GUI thread doesn't get
         blocked (i.e the progress bar pulsing doesn't stop/"freeze" when
         making api calls)
+
+        perform online validation before uploading
+
+        uploads each SequencingRun in self.seq_run_list to irida web server
+
+        each SequencingRun will contain a list of samples and each sample
+        from the list of samples will contain a pair of sequence files
+
+        we then check if the sample's id exists for it's given project_id
+        if it doesn't exist then create it
+
+        create and execute event: self.send_seq_files_evt which calls
+        api.send_pair_sequence_files() with the list of samples and
+        callback function: self.pair_upload_callback()
+
+        no return value
         """
 
         api = self.api
@@ -455,37 +510,27 @@ class MainPanel(wx.Panel):
             # the sequencing run uploadStatus to ERROR
             # set to true in handle_upload_complete()
 
-            for sr in self.seq_run_list[:]:
+            valid = self.do_online_validation()
 
-                json_res = api.create_paired_seq_run(sr.get_all_metadata())
-                self.curr_upload_id = json_res["resource"]["identifier"]
+            if valid:
 
-                for sample in sr.get_sample_list():
+                for sr in self.seq_run_list[:]:
 
-                    if project_exists(api, sample.get_project_id()) is False:
-                        msg = "Project ID: {id} doesn't exist".format(
-                               id=sample.get_project_id())
-                        raise ProjectError(msg)
+                    json_res = api.create_paired_seq_run(sr.get_all_metadata())
+                    self.curr_upload_id = json_res["resource"]["identifier"]
 
-                    if sample_exists(api, sample) is False:
-                        api.send_samples([sample])
+                    for sample in sr.get_sample_list():
 
-                wx.CallAfter(self.log_color_print, "Uploading")
-                evt = self.send_seq_files_evt(
-                    sample_list=sr.get_sample_list(),
-                    send_pairs_callback=self.pair_upload_callback)
-                self.GetEventHandler().ProcessEvent(evt)
+                        if sample_exists(api, sample) is False:
+                            api.send_samples([sample])
 
-                self.seq_run_list.remove(sr)
+                    wx.CallAfter(self.log_color_print, "Uploading")
+                    evt = self.send_seq_files_evt(
+                        sample_list=sr.get_sample_list(),
+                        send_pairs_callback=self.pair_upload_callback)
+                    self.GetEventHandler().ProcessEvent(evt)
 
-        except ProjectError, e:
-            self.api.set_pair_seq_run_error(self.curr_upload_id)
-
-            wx.CallAfter(self.pulse_timer.Stop)
-            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-            wx.CallAfter(self.display_warning, e.message)
-
-            self.seq_run_list.remove(sr)
+                    self.seq_run_list.remove(sr)
 
         except Exception, e:
             # this catches all api errors except send_pair_sequence_files
@@ -505,22 +550,11 @@ class MainPanel(wx.Panel):
         """
         Function bound to upload_button being clicked
 
-        uploads each SequencingRun in self.seq_run_list to irida web server
+        pulse the current file progress bar to indicate that processing
+        is happening
 
-        each SequencingRun will contain a list of samples and each sample
-        from the list of samples will contain a pair of sequence files
-
-        for each sample in the sample list, we check if the project_id
-        that it's supposed to be uploaded to already exists and
-        raises an error if it doesn't
-
-        we then check if the sample's id exists for it's given project_id
-        if it doesn't exist then create it
-
-        finally we create an UploadThread which runs
-        api.send_pair_sequence_files() and send it the list of samples and
-        our callback function:
-        self.pair_upload_callback()
+        make threaded call to self._upload_to_server() which does the
+        online validation and upload
 
         arguments:
                 event -- EVT_BUTTON when upload button is clicked
@@ -531,10 +565,9 @@ class MainPanel(wx.Panel):
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
 
-        self.log_color_print("Starting upload process")
-        self.log_color_print("Calculating file sizes")
-
         self.start_cf_progress_bar_pulse()
+
+        self.log_color_print("Starting upload process")
         t = Thread(target=self._upload_to_server)
         t.daemon = True
         t.start()
