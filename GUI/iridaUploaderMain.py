@@ -6,6 +6,7 @@ from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
 from math import ceil
+from copy import deepcopy
 
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
@@ -445,7 +446,8 @@ class MainPanel(wx.Panel):
             return False
         """
 
-        wx.CallAfter(self.log_color_print, "Performing online validation")
+        wx.CallAfter(self.log_color_print,
+                     "Performing online validation on all sequencing runs.\n")
         api = self.api
 
         valid = True
@@ -518,13 +520,16 @@ class MainPanel(wx.Panel):
 
                     json_res = api.create_paired_seq_run(sr.get_all_metadata())
                     self.curr_upload_id = json_res["resource"]["identifier"]
+                    self.curr_seq_run = sr
 
                     for sample in sr.get_sample_list():
 
                         if sample_exists(api, sample) is False:
                             api.send_samples([sample])
 
-                    wx.CallAfter(self.log_color_print, "Uploading")
+                    wx.CallAfter(self.log_color_print,
+                                 "Uploading sequencing files from:" +
+                                 sr.sample_sheet_dir)
                     evt = self.send_seq_files_evt(
                         sample_list=sr.get_sample_list(),
                         send_pairs_callback=self.pair_upload_callback)
@@ -843,7 +848,8 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        filename = path.join(self.browse_path, ".miseqUploaderInfo")
+        filename = path.join(self.curr_seq_run.sample_sheet_dir,
+                             ".miseqUploaderInfo")
 
         with open(filename, "wb") as writer:
             writer.write("Upload ID: {id}".format(id=self.curr_upload_id))
@@ -944,9 +950,9 @@ class MainPanel(wx.Panel):
 
         try:
 
-            res_list = self.find_sample_sheet(self.browse_path,
-                                              "SampleSheet.csv")
-            if len(res_list) == 0:
+            ss_list = self.find_sample_sheet(self.browse_path,
+                                             "SampleSheet.csv")
+            if len(ss_list) == 0:
                 sub_dirs = [str(f) for f in listdir(self.browse_path)
                             if path.isdir(
                             path.join(self.browse_path, f))]
@@ -961,7 +967,15 @@ class MainPanel(wx.Panel):
                 raise SampleSheetError(err_msg)
 
             else:
-                self.sample_sheet_files = res_list
+
+                pruned_list = self.prune_sample_sheets(ss_list)
+                if len(pruned_list) == 0:
+                    err_msg = ("The following have already been uploaded:\n" +
+                               "{_dir}").format(_dir=",\n".join(ss_list))
+
+                    raise SampleSheetError(err_msg)
+
+            self.sample_sheet_files = pruned_list
 
             for ss in self.sample_sheet_files:
                 self.log_color_print("Processing: " + ss)
@@ -1038,7 +1052,6 @@ class MainPanel(wx.Panel):
         result_list = []
 
         if path.isdir(top_dir):
-            root = path.split(top_dir)[0]
 
             targ_dirs = [top_dir]
             targ_dirs.extend([path.join(top_dir, item)
@@ -1074,6 +1087,41 @@ class MainPanel(wx.Panel):
 
         return result_list
 
+    def prune_sample_sheets(self, ss_list):
+
+        """
+        check if a .miseqUploaderInfo file exists in a directory
+        if it does then check the Upload Status inside the file
+        if it's "Complete" (i.e the folder has already been uploaded) then
+        remove it from the corresponding SampleSheet.csv file path in ss_list
+
+        else if a .miseqUploaderComplete file exists in a directory then
+        remove it from the corresponding SampleSheet.csv file path in ss_list
+
+        argument:
+            ss_list -- list containing path to SampleSheet.csv files
+
+        ss_list
+
+        return ss_list just to be explicit
+        """
+
+        pruned_list = deepcopy(ss_list)
+
+        for _dir in map(path.dirname, pruned_list[:]):
+            if ".miseqUploaderInfo" in listdir(_dir):
+                uploader_info_filename = path.join(_dir, ".miseqUploaderInfo")
+                with open(uploader_info_filename, "rb") as reader:
+                    for line in reader.readlines():
+                        if "Upload status" in line and "Complete" in line:
+                            pruned_list.remove(
+                                path.join(_dir, "SampleSheet.csv"))
+
+            elif ".miseqUploaderComplete" in listdir(_dir):
+                pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
+
+        return pruned_list
+
     def create_seq_run(self, sample_sheet_file):
 
         """
@@ -1106,6 +1154,7 @@ class MainPanel(wx.Panel):
             seq_run = SequencingRun()
             seq_run.set_metadata(m_dict)
             seq_run.set_sample_list(s_list)
+            seq_run.sample_sheet_dir = path.dirname(sample_sheet_file)
 
         else:
             raise SequenceFileError(v_res.get_errors())
