@@ -818,10 +818,37 @@ class MainPanel(wx.Panel):
         t.daemon = True
         t.start()
         self.upload_complete = True
+        self.create_miseq_uploader_info_file("Complete")
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
         wx.CallAfter(self.Layout)
+
+    def create_miseq_uploader_info_file(self, upload_status):
+
+        """
+        creates a .miseqUploaderInfo file
+        Contains Upload ID and Upload Status
+        Upload ID is is the SequencingRun's identifier in IRIDA
+        Upload Status will either be "Complete" or the last sequencing file
+        that was uploaded.
+        If there was an error with the upload then the last sequencing file
+        uploaded will be written so that the program knows from which point to
+        resume when the upload is restarted
+
+        arguments:
+            upload_status -- string that's either "Complete" or name of last
+                             sequencing file uploaded if upload was interrupted
+
+        no return value
+        """
+
+        filename = path.join(self.browse_path, ".miseqUploaderInfo")
+
+        with open(filename, "wb") as writer:
+            writer.write("Upload ID: {id}".format(id=self.curr_upload_id))
+            writer.write("\n")
+            writer.write("Upload status: {s}".format(s=upload_status))
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
