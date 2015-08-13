@@ -181,9 +181,11 @@ def validate_sample_list(sample_list):
                 res = sample_id_name_match(sample)
                 if res is False:
                     valid = False
-                    v_res.add_error_msg(sample.get_id() +
-                                        " does not match Sample_Name: " +
-                                        sample.get("sampleName"))
+                    v_res.add_error_msg(("Sample_ID {sid} does not match " +
+                                        "Sample_Name: {sname}").format(
+                                            sid=sample.get_id(),
+                                            sname=sample.get("sampleName")
+                                        ))
 
     else:
         v_res.add_error_msg(
