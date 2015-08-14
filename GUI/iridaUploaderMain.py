@@ -952,6 +952,7 @@ class MainPanel(wx.Panel):
 
             ss_list = self.find_sample_sheet(self.browse_path,
                                              "SampleSheet.csv")
+
             if len(ss_list) == 0:
                 sub_dirs = [str(f) for f in listdir(self.browse_path)
                             if path.isdir(
@@ -967,6 +968,18 @@ class MainPanel(wx.Panel):
                 raise SampleSheetError(err_msg)
 
             else:
+
+                for sr in self.seq_run_list:
+                    if sr.sample_sheet_file in ss_list:
+                        ss_list.remove(sr.sample_sheet_file)
+                        err_msg = ("The SampleSheet file {sheet_file} " +
+                                   "that you are trying to upload has " +
+                                   "already been added to " +
+                                   "the list of Sequencing Runs " +
+                                   "to be uploaded.").format(
+                                    sheet_file=sr.sample_sheet_file)
+
+                        raise Warning(err_msg)
 
                 pruned_list = self.prune_sample_sheets(ss_list)
                 if len(pruned_list) == 0:
@@ -991,6 +1004,9 @@ class MainPanel(wx.Panel):
         except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
+        except Warning, e:
+            self.display_warning(str(e))
+
     def process_sample_sheet(self, sample_sheet_file):
 
         """
@@ -1006,8 +1022,7 @@ class MainPanel(wx.Panel):
         v_res = validate_sample_sheet(sample_sheet_file)
 
         if v_res.is_valid():
-            self.dir_box.SetBackgroundColour(
-                self.VALID_SAMPLESHEET_BG_COLOR)
+            self.dir_box.SetBackgroundColour(self.VALID_SAMPLESHEET_BG_COLOR)
 
             try:
                 self.create_seq_run(sample_sheet_file)
@@ -1155,6 +1170,7 @@ class MainPanel(wx.Panel):
             seq_run.set_metadata(m_dict)
             seq_run.set_sample_list(s_list)
             seq_run.sample_sheet_dir = path.dirname(sample_sheet_file)
+            seq_run.sample_sheet_file = sample_sheet_file
 
         else:
             raise SequenceFileError(v_res.get_errors())
