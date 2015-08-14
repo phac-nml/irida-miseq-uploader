@@ -120,7 +120,6 @@ def validate_pair_files(file_list, sample_id):
 
                     break
 
-
                 if 'R1' in file:
                     matching_pair_file = file.replace('R1', 'R2')
                 elif 'R2' in file:
