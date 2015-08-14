@@ -50,8 +50,8 @@ class MainPanel(wx.Panel):
         self.upload_complete = None
         self.curr_upload_id = None
         self.loaded_upload_id = None
-        self.uploaded_files_q = None
-        self.prev_uploaded_seq_files = []
+        self.uploaded_samples_q = None
+        self.prev_uploaded_samples = []
 
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
@@ -153,8 +153,8 @@ class MainPanel(wx.Panel):
             "samples_list": evt.sample_list,
             "callback": evt.send_pairs_callback,
             "upload_id": evt.curr_upload_id,
-            "prev_uploaded_seq_files": evt.prev_uploaded_seq_files,
-            "uploaded_files_q": evt.uploaded_files_q
+            "prev_uploaded_samples": evt.prev_uploaded_samples,
+            "uploaded_samples_q": evt.uploaded_samples_q
         }
         self.api.send_pair_sequence_files(**kwargs)
 
@@ -417,11 +417,11 @@ class MainPanel(wx.Panel):
                        args=(self.curr_upload_id,))
             t.start()
 
-            uploaded_files = []
-            while not self.uploaded_files_q.empty():
-                uploaded_files.append(self.uploaded_files_q.get())
+            uploaded_samples = []
+            while not self.uploaded_samples_q.empty():
+                uploaded_samples.append(self.uploaded_samples_q.get())
 
-            self.create_miseq_uploader_info_file(uploaded_files)
+            self.create_miseq_uploader_info_file(uploaded_samples)
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -547,21 +547,21 @@ class MainPanel(wx.Panel):
                             api.send_samples([sample])
 
                     wx.CallAfter(self.log_color_print,
-                                 "Uploading sequencing files from:" +
+                                 "Uploading sequencing files from: " +
                                  sr.sample_sheet_dir)
 
-                    self.uploaded_files_q = Queue()
-                    if len(self.prev_uploaded_seq_files) > 0:
+                    self.uploaded_samples_q = Queue()
+                    if len(self.prev_uploaded_samples) > 0:
                         wx.CallAfter(self.log_color_print, "Resuming")
-                        for file in self.prev_uploaded_seq_files:
-                            self.uploaded_files_q.put(file)
+                        for file in self.prev_uploaded_samples:
+                            self.uploaded_samples_q.put(file)
 
                     evt = self.send_seq_files_evt(
                         sample_list=sr.get_sample_list(),
                         send_pairs_callback=self.pair_upload_callback,
                         curr_upload_id=self.curr_upload_id,
-                        prev_uploaded_seq_files=self.prev_uploaded_seq_files,
-                        uploaded_files_q=self.uploaded_files_q)
+                        prev_uploaded_samples=self.prev_uploaded_samples,
+                        uploaded_samples_q=self.uploaded_samples_q)
                     self.GetEventHandler().ProcessEvent(evt)
 
                     self.seq_run_list.remove(sr)
@@ -607,7 +607,7 @@ class MainPanel(wx.Panel):
         t.start()
 
     def handle_send_seq_pair_files_error(self, exception_error, error_msg,
-                                         uploaded_files_q):
+                                         uploaded_samples_q):
 
         """
         Subscribed to "handle_send_seq_pair_files_error"
@@ -619,18 +619,18 @@ class MainPanel(wx.Panel):
         arguments:
             exception_error -- Exception object
             error_msg -- message string to be displayed in log panel
-            uploaded_files_q -- Queue that contains strings of uploaded
+            uploaded_samples_q -- Queue that contains strings of uploaded
                                 sequence file paths
-                                it's self.uploaded_files_q being passed back
+                                it's self.uploaded_samples_q being passed back
                                 from api.send_pair_sequence_files()
         no return value
         """
 
-        uploaded_files = []
-        while not uploaded_files_q.empty():
-            uploaded_files.append(uploaded_files_q.get())
-
-        self.create_miseq_uploader_info_file(uploaded_files)
+        uploaded_samples = []
+        while not uploaded_samples_q.empty():
+            uploaded_samples.append(uploaded_samples_q.get())
+        print uploaded_samples
+        self.create_miseq_uploader_info_file(uploaded_samples)
         self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         wx.CallAfter(self.pulse_timer.Stop)
@@ -1173,7 +1173,7 @@ class MainPanel(wx.Panel):
                     if info["Upload Status"] == "Complete":
                         pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
                     else:
-                        self.prev_uploaded_seq_files = info["Upload Status"]
+                        self.prev_uploaded_samples = info["Upload Status"]
                         self.loaded_upload_id = info["Upload ID"]
 
             elif ".miseqUploaderComplete" in listdir(_dir):

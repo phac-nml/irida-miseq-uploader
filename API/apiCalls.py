@@ -40,12 +40,13 @@ def method_decorator(fn):
         except Exception, e:
 
             if "callback" in kwargs.keys():
-                err_msg, uploaded_files_q = e.args
+
+                err_msg, uploaded_samples_q = e.args
                 pub.sendMessage(
                     "handle_send_seq_pair_files_error",
                     exception_error=e.__class__,
                     error_msg="".join(err_msg),
-                    uploaded_files_q=uploaded_files_q)
+                    uploaded_samples_q=uploaded_samples_q)
 
             else:
                 raise
@@ -489,25 +490,25 @@ class ApiCalls(object):
 
         return file_size_list
 
-    def prune_samples_list(self, prev_uploaded_seq_files, samples_list):
+    def prune_samples_list(self, prev_uploaded_samples, samples_list):
 
         """
         Remove each sequence file from samples_list that is in
-        prev_uploaded_seq_files
+        prev_uploaded_samples
 
         no return value
         """
 
-        for seq_file in prev_uploaded_seq_files:
-            for sample in samples_list[:]:
-                if seq_file in sample.get_pair_files():
+        for sample_id in prev_uploaded_samples:
+            for sample in samples_list:
+                if sample_id == sample.get_id():
                     samples_list.remove(sample)
                     break
 
     def send_pair_sequence_files(self, samples_list, callback=None,
                                  upload_id=1,
-                                 prev_uploaded_seq_files=[],
-                                 uploaded_files_q=None):
+                                 prev_uploaded_samples=[],
+                                 uploaded_samples_q=None):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -528,8 +529,8 @@ class ApiCalls(object):
 
         json_res_list = []
 
-        if len(prev_uploaded_seq_files) > 0:
-            self.prune_samples_list(prev_uploaded_seq_files, samples_list)
+        if len(prev_uploaded_samples) > 0:
+            self.prune_samples_list(prev_uploaded_samples, samples_list)
 
         file_size_list = self.get_file_size_list(samples_list)
         self.size_of_all_seq_files = sum(file_size_list)
@@ -543,12 +544,11 @@ class ApiCalls(object):
                                                           upload_id)
                 json_res_list.append(json_res)
 
-                if uploaded_files_q is not None:
-                    uploaded_files_q.put(sample.get_pair_files()[0])
-                    uploaded_files_q.put(sample.get_pair_files()[1])
+                if uploaded_samples_q is not None:
+                    uploaded_samples_q.put(sample.get_id())
 
             except SequenceFileError, e:
-                raise SequenceFileError(e.args, uploaded_files_q)
+                raise SequenceFileError(e.args, uploaded_samples_q)
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
