@@ -1,12 +1,13 @@
 import wx
 import sys
-from pprint import pprint
+import json
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
 from math import ceil
 from copy import deepcopy
+from Queue import Queue
 
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
@@ -48,6 +49,9 @@ class MainPanel(wx.Panel):
         self.api = None
         self.upload_complete = None
         self.curr_upload_id = None
+        self.loaded_upload_id = None
+        self.uploaded_files_q = None
+        self.prev_uploaded_seq_files = []
 
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
@@ -148,9 +152,10 @@ class MainPanel(wx.Panel):
         kwargs = {
             "samples_list": evt.sample_list,
             "callback": evt.send_pairs_callback,
-            "upload_id": self.curr_upload_id
+            "upload_id": evt.curr_upload_id,
+            "prev_uploaded_seq_files": evt.prev_uploaded_seq_files,
+            "uploaded_files_q": evt.uploaded_files_q
         }
-
         self.api.send_pair_sequence_files(**kwargs)
 
     def add_select_sample_sheet_section(self):
@@ -338,6 +343,10 @@ class MainPanel(wx.Panel):
 
         arguments:
                 warn_msg -- message to display in warning dialog message box
+                dlg_msg -- optional message to display in warning dialog
+                           message box. If this is not an empty string
+                           then the string message here will be displayed for
+                           the pop up dialog instead of warn_msg.
 
         no return value
         """
@@ -398,7 +407,6 @@ class MainPanel(wx.Panel):
         """
 
         self.log_color_print("Closing")
-
         if all([self.upload_complete is not None,
                 self.curr_upload_id is not None,
                 self.upload_complete is False]):
@@ -408,6 +416,12 @@ class MainPanel(wx.Panel):
             t = Thread(target=self.api.set_pair_seq_run_error,
                        args=(self.curr_upload_id,))
             t.start()
+
+            uploaded_files = []
+            while not self.uploaded_files_q.empty():
+                uploaded_files.append(self.uploaded_files_q.get())
+
+            self.create_miseq_uploader_info_file(uploaded_files)
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -518,8 +532,13 @@ class MainPanel(wx.Panel):
 
                 for sr in self.seq_run_list[:]:
 
-                    json_res = api.create_paired_seq_run(sr.get_all_metadata())
-                    self.curr_upload_id = json_res["resource"]["identifier"]
+                    if self.loaded_upload_id is not None:
+                        self.curr_upload_id = self.loaded_upload_id
+                    else:
+                        json_res = api.create_paired_seq_run(
+                            sr.get_all_metadata())
+                        self.curr_upload_id = (
+                            json_res["resource"]["identifier"])
                     self.curr_seq_run = sr
 
                     for sample in sr.get_sample_list():
@@ -530,9 +549,19 @@ class MainPanel(wx.Panel):
                     wx.CallAfter(self.log_color_print,
                                  "Uploading sequencing files from:" +
                                  sr.sample_sheet_dir)
+
+                    self.uploaded_files_q = Queue()
+                    if len(self.prev_uploaded_seq_files) > 0:
+                        wx.CallAfter(self.log_color_print, "Resuming")
+                        for file in self.prev_uploaded_seq_files:
+                            self.uploaded_files_q.put(file)
+
                     evt = self.send_seq_files_evt(
                         sample_list=sr.get_sample_list(),
-                        send_pairs_callback=self.pair_upload_callback)
+                        send_pairs_callback=self.pair_upload_callback,
+                        curr_upload_id=self.curr_upload_id,
+                        prev_uploaded_seq_files=self.prev_uploaded_seq_files,
+                        uploaded_files_q=self.uploaded_files_q)
                     self.GetEventHandler().ProcessEvent(evt)
 
                     self.seq_run_list.remove(sr)
@@ -577,10 +606,10 @@ class MainPanel(wx.Panel):
         t.daemon = True
         t.start()
 
-    def handle_send_seq_pair_files_error(self, exception_error, error_msg):
+    def handle_send_seq_pair_files_error(self, exception_error, error_msg,
+                                         uploaded_files_q):
 
         """
-
         Subscribed to "handle_send_seq_pair_files_error"
         Called by api.send_pair_sequence_files() when an error occurs
         It's set up this way because send_pair_sequence_files() is running
@@ -590,10 +619,18 @@ class MainPanel(wx.Panel):
         arguments:
             exception_error -- Exception object
             error_msg -- message string to be displayed in log panel
-
+            uploaded_files_q -- Queue that contains strings of uploaded
+                                sequence file paths
+                                it's self.uploaded_files_q being passed back
+                                from api.send_pair_sequence_files()
         no return value
         """
 
+        uploaded_files = []
+        while not uploaded_files_q.empty():
+            uploaded_files.append(uploaded_files_q.get())
+
+        self.create_miseq_uploader_info_file(uploaded_files)
         self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         wx.CallAfter(self.pulse_timer.Stop)
@@ -842,19 +879,23 @@ class MainPanel(wx.Panel):
         resume when the upload is restarted
 
         arguments:
-            upload_status -- string that's either "Complete" or name of last
-                             sequencing file uploaded if upload was interrupted
+            upload_status -- string that's either "Complete" or
+                             string list of completed sequencing file path
+                             uploads if upload was interrupted
+                             used to know which files still need to be uploaded
+                             when resuming upload
 
         no return value
         """
 
         filename = path.join(self.curr_seq_run.sample_sheet_dir,
                              ".miseqUploaderInfo")
-
+        info = {
+            "Upload ID": self.curr_upload_id,
+            "Upload Status": upload_status
+        }
         with open(filename, "wb") as writer:
-            writer.write("Upload ID: {id}".format(id=self.curr_upload_id))
-            writer.write("\n")
-            writer.write("Upload status: {s}".format(s=upload_status))
+            json.dump(info, writer)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 
@@ -1127,10 +1168,13 @@ class MainPanel(wx.Panel):
             if ".miseqUploaderInfo" in listdir(_dir):
                 uploader_info_filename = path.join(_dir, ".miseqUploaderInfo")
                 with open(uploader_info_filename, "rb") as reader:
-                    for line in reader.readlines():
-                        if "Upload status" in line and "Complete" in line:
-                            pruned_list.remove(
-                                path.join(_dir, "SampleSheet.csv"))
+                    info = json.load(reader)
+
+                    if info["Upload Status"] == "Complete":
+                        pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
+                    else:
+                        self.prev_uploaded_seq_files = info["Upload Status"]
+                        self.loaded_upload_id = info["Upload ID"]
 
             elif ".miseqUploaderComplete" in listdir(_dir):
                 pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
@@ -1177,7 +1221,6 @@ class MainPanel(wx.Panel):
 
         for sample in seq_run.get_sample_list():
             pf_list = seq_run.get_pair_files(sample.get_id())
-
             v_res = validate_pair_files(pf_list, sample.get_id())
             if v_res.is_valid() is False:
                 raise SequenceFileError(v_res.get_errors())

@@ -4,6 +4,7 @@ import httplib
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 from time import time
+from copy import deepcopy
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -39,11 +40,16 @@ def method_decorator(fn):
         except Exception, e:
 
             if "callback" in kwargs.keys():
-                pub.sendMessage("handle_send_seq_pair_files_error",
-                                exception_error=e.__class__,
-                                error_msg=e.message)
+                err_msg, uploaded_files_q = e.args
+                pub.sendMessage(
+                    "handle_send_seq_pair_files_error",
+                    exception_error=e.__class__,
+                    error_msg="".join(err_msg),
+                    uploaded_files_q=uploaded_files_q)
+
             else:
                 raise
+
         return res
 
     return decorator
@@ -483,8 +489,25 @@ class ApiCalls(object):
 
         return file_size_list
 
+    def prune_samples_list(self, prev_uploaded_seq_files, samples_list):
+
+        """
+        Remove each sequence file from samples_list that is in
+        prev_uploaded_seq_files
+
+        no return value
+        """
+
+        for seq_file in prev_uploaded_seq_files:
+            for sample in samples_list[:]:
+                if seq_file in sample.get_pair_files():
+                    samples_list.remove(sample)
+                    break
+
     def send_pair_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1):
+                                 upload_id=1,
+                                 prev_uploaded_seq_files=[],
+                                 uploaded_files_q=None):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -505,6 +528,9 @@ class ApiCalls(object):
 
         json_res_list = []
 
+        if len(prev_uploaded_seq_files) > 0:
+            self.prune_samples_list(prev_uploaded_seq_files, samples_list)
+
         file_size_list = self.get_file_size_list(samples_list)
         self.size_of_all_seq_files = sum(file_size_list)
 
@@ -512,9 +538,17 @@ class ApiCalls(object):
         self.start_time = time()
 
         for sample in samples_list:
-            json_res = self._send_pair_sequence_files(sample, callback,
-                                                      upload_id)
-            json_res_list.append(json_res)
+            try:
+                json_res = self._send_pair_sequence_files(sample, callback,
+                                                          upload_id)
+                json_res_list.append(json_res)
+
+                if uploaded_files_q is not None:
+                    uploaded_files_q.put(sample.get_pair_files()[0])
+                    uploaded_files_q.put(sample.get_pair_files()[1])
+
+            except SequenceFileError, e:
+                raise SequenceFileError(e.args, uploaded_files_q)
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
@@ -592,7 +626,7 @@ class ApiCalls(object):
 
         monitor = encoder.MultipartEncoderMonitor(e, callback)
 
-        monitor.files = sample.get_pair_files()
+        monitor.files = deepcopy(sample.get_pair_files())
         monitor.total_bytes_read = self.total_bytes_read
         monitor.size_of_all_seq_files = self.size_of_all_seq_files
 
