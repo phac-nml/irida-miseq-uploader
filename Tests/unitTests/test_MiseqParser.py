@@ -1,6 +1,8 @@
 import unittest
 from os import path
 from csv import reader
+from StringIO import StringIO
+from mock import patch
 
 from Model.Sample import Sample
 from Parsers.miseqParser import (parse_metadata, parse_samples, get_csv_reader,
@@ -148,6 +150,101 @@ class TestMiSeqParser(unittest.TestCase):
         sample_list_values = [sample.get_dict() for sample in sample_list]
         self.assertEqual(correct_samples, sample_list_values)
 
+    @patch("Parsers.miseqParser.get_csv_reader")
+    def test_parse_samples_no_trail_comma(self, mock_csv_reader):
+
+        headers = ("Sample_ID,Sample_Name,Sample_Plate,Sample_Well," +
+                   "I7_Index_ID,index,I5_Index_ID,index2,Sample_Project," +
+                   "Description")
+
+        field_values = (
+            "15-0318,,2015-08-05-SE,A01,N701,TAAGGCGA,S502,CTCTCTAT,203\n" +
+            "15-0455,,2015-08-05-SE,B01,N701,TAAGGCGA,S503,TATCCTCT,203\n" +
+            "15-0462,,2015-08-05-SE,C01,N701,TAAGGCGA,S505,GTAAGGAG,203\n"
+        )
+
+        file_contents_str = (
+            "[Data]\n" +
+            "{headers}\n" +
+            "{field_values}"
+        ).format(headers=headers, field_values=field_values)
+
+        # converts string as a pseudo file / memory file
+        sample_sheet_file = StringIO(file_contents_str)
+
+        # the call to get_csv_reader() inside parse_samples() will return
+        # items inside side_effect
+        mock_csv_reader.side_effect = [reader(sample_sheet_file)]
+
+        sample_list = parse_samples(sample_sheet_file)
+        self.assertEqual(len(sample_list), 3)
+
+        for key in parse_samples.sample_key_translation_dict.keys():
+            headers = headers.replace(
+                key, parse_samples.sample_key_translation_dict[key])
+
+        for sample in sample_list:
+
+            self.assertEqual(len(headers.split(",")),
+                             len(sample.get_dict().keys()))
+
+            # check all translated header values are in Sample object
+            # converted to set to remove ordering differences
+            self.assertEqual(set(headers.split(",")),
+                             set(sample.get_dict().keys()))
+
+            # sample.get_dict() is an OrderedDict
+            # so we can check each sample in the same order as the field_values
+            # check that all the values in field_values are found in the sample
+            i = sample_list.index(sample)
+            self.assertEqual(set(field_values.split("\n")[i].split(",")),
+                             set(sample.get_dict().values()))
+
+            self.assertEqual(sample.get("description"), "")
+
+    @patch("Parsers.miseqParser.get_csv_reader")
+    def test_parse_samples_unequal_data_and_field_length(self,
+                                                         mock_csv_reader):
+
+        headers = ("Sample_ID,Sample_Name,Sample_Plate,Sample_Well," +
+                   "I7_Index_ID,index,I5_Index_ID,index2,Sample_Project," +
+                   "Description")
+
+        field_values = (
+            "15-0318,,2015-08-05-SE,A01,N701,TAAGGCGA,S502,CTCTCTAT\n" +
+            "15-0455,,2015-08-05-SE,B01,N701,TAAGGCGA,S503,TATCCTCT\n" +
+            "15-0462,,2015-08-05-SE,C01,N701,TAAGGCGA,S505,GTAAGGAG\n"
+        )
+
+        file_contents_str = (
+            "[Data]\n" +
+            "{headers}\n" +
+            "{field_values}"
+        ).format(headers=headers, field_values=field_values)
+
+        # converts string as a pseudo file / memory file
+        sample_sheet_file = StringIO(file_contents_str)
+
+        # the call to get_csv_reader() inside parse_samples() will return
+        # items inside side_effect
+        mock_csv_reader.side_effect = [reader(sample_sheet_file)]
+
+        with self.assertRaises(SampleSheetError) as context:
+            sample_list = parse_samples(sample_sheet_file)
+
+        expected_err_msg = (
+            "Number of values doesn't match number of " +
+            "[Data] headers. " +
+            ("Number of [Data] headers: {data_len}. " +
+             "Number of values: {val_len}").format(
+                data_len=len(headers.split(",")),
+                val_len=len(field_values.split("\n")[0].split(","))
+            )
+        )
+
+        self.assertEqual(expected_err_msg,
+                         str(context.exception))
+
     def test_parse_out_sequence_file(self):
 
         sample = Sample({"Sample_Well": "03",
@@ -236,6 +333,10 @@ def load_test_suite():
     parser_test_suite.addTest(TestMiSeqParser("test_parse_metadata"))
     parser_test_suite.addTest(TestMiSeqParser("test_complete_parse_samples"))
     parser_test_suite.addTest(TestMiSeqParser("test_parse_samples"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_parse_samples_no_trail_comma"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_parse_samples_unequal_data_and_field_length"))
     parser_test_suite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
 
     parser_test_suite.addTest(

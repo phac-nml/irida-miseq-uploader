@@ -84,7 +84,7 @@ def validate_sample_sheet(sample_sheet_file):
     return v_res
 
 
-def validate_pair_files(file_list):
+def validate_pair_files(file_list, sample_id):
 
     """
     Validate files in file_list to have a matching pair file.
@@ -92,7 +92,8 @@ def validate_pair_files(file_list):
     All files in file_list must have a pair to be valid.
 
     arguments:
-            file_list -- list containing fastq.gz files
+            file_list -- list containing pair files paths
+            sample_id -- Sample_Id of Sample object
             doesn't alter file_list
 
     returns ValidationResult object - stores bool valid and
@@ -102,39 +103,47 @@ def validate_pair_files(file_list):
     v_res = ValidationResult()
     validation_file_list = deepcopy(file_list)
     valid = False
-    if len(validation_file_list) > 0 and len(validation_file_list) % 2 == 0:
-        valid = True
+    if len(validation_file_list) > 0:
 
-        for file in validation_file_list:
-            if 'R1' in file:
-                matching_pair_file = file.replace('R1', 'R2')
-            elif 'R2' in file:
-                matching_pair_file = file.replace('R2', 'R1')
-            else:
-                valid = False
-                v_res.add_error_msg(
-                    file + " doesn't contain either 'R1' or 'R2' in filename" +
-                    ".\nRequired for identifying sequence files.")
-                break
+        if len(validation_file_list) % 2 == 0:
+            valid = True
 
-            if matching_pair_file in validation_file_list:
-                validation_file_list.remove(matching_pair_file)
-                validation_file_list.remove(file)
+            for file in validation_file_list:
+                if 'R1' in file:
+                    matching_pair_file = file.replace('R1', 'R2')
+                elif 'R2' in file:
+                    matching_pair_file = file.replace('R2', 'R1')
+                else:
+                    valid = False
+                    v_res.add_error_msg(
+                        file +
+                        " doesn't contain either 'R1' or 'R2' in filename" +
+                        ".\nRequired for identifying sequence files.")
+                    break
 
-            else:
-                valid = False
-                v_res.add_error_msg("No pair sequence file found for: " +
-                                    file +
-                                    "\nRequired matching sequence file: " +
-                                    matching_pair_file)
-                break
+                if matching_pair_file in validation_file_list:
+                    validation_file_list.remove(matching_pair_file)
+                    validation_file_list.remove(file)
+
+                else:
+                    valid = False
+                    v_res.add_error_msg("No pair sequence file found for: " +
+                                        file +
+                                        "\nRequired matching sequence file: " +
+                                        matching_pair_file)
+                    break
+
+        else:
+            v_res.add_error_msg(
+                "The given file list has an odd number of files." +
+                "\nRequires an even number of files in order for each " +
+                "sequence file to have a pair.\n" +
+                "Given file list:\n " + "\n ".join(file_list))
 
     else:
-        v_res.add_error_msg(
-            "The given file list has an odd number of files." +
-            "\nRequires an even number of files in order for each " +
-            "sequence file to have a pair.\n" +
-            "Given file list:\n " + "\n ".join(file_list))
+        v_res.add_error_msg("No pair files found for Sample_ID: {sid}".format(
+            sid=sample_id)
+        )
 
     v_res.set_valid(valid)
     return v_res
@@ -158,13 +167,25 @@ def validate_sample_list(sample_list):
     if len(sample_list) > 0:
         valid = True
         for sample in sample_list:
-            res = validate_sample(sample)
+
+            res = sample_has_req_keys(sample)
             if res is False:
                 valid = False
                 v_res.add_error_msg(
-                    "No sampleProject found for sample with ID: " +
-                    sample.get_id())
-                break
+                    ("{sid} is missing at least one of the required values: " +
+                     "Sample_Name, Sample_Project or Sample_Id").format(
+                        sid=sample.get_id()))
+
+            # Sample_ID and Sample_Name must be equal
+            else:
+                res = sample_id_name_match(sample)
+                if res is False:
+                    valid = False
+                    v_res.add_error_msg(("Sample_ID {sid} does not match " +
+                                        "Sample_Name: {sname}").format(
+                                            sid=sample.get_id(),
+                                            sname=sample.get("sampleName")
+                                        ))
 
     else:
         v_res.add_error_msg(
@@ -175,18 +196,39 @@ def validate_sample_list(sample_list):
     return v_res
 
 
-def validate_sample(sample):
+def sample_id_name_match(sample):
 
     """
-    Checks if sample has project identifier attached to it
+    arguments:
+            sample -- Sample object
+
+    returns status of Sample_ID and Sample_Name being equal
     """
 
-    valid = False
+    return sample.get_id() == sample.get("sampleName")
+
+
+def sample_has_req_keys(sample):
+
+    """
+    Checks if sample has the required keys:
+    Sample_Name, Sample_Project and Sample_Id
+
+    arguments:
+            sample -- Sample object
+
+    return True if all required keys exist else False
+    """
 
     sample_proj = sample.get("sampleProject")
-    if sample_proj is not None and len(sample_proj) > 0:
-        valid = True
-    return valid
+    sample_name = sample.get("sampleName")
+    sample_id = sample.get_id()
+    return (sample_proj is not None and
+            len(sample_proj) > 0 and
+            sample_name is not None and
+            len(sample_name) > 0 and
+            sample_id is not None and
+            len(sample_id) > 0)
 
 
 def validate_URL_form(url):
