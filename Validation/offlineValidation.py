@@ -1,6 +1,7 @@
 from csv import reader
 from copy import deepcopy
 from urlparse import urlparse
+from os import path
 
 from Parsers.miseqParser import get_csv_reader
 from Model.ValidationResult import ValidationResult
@@ -109,6 +110,17 @@ def validate_pair_files(file_list, sample_id):
             valid = True
 
             for file in validation_file_list:
+
+                if path.isfile(file) is False:
+                    valid = False
+                    v_res.add_error_msg(
+                        "{file} is not a valid file ".format(
+                            file=file
+                        ))
+
+                    break
+
+
                 if 'R1' in file:
                     matching_pair_file = file.replace('R1', 'R2')
                 elif 'R2' in file:
