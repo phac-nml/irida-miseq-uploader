@@ -641,11 +641,12 @@ class ApiCalls(object):
 
         # response.status_code = 500
 
-        if uploaded_samples_q is not None:
-            uploaded_samples_q.put(sample.get_id())
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
+
+            if uploaded_samples_q is not None:
+                uploaded_samples_q.put(sample.get_id())
 
         else:
 
