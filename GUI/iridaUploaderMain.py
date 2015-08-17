@@ -52,6 +52,7 @@ class MainPanel(wx.Panel):
         self.loaded_upload_id = None
         self.uploaded_samples_q = None
         self.prev_uploaded_samples = []
+        self.mui_created_in_handle_send_seq_pair_files_error = False
 
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
@@ -401,6 +402,14 @@ class MainPanel(wx.Panel):
         while an upload was still running.
         Set that SequencingRun's uploadStatus to ERROR.
 
+        in the event that the program is closed during mid-upload -
+        if .miseqUploaderInfo was not already created in
+        handle_send_seq_pair_files_error() then try create it here
+        write all uploaded sample id in to .miseqUploaderInfo
+        if uploaded_samples_q is empty that should mean that the
+        upload is complete and handle_upload_complete() already created
+        the .miseqUploaderInfo or there were no uploads in this session
+
         Destroy SettingsFrame and then destroy self
 
         no return value
@@ -417,11 +426,12 @@ class MainPanel(wx.Panel):
                        args=(self.curr_upload_id,))
             t.start()
 
-            uploaded_samples = []
-            while not self.uploaded_samples_q.empty():
-                uploaded_samples.append(self.uploaded_samples_q.get())
+            if not self.mui_created_in_handle_send_seq_pair_files_error:
+                uploaded_samples = []
+                while not self.uploaded_samples_q.empty():
+                    uploaded_samples.append(self.uploaded_samples_q.get())
 
-            self.create_miseq_uploader_info_file(uploaded_samples)
+                self.create_miseq_uploader_info_file(uploaded_samples)
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -645,6 +655,8 @@ class MainPanel(wx.Panel):
         uploaded_samples = []
         while not uploaded_samples_q.empty():
             uploaded_samples.append(uploaded_samples_q.get())
+
+        self.mui_created_in_handle_send_seq_pair_files_error = True
 
         self.create_miseq_uploader_info_file(uploaded_samples)
         self.api.set_pair_seq_run_error(self.curr_upload_id)

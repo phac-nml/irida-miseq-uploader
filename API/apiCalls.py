@@ -539,23 +539,19 @@ class ApiCalls(object):
         self.start_time = time()
 
         for sample in samples_list:
-            try:
-                json_res = self._send_pair_sequence_files(sample, callback,
-                                                          upload_id)
-                json_res_list.append(json_res)
 
-                if uploaded_samples_q is not None:
-                    uploaded_samples_q.put(sample.get_id())
-
-            except SequenceFileError, e:
-                raise SequenceFileError(e.args, uploaded_samples_q)
+            json_res = self._send_pair_sequence_files(sample, callback,
+                                                      upload_id,
+                                                      uploaded_samples_q)
+            json_res_list.append(json_res)
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
 
         return json_res_list
 
-    def _send_pair_sequence_files(self, sample, callback, upload_id):
+    def _send_pair_sequence_files(self, sample, callback, upload_id,
+                                  uploaded_samples_q):
 
         """
         post request to send pair sequence files found in given sample argument
@@ -645,6 +641,9 @@ class ApiCalls(object):
 
         # response.status_code = 500
 
+        if uploaded_samples_q is not None:
+            uploaded_samples_q.put(sample.get_id())
+
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
@@ -656,7 +655,7 @@ class ApiCalls(object):
                        err_msg=response.reason,
                        ud=str(files))
 
-            raise SequenceFileError(err_msg)
+            raise SequenceFileError(err_msg, uploaded_samples_q)
 
         return json_res
 
