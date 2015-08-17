@@ -641,7 +641,6 @@ class ApiCalls(object):
 
         # response.status_code = 500
 
-
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
