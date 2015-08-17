@@ -532,6 +532,9 @@ class MainPanel(wx.Panel):
 
                 for sr in self.seq_run_list[:]:
 
+                    # if resuming from an upload, self.loaded_upload_id
+                    # will contain the previous upload_id created
+                    # else it's a new upload so create a new seq run
                     if self.loaded_upload_id is not None:
                         self.curr_upload_id = self.loaded_upload_id
                     else:
@@ -539,6 +542,10 @@ class MainPanel(wx.Panel):
                             sr.get_all_metadata())
                         self.curr_upload_id = (
                             json_res["resource"]["identifier"])
+
+                    # used to identify SampleSheet.csv file path
+                    # when creating a .miseqUploaderInfo in
+                    # create_miseq_uploader_info_file()
                     self.curr_seq_run = sr
 
                     for sample in sr.get_sample_list():
@@ -550,6 +557,12 @@ class MainPanel(wx.Panel):
                                  "Uploading sequencing files from: " +
                                  sr.sample_sheet_dir)
 
+                    # if resuming upload, print to log panel
+                    # and add all prev_uploaded_samples in to
+                    # uploaded_samples_q so that in case the
+                    # upload gets interrupted again the contents
+                    # of uploaded_samples_q will be written in to
+                    # .miseqUploaderInfo to enable resuming again
                     self.uploaded_samples_q = Queue()
                     if len(self.prev_uploaded_samples) > 0:
                         wx.CallAfter(self.log_color_print, "Resuming")
@@ -616,11 +629,14 @@ class MainPanel(wx.Panel):
         in a different thread so the regular try-except block wasn't catching
         errors from this function
 
+        writes all contents of uploaded_samples_q in to .miseqUploaderInfo
+        file to enable resuming from upload at a later time
+
         arguments:
             exception_error -- Exception object
             error_msg -- message string to be displayed in log panel
             uploaded_samples_q -- Queue that contains strings of uploaded
-                                sequence file paths
+                                sample IDs
                                 it's self.uploaded_samples_q being passed back
                                 from api.send_pair_sequence_files()
         no return value
@@ -629,7 +645,7 @@ class MainPanel(wx.Panel):
         uploaded_samples = []
         while not uploaded_samples_q.empty():
             uploaded_samples.append(uploaded_samples_q.get())
-        print uploaded_samples
+
         self.create_miseq_uploader_info_file(uploaded_samples)
         self.api.set_pair_seq_run_error(self.curr_upload_id)
 
@@ -1022,7 +1038,8 @@ class MainPanel(wx.Panel):
 
                         raise Warning(err_msg)
 
-                pruned_list = self.prune_sample_sheets(ss_list)
+                pruned_list = self.prune_sample_sheets_check_miseqUploaderInfo(
+                    ss_list)
                 if len(pruned_list) == 0:
                     err_msg = ("The following have already been uploaded:\n" +
                                "{_dir}").format(_dir=",\n".join(ss_list))
@@ -1143,13 +1160,22 @@ class MainPanel(wx.Panel):
 
         return result_list
 
-    def prune_sample_sheets(self, ss_list):
+    def prune_sample_sheets_check_miseqUploaderInfo(self, ss_list):
 
         """
         check if a .miseqUploaderInfo file exists in a directory
-        if it does then check the Upload Status inside the file
-        if it's "Complete" (i.e the folder has already been uploaded) then
-        remove it from the corresponding SampleSheet.csv file path in ss_list
+          if it does then check the Upload Status inside the file
+
+          if it's "Complete" (i.e the folder has already been uploaded) then
+          remove it from the corresponding SampleSheet.csv in ss_list.
+
+          if it's not then that means the previous attempt at uploading
+          the SampleSheet.csv was interrupted and we need to resume the upload.
+
+          In this case Upload Status will contain a list of sample ID's that
+          have been already uploaded. This data will be loaded in to
+          self.prev_uploaded_samples and the previous upload_id will be
+          loaded in to self.loaded_upload_id.
 
         else if a .miseqUploaderComplete file exists in a directory then
         remove it from the corresponding SampleSheet.csv file path in ss_list
