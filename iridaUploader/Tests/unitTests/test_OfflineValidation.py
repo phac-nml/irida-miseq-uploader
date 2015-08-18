@@ -1,13 +1,15 @@
 import unittest
 from os import path
 
-from Parsers.miseqParser import (get_pair_files,
-                                 get_all_fastq_files)
-from Validation.offlineValidation import (validate_sample_sheet,
-                                          validate_pair_files,
-                                          validate_sample_list,
-                                          validate_URL_form)
-from Model.Sample import Sample
+from iridaUploader.Parsers.miseqParser import (
+    get_pair_files,
+    get_all_fastq_files)
+from iridaUploader.Validation.offlineValidation import (
+    validate_sample_sheet,
+validate_pair_files,
+validate_sample_list,
+validate_URL_form)
+from iridaUploader.Model.Sample import Sample
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
