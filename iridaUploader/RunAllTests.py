@@ -2,7 +2,7 @@ import Tests.unitTests.test_OfflineValidation as test_OfflineValidation
 import Tests.unitTests.test_MiseqParser as test_MiseqParser
 import Tests.unitTests.test_ApiCalls as test_ApiCalls
 import Tests.unitTests.test_IridaUploaderMain as test_IridaUploaderMain
-
+import Tests.unitTests.test_SettingsFrame as test_SettingsFrame
 import Tests.integrationTests.test_ApiCalls_integration as apiCalls_integration
 
 import unittest
@@ -41,6 +41,9 @@ def load_unit_tests(suite_list):
 
     off_valid_ts = test_OfflineValidation.load_test_suite()
     suite_list.append(off_valid_ts)
+
+    settings_ts = test_SettingsFrame.load_test_suite()
+    suite_list.append(settings_ts)
 
 
 def run_verify_PEP8():
