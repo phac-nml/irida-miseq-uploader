@@ -12,14 +12,14 @@ from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
 from pubsub import pub
 
-from Model.SequenceFile import SequenceFile
-from Model.Project import Project
-from Model.Sample import Sample
-from Exceptions.ProjectError import ProjectError
-from Exceptions.SampleError import SampleError
-from Exceptions.SequenceFileError import SequenceFileError
-from Exceptions.SampleSheetError import SampleSheetError
-from Validation.offlineValidation import validate_URL_form
+from iridaUploader.Model.SequenceFile import SequenceFile
+from iridaUploader.Model.Project import Project
+from iridaUploader.Model.Sample import Sample
+from iridaUploader.Exceptions.ProjectError import ProjectError
+from iridaUploader.Exceptions.SampleError import SampleError
+from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
+from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
+from iridaUploader.Validation.offlineValidation import validate_URL_form
 
 
 # https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/

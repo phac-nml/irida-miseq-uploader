@@ -8,7 +8,7 @@ from collections import OrderedDict
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from pubsub import pub
 
-from API.apiCalls import ApiCalls
+from iridaUploader.API.apiCalls import ApiCalls
 
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
@@ -1057,6 +1057,13 @@ class SettingsFrame(wx.Frame):
         self.Center()
         self.attempt_connect_to_api = self.sp.attempt_connect_to_api
         self.Bind(wx.EVT_CLOSE, self.sp.close_handler)
+        self.config_dict = self.sp.config_dict
+        self.base_url_box = self.sp.base_url_box
+        self.username_box = self.sp.username_box
+        self.password_box = self.sp.password_box
+        self.client_id_box =  self.sp.client_id_box
+        self.client_secret_box = self.sp.client_secret_box
+        self.log_panel = self.sp.log_panel
         self.close_btn = self.sp.close_btn  # test_iridaUploaderMain.py
 
 
@@ -1066,3 +1073,4 @@ if __name__ == "__main__":
     frame.Show()
     frame.attempt_connect_to_api()
     app.MainLoop()
+
