@@ -17,27 +17,27 @@ distutils.core.setup(name="iridaUploader",
     url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
     author='Kevin Camba',
     author_email='kevin.camba@phac-aspc.gc.ca',
-    packages=["API", "Exceptions", "GUI", "Model", "Parsers", "Validation"],
-    install_requires=["mock", "rauth", "selenium", "pep8"],
-    zip_safe=False
+    packages=["iridaUploader", "iridaUploader.API", "iridaUploader.Exceptions", 
+              "iridaUploader.GUI", "iridaUploader.Model",
+              "iridaUploader.Parsers", "iridaUploader.Validation"]
 )
 
 # Assuming only running on either Windows or Linux
 if platform.system() == "Windows":
     py_version = str(sys.version_info.major) + str(sys.version_info.minor)
     dest = path.join(site.USER_BASE, "python" + py_version, "site-packages")
-    copy2("./config.conf", dest)
+    copy2("./iridaUploader/config.conf", dest)
 
-    img_dest = path.join(dest,"GUI","images")
-    distutils.dir_util.copy_tree("./GUI/images", img_dest)
+    img_dest = path.join(dest, "iridaUploader", "GUI","images")
+    distutils.dir_util.copy_tree("./iridaUploader/GUI/images", img_dest)
 
 else:
     ver_info = sys.version_info
     py_version = str(ver_info.major) + "." + str(ver_info.minor)
 
     dest = path.join(site.USER_BASE, "lib", "python" + py_version,
-                     "site-packages")
-    copy2("./config.conf", dest)
+                     "site-packages", "iridaUploader")
+    copy2("./iridaUploader/config.conf", dest)
 
-    img_dest = path.join(dest,"GUI","images")
-    distutils.dir_util.copy_tree("./GUI/images", img_dest)
+    img_dest = path.join(dest, "iridaUploader", "GUI","images")
+    distutils.dir_util.copy_tree("./iridaUploader/GUI/images", img_dest)
