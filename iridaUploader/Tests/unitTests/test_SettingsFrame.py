@@ -6,8 +6,8 @@ import sys
 from os import path, listdir
 from requests.exceptions import ConnectionError
 from collections import OrderedDict
-from mock import MagicMock, patch
 import iridaUploader.GUI.SettingsFrame
+from mock import MagicMock, patch
 
 
 POLL_INTERVAL = 100  # milliseconds
@@ -52,9 +52,10 @@ def poll_for_prompt_dlg(self, time_counter, handle_func):
 
     if (self.frame.sp.prompt_dlg is not None or
             time_counter["value"] == MAX_WAIT_TIME):
-        self.frame.timer.Stop()
+        self.frame.sp.timer.Stop()
 
         try:
+
             handle_func(self)
 
         except (AssertionError, AttributeError):
@@ -66,21 +67,25 @@ class TestSettingsFrame(unittest.TestCase):
 
     def set_config_dict(self):
 
-        self.frame.config_dict = OrderedDict()
-        self.frame.config_dict["baseURL"] = "http://localhost:8080/api2"
-        self.frame.config_dict["username"] = "admin2"
-        self.frame.config_dict["password"] = "password2"
-        self.frame.config_dict["client_id"] = "testClient2"
-        self.frame.config_dict["client_secret"] = "testSecret2"
+        self.frame.sp.config_dict = OrderedDict()
+        self.frame.sp.config_dict["baseURL"] = "http://localhost:8080/api2"
+        self.frame.sp.config_dict["username"] = "admin2"
+        self.frame.sp.config_dict["password"] = "password2"
+        self.frame.sp.config_dict["client_id"] = "testClient2"
+        self.frame.sp.config_dict["client_secret"] = "testSecret2"
 
     def set_boxes(self):
 
-        self.frame.base_url_box.SetValue(self.frame.config_dict["baseURL"])
-        self.frame.username_box.SetValue(self.frame.config_dict["username"])
-        self.frame.password_box.SetValue(self.frame.config_dict["password"])
-        self.frame.client_id_box.SetValue(self.frame.config_dict["client_id"])
-        self.frame.client_secret_box.SetValue(
-            self.frame.config_dict["client_secret"])
+        self.frame.sp.base_url_box.SetValue(
+            self.frame.sp.config_dict["baseURL"])
+        self.frame.sp.username_box.SetValue(
+            self.frame.sp.config_dict["username"])
+        self.frame.sp.password_box.SetValue(
+            self.frame.sp.config_dict["password"])
+        self.frame.sp.client_id_box.SetValue(
+            self.frame.sp.config_dict["client_id"])
+        self.frame.sp.client_secret_box.SetValue(
+            self.frame.sp.config_dict["client_secret"])
 
     @patch("iridaUploader.GUI.SettingsFrame.RawConfigParser")
     def setUp(self, mock_confparser):
@@ -107,7 +112,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.set_config_dict()
         self.set_boxes()
 
-        # self.frame.Show()
+        # self.frame.sp.Show()
 
     def tearDown(self):
 
@@ -117,193 +122,153 @@ class TestSettingsFrame(unittest.TestCase):
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_valid_credentials(self, mock_apicalls):
 
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.VALID_CONNECTION_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.VALID_CONNECTION_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.VALID_CONNECTION_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.VALID_CONNECTION_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.VALID_CONNECTION_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Successfully connected to API",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "success")
-        self.assertEqual(self.frame.username_icon.Label, "success")
-        self.assertEqual(self.frame.password_icon.Label, "success")
-        self.assertEqual(self.frame.client_id_icon.Label, "success")
-        self.assertEqual(self.frame.client_secret_icon.Label, "success")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "success")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "success")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "success")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "success")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "success")
+
+        self.assertEqual(self.frame.sp.base_url_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_invalid_connection(self, mock_apicalls):
 
         mock_apicalls.side_effect = [ConnectionError()]
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Cannot connect to url",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
-                         self.frame.log_panel.GetValue())
+                         self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "warning")
-        self.assertEqual(self.frame.username_icon.Label, "hidden")
-        self.assertEqual(self.frame.password_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
+
+        self.assertEqual(self.frame.sp.base_url_warn_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.username_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_user_or_pass(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("Bad credentials")]
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Invalid credentials",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertIn("Username and/or password is incorrect",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
-                         self.frame.log_panel.GetValue())
+                         self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
-        self.assertEqual(self.frame.username_icon.Label, "warning")
-        self.assertEqual(self.frame.password_icon.Label, "warning")
-        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
+
+        self.assertEqual(self.frame.sp.base_url_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_warn_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.password_warn_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_id(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("clientId does not exist")]
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Invalid credentials",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertIn("Client ID is incorrect",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
-                         self.frame.log_panel.GetValue())
+                         self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
-        self.assertEqual(self.frame.username_icon.Label, "hidden")
-        self.assertEqual(self.frame.password_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_id_icon.Label, "warning")
-        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
+
+        self.assertEqual(self.frame.sp.base_url_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_warn_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_secret(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("Bad client credentials")]
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Invalid credentials",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertIn("Client Secret is incorrect",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
-                         self.frame.log_panel.GetValue())
+                         self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
-        self.assertEqual(self.frame.username_icon.Label, "hidden")
-        self.assertEqual(self.frame.password_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_secret_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
+
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(
+            self.frame.sp.client_secret_warn_icon.Label, "warning")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_value_err(self, mock_apicalls):
 
         mock_apicalls.side_effect = [ValueError()]
-        self.frame.attempt_connect_to_api()
-
-        self.assertEqual(self.frame.base_url_box.GetBackgroundColour(),
-                         self.frame.INVALID_CONNECTION_COLOR)
-
-        self.assertEqual(self.frame.client_secret_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.username_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.password_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
-        self.assertEqual(self.frame.client_id_box.GetBackgroundColour(),
-                         self.frame.NEUTRAL_BOX_COLOR)
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Cannot connect to url",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
-                         self.frame.log_panel.GetValue())
+                         self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "warning")
-        self.assertEqual(self.frame.username_icon.Label, "hidden")
-        self.assertEqual(self.frame.password_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.base_url_warn_icon.Label, "warning")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
     def test_unexpected_err(self, mock_apicalls):
 
         mock_apicalls.side_effect = [SyntaxError()]
-        self.frame.attempt_connect_to_api()
+        self.frame.sp.attempt_connect_to_api()
 
         self.assertIn("Unexpected error",
-                      self.frame.log_panel.GetValue())
+                      self.frame.sp.log_panel.GetValue())
 
-        self.assertEqual(self.frame.base_URL_icon.Label, "hidden")
-        self.assertEqual(self.frame.username_icon.Label, "hidden")
-        self.assertEqual(self.frame.password_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_id_icon.Label, "hidden")
-        self.assertEqual(self.frame.client_secret_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.base_url_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.username_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
+        self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
 
     @patch("iridaUploader.GUI.SettingsFrame.SettingsPanel.write_config_data")
     def test_close_with_unsaved_changes_save(self, mock_wcd):
@@ -334,33 +299,33 @@ class TestSettingsFrame(unittest.TestCase):
             self.frame.sp.prompt_dlg.EndModal(wx.ID_YES)  # yes save changes
             self.assertFalse(self.frame.sp.prompt_dlg.IsShown())
 
-        self.frame.base_url_box.SetValue(new_baseURL)
-        self.frame.username_box.SetValue(new_username)
-        self.frame.password_box.SetValue(new_password)
-        self.frame.client_id_box.SetValue(new_client_id)
-        self.frame.client_secret_box.SetValue(new_client_secret)
+        self.frame.sp.base_url_box.SetValue(new_baseURL)
+        self.frame.sp.username_box.SetValue(new_username)
+        self.frame.sp.password_box.SetValue(new_password)
+        self.frame.sp.client_id_box.SetValue(new_client_id)
+        self.frame.sp.client_secret_box.SetValue(new_client_secret)
 
-        self.assertEqual(self.frame.base_url_box.GetValue(), new_baseURL)
-        self.assertEqual(self.frame.username_box.GetValue(), new_username)
-        self.assertEqual(self.frame.password_box.GetValue(), new_password)
-        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
-        self.assertEqual(self.frame.client_secret_box.GetValue(),
+        self.assertEqual(self.frame.sp.base_url_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.sp.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.sp.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.sp.client_id_box.GetValue(), new_client_id)
+        self.assertEqual(self.frame.sp.client_secret_box.GetValue(),
                          new_client_secret)
 
-        self.frame.log_panel.Clear()
-        self.assertEqual(self.frame.log_panel.GetValue(), "")
+        self.frame.sp.log_panel.Clear()
+        self.assertEqual(self.frame.sp.log_panel.GetValue(), "")
 
         handle_func = handle_prompt_dlg
         time_counter = {"value": 0}
-        self.frame.timer = wx.Timer(self.frame)
-        self.frame.Bind(wx.EVT_TIMER,
-                        lambda evt: poll_for_prompt_dlg(self,
-                                                        time_counter,
-                                                        handle_func),
-                        self.frame.timer)
-        self.frame.timer.Start(POLL_INTERVAL)
+        self.frame.sp.timer = wx.Timer(self.frame.sp)
+        self.frame.sp.Bind(wx.EVT_TIMER,
+                           lambda evt: poll_for_prompt_dlg(self,
+                                                           time_counter,
+                                                           handle_func),
+                           self.frame.sp.timer)
+        self.frame.sp.timer.Start(POLL_INTERVAL)
 
-        push_button(self.frame.close_btn)
+        push_button(self.frame.sp.close_btn)
 
         expected_targ_section = "apiCalls"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
@@ -392,49 +357,49 @@ class TestSettingsFrame(unittest.TestCase):
             self.assertIn(expected_pw_hidden,
                           self.frame.sp.prompt_dlg.Message)
 
-            self.frame.sp.prompt_dlg.EndModal(wx.ID_NO)  # no don't save changes
+            self.frame.sp.prompt_dlg.EndModal(wx.ID_NO)
+            # no don't save changes
             self.assertFalse(self.frame.sp.prompt_dlg.IsShown())
 
-        self.frame.base_url_box.SetValue(new_baseURL)
-        self.frame.username_box.SetValue(new_username)
-        self.frame.password_box.SetValue(new_password)
-        self.frame.client_id_box.SetValue(new_client_id)
-        self.frame.client_secret_box.SetValue(new_client_secret)
+        self.frame.sp.base_url_box.SetValue(new_baseURL)
+        self.frame.sp.username_box.SetValue(new_username)
+        self.frame.sp.password_box.SetValue(new_password)
+        self.frame.sp.client_id_box.SetValue(new_client_id)
+        self.frame.sp.client_secret_box.SetValue(new_client_secret)
 
-        self.assertEqual(self.frame.base_url_box.GetValue(), new_baseURL)
-        self.assertEqual(self.frame.username_box.GetValue(), new_username)
-        self.assertEqual(self.frame.password_box.GetValue(), new_password)
-        self.assertEqual(self.frame.client_id_box.GetValue(), new_client_id)
-        self.assertEqual(self.frame.client_secret_box.GetValue(),
+        self.assertEqual(self.frame.sp.base_url_box.GetValue(), new_baseURL)
+        self.assertEqual(self.frame.sp.username_box.GetValue(), new_username)
+        self.assertEqual(self.frame.sp.password_box.GetValue(), new_password)
+        self.assertEqual(self.frame.sp.client_id_box.GetValue(), new_client_id)
+        self.assertEqual(self.frame.sp.client_secret_box.GetValue(),
                          new_client_secret)
 
-        self.frame.log_panel.Clear()
-        self.assertEqual(self.frame.log_panel.GetValue(), "")
+        self.frame.sp.log_panel.Clear()
+        self.assertEqual(self.frame.sp.log_panel.GetValue(), "")
 
         handle_func = handle_prompt_dlg
         time_counter = {"value": 0}
-        self.frame.timer = wx.Timer(self.frame)
-        self.frame.Bind(wx.EVT_TIMER,
-                        lambda evt: poll_for_prompt_dlg(self,
-                                                        time_counter,
-                                                        handle_func),
-                        self.frame.timer)
-        self.frame.timer.Start(POLL_INTERVAL)
+        self.frame.sp.timer = wx.Timer(self.frame.sp)
+        self.frame.sp.Bind(wx.EVT_TIMER,
+                           lambda evt: poll_for_prompt_dlg(self,
+                                                           time_counter,
+                                                           handle_func),
+                           self.frame.sp.timer)
+        self.frame.sp.timer.Start(POLL_INTERVAL)
 
-        push_button(self.frame.close_btn)
+        push_button(self.frame.sp.close_btn)
 
         # reset boxes back to their original values - discard changes
-
-        self.assertEqual(self.frame.base_url_box.GetValue(),
-                         self.frame.config_dict["baseURL"])
-        self.assertEqual(self.frame.username_box.GetValue(),
-                         self.frame.config_dict["username"])
-        self.assertEqual(self.frame.password_box.GetValue(),
-                         self.frame.config_dict["password"])
-        self.assertEqual(self.frame.client_id_box.GetValue(),
-                         self.frame.config_dict["client_id"])
-        self.assertEqual(self.frame.client_secret_box.GetValue(),
-                         self.frame.config_dict["client_secret"])
+        self.assertEqual(self.frame.sp.base_url_box.GetValue(),
+                         self.frame.sp.config_dict["baseURL"])
+        self.assertEqual(self.frame.sp.username_box.GetValue(),
+                         self.frame.sp.config_dict["username"])
+        self.assertEqual(self.frame.sp.password_box.GetValue(),
+                         self.frame.sp.config_dict["password"])
+        self.assertEqual(self.frame.sp.client_id_box.GetValue(),
+                         self.frame.sp.config_dict["client_id"])
+        self.assertEqual(self.frame.sp.client_secret_box.GetValue(),
+                         self.frame.sp.config_dict["client_secret"])
 
         self.assertFalse(mock_wcd.called)
 
