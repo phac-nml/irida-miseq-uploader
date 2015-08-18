@@ -8,9 +8,10 @@ from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
-from Model.SequenceFile import SequenceFile
+from iridaUploader.Model.SequenceFile import SequenceFile
 
-import API.apiCalls
+import iridaUploader.API
+API = None
 
 
 class Foo(object):
@@ -29,8 +30,8 @@ class TestApiCalls(unittest.TestCase):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
-    @patch("API.apiCalls.urlopen")
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.urlopen")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_validate_URL_existence_url_ok(self, mock_cs, mock_url):
 
         url_ok = Foo()
@@ -49,8 +50,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(is_valid, valid)
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
-    @patch("API.apiCalls.urlopen")
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.urlopen")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_validate_URL_existence_url_raise_err(self, mock_cs, mock_url):
 
         url_raise_err = Foo()
@@ -81,8 +82,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(err_msg in str(err.exception))
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
-    @patch("API.apiCalls.urlopen")
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.urlopen")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_validate_URL_existence_url_not_found(self, mock_cs, mock_url):
 
         url_not_found = Foo()
@@ -101,10 +102,10 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(is_valid, valid)
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
-    @patch("API.apiCalls.ApiCalls.get_access_token")
-    @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_form")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_access_token")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_oauth_service")
+    @patch("iridaUploader.API.apiCalls.validate_URL_form")
     def test_create_session_valid_base_url_no_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
@@ -132,10 +133,10 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL1 + "/", use_session=True)
 
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
-    @patch("API.apiCalls.ApiCalls.get_access_token")
-    @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_form")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_access_token")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_oauth_service")
+    @patch("iridaUploader.API.apiCalls.validate_URL_form")
     def test_create_session_valid_base_url_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
@@ -163,7 +164,7 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
 
-    @patch("API.apiCalls.validate_URL_form")
+    @patch("iridaUploader.API.apiCalls.validate_URL_form")
     def test_create_session_invalid_form(self, mock_validate_url_form):
 
         mock_validate_url_form.side_effect = [False]
@@ -181,10 +182,10 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("not a valid URL" in str(err.exception))
         mock_validate_url_form.assert_called_with(base_URL)
 
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
-    @patch("API.apiCalls.ApiCalls.get_access_token")
-    @patch("API.apiCalls.ApiCalls.get_oauth_service")
-    @patch("API.apiCalls.validate_URL_form")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_access_token")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.get_oauth_service")
+    @patch("iridaUploader.API.apiCalls.validate_URL_form")
     def test_create_session_invalid_session(self, mock_validate_url_form,
                                             mock_get_oauth_service,
                                             mock_get_access_token,
@@ -214,8 +215,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(expectedErrMsg in str(err.exception))
         mock_validate_url_form.assert_called_with("/")
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_valid(self,
                             mock_validate_url_existence,
                             mock_cs):
@@ -259,8 +260,8 @@ class TestApiCalls(unittest.TestCase):
         api.session.get.assert_called_with(targ_URL)
         self.assertEqual(link, targ_link)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_valid_targ_dict(self,
                                       mock_validate_url_existence,
                                       mock_cs):
@@ -309,8 +310,8 @@ class TestApiCalls(unittest.TestCase):
         api.session.get.assert_called_with(targ_URL)
         self.assertEqual(link, targ_link)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_invalid_url_not_found(self,
                                             mock_validate_url_existence,
                                             mock_cs):
@@ -336,8 +337,8 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(targ_URL,
                                                        use_session=True)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_invalid_key_not_found(self,
                                             mock_validate_url_existence,
                                             mock_cs):
@@ -385,8 +386,8 @@ class TestApiCalls(unittest.TestCase):
             "Available links: " + invalid_key in str(err.exception))
         api.session.get.assert_called_with(targ_URL)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_invalid_targ_dict_value(self,
                                               mock_validate_url_existence,
                                               mock_cs):
@@ -436,8 +437,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(t_dict["value"] + " not found." in str(err.exception))
         api.session.get.assert_called_with(targ_URL)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
-    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.validate_URL_existence")
     def test_get_link_invalid_targ_dict_key(self, mock_validate_url_existence,
                                             mock_cs):
 
@@ -488,7 +489,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("Available keys: identifier" in str(err.exception))
         api.session.get.assert_called_with(targ_URL)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_projects_valid(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -545,7 +546,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(proj_list[1].get_description(),
                          p2_dict["projectDescription"])
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_projects_invalid_missing_key(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -596,7 +597,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("Available keys: projectDescription, identifier"
                         in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_samples_valid(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -641,7 +642,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(sample_dict.items(),
                          sample_list[0].get_dict().items())
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_samples_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -664,7 +665,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(proj.get_id() + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_sequence_files_valid(self, mock_cs):
         mock_cs.side_effect = [None]
 
@@ -718,7 +719,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(len(seqRes), 1)
         self.assertEqual(seq_dict.items(), seqRes[0].items())
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_sequence_files_invalid_proj(self, mock_cs):
         mock_cs.side_effect = [None]
 
@@ -740,7 +741,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(sample["sampleProject"] + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_get_sequence_files_invalid_sample(self, mock_cs):
         mock_cs.side_effect = [None]
 
@@ -769,7 +770,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(sample.get_id() + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_project_valid(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -807,7 +808,7 @@ class TestApiCalls(unittest.TestCase):
         json_res = api.send_project(proj)
         self.assertEqual(json_dict, json_res)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_project_invalid_name(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -830,7 +831,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("A project requires a name that must be" +
                         " 5 or more characters" in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_project_invalid_server_res(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -862,7 +863,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(str(session_response.status_code) + " " +
                         session_response.text in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_samples_valid(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -912,7 +913,7 @@ class TestApiCalls(unittest.TestCase):
         json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -936,7 +937,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(proj_id + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_server_res(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -970,7 +971,7 @@ class TestApiCalls(unittest.TestCase):
                         session_response.text in str(err.exception))
 
     @patch("__builtin__.open")
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_):
 
         mock_cs.side_effect = [None]
@@ -1035,7 +1036,7 @@ class TestApiCalls(unittest.TestCase):
         mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
         mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_pair_sequence_files_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -1062,7 +1063,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertIn("project ID: {proj_id} doesn't exist".format(
             proj_id=proj_id), str(err.exception))
 
-    @patch("API.apiCalls.ApiCalls.create_session")
+    @patch("iridaUploader.API.apiCalls.ApiCalls.create_session")
     def test_send_pair_sequence_files_invalid_sample_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -1095,6 +1096,10 @@ class TestApiCalls(unittest.TestCase):
 
 
 def load_test_suite():
+
+    global API
+    API = Foo()
+    API = iridaUploader.API
 
     api_test_suite = unittest.TestSuite()
 
