@@ -762,6 +762,22 @@ class ApiCalls(object):
 
         return json_res
 
+    def set_pair_seq_run_uploading(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "UPLOADING"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "UPLOADING"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
     def set_pair_seq_run_error(self, identifier):
 
         """

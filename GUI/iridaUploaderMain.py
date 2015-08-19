@@ -547,6 +547,7 @@ class MainPanel(wx.Panel):
                     # else it's a new upload so create a new seq run
                     if self.loaded_upload_id is not None:
                         self.curr_upload_id = self.loaded_upload_id
+                        api.set_pair_seq_run_uploading(self.curr_upload_id)
                     else:
                         json_res = api.create_paired_seq_run(
                             sr.get_all_metadata())
