@@ -52,7 +52,7 @@ class MainPanel(wx.Panel):
         self.loaded_upload_id = None
         self.uploaded_samples_q = None
         self.prev_uploaded_samples = []
-        self.mui_created_in_handle_send_seq_pair_files_error = False
+        self.mui_created_in_handle_api_thread_error = False
 
         self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
@@ -122,10 +122,10 @@ class MainPanel(wx.Panel):
         pub.subscribe(self.pair_seq_files_upload_complete,
                       "pair_seq_files_upload_complete")
 
-        # Called by api.send_pair_sequence_files() when an error occurs
+        # Called by an api function
         # display error message and update sequencing run uploadStatus to ERROR
-        pub.subscribe(self.handle_send_seq_pair_files_error,
-                      "handle_send_seq_pair_files_error")
+        pub.subscribe(self.handle_api_thread_error,
+                      "handle_api_thread_error")
 
         # update self.api when Settings is closed
         # if it's not None (i.e can connect to API) enable the submit button
@@ -365,7 +365,8 @@ class MainPanel(wx.Panel):
 
         self.warn_dlg.Message = warn_msg  # for testing
         self.warn_dlg.ShowModal()
-        self.warn_dlg.Destroy()
+        if self.warn_dlg:
+            self.warn_dlg.Destroy()
 
     def log_color_print(self, msg, color=None):
 
@@ -404,7 +405,7 @@ class MainPanel(wx.Panel):
 
         in the event that the program is closed during mid-upload -
         if .miseqUploaderInfo was not already created in
-        handle_send_seq_pair_files_error() then try create it here
+        handle_api_thread_error() then try create it here
         write all uploaded sample id in to .miseqUploaderInfo
         if uploaded_samples_q is empty that should mean that the
         upload is complete and handle_upload_complete() already created
@@ -426,7 +427,7 @@ class MainPanel(wx.Panel):
                        args=(self.curr_upload_id,))
             t.start()
 
-            if not self.mui_created_in_handle_send_seq_pair_files_error:
+            if not self.mui_created_in_handle_api_thread_error:
                 uploaded_samples = []
                 while not self.uploaded_samples_q.empty():
                     uploaded_samples.append(self.uploaded_samples_q.get())
@@ -591,9 +592,9 @@ class MainPanel(wx.Panel):
                     self.seq_run_list.remove(sr)
 
         except Exception, e:
-            # this catches all api errors except send_pair_sequence_files
-            # it won't catch send_pair_sequence_files because it's threaded
-            # handle_send_seq_pair_files_error takes care of that
+            # this catches all non-api errors
+            # it won't catch api errors because they are on a diffrent thread
+            # handle_api_thread_error takes care of that
             if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
 
@@ -630,13 +631,14 @@ class MainPanel(wx.Panel):
         t.daemon = True
         t.start()
 
-    def handle_send_seq_pair_files_error(self, exception_error, error_msg,
-                                         uploaded_samples_q):
+    def handle_api_thread_error(self, function_name,
+                                exception_error, error_msg,
+                                uploaded_samples_q=None):
 
         """
-        Subscribed to "handle_send_seq_pair_files_error"
-        Called by api.send_pair_sequence_files() when an error occurs
-        It's set up this way because send_pair_sequence_files() is running
+        Subscribed to "handle_api_thread_error"
+        Called by any api method when an error occurs
+        It's set up this way because api is running
         in a different thread so the regular try-except block wasn't catching
         errors from this function
 
@@ -653,21 +655,27 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        uploaded_samples = []
-        while not uploaded_samples_q.empty():
-            uploaded_samples.append(uploaded_samples_q.get())
+        if uploaded_samples_q is not None:
+            uploaded_samples = []
+            while not uploaded_samples_q.empty():
+                uploaded_samples.append(uploaded_samples_q.get())
 
-        self.mui_created_in_handle_send_seq_pair_files_error = True
+            self.mui_created_in_handle_api_thread_error = True
 
-        self.create_miseq_uploader_info_file(uploaded_samples)
-        self.api.set_pair_seq_run_error(self.curr_upload_id)
+            self.create_miseq_uploader_info_file(uploaded_samples)
+
+        # upload_id might not yet be set if the api error is from before
+        # creating a sequencing run or the error is with the creation itself
+        if self.curr_upload_id is not None:
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(
-            self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
+            self.display_warning, "From {fname}".format(fname=function_name) +
             " {error_name}: {error_msg}".format(
                 error_name=exception_error.__name__,
-                error_msg=error_msg), dlg_msg="Server error")
+                error_msg=error_msg),
+            dlg_msg="API " + exception_error.__name__)
 
     def pair_seq_files_upload_complete(self):
 

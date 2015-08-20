@@ -30,8 +30,7 @@ def method_decorator(fn):
         """
         Run the function (fn) and if any errors are raised then
         the publisher sends a messaage which calls
-        handle_send_seq_pair_files_error() in
-        iridaUploaderMain.MainPanel
+        handle_api_thread_error() in iridaUploaderMain.MainPanel
         """
 
         res = None
@@ -39,16 +38,33 @@ def method_decorator(fn):
             res = fn(*args, **kwargs)
         except Exception, e:
 
-            if "callback" in kwargs.keys():
+            if fn.__name__ == "send_pair_sequence_files":
 
-                err_msg, uploaded_samples_q = e.args
-                pub.sendMessage(
-                    "handle_send_seq_pair_files_error",
-                    exception_error=e.__class__,
-                    error_msg="".join(err_msg),
-                    uploaded_samples_q=uploaded_samples_q)
+                if len(e.args) > 1:
+                    err_msg, uploaded_samples_q = e.args
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg="".join(err_msg),
+                        uploaded_samples_q=uploaded_samples_q)
+
+                else:
+
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg=e.message)
 
             else:
+
+                pub.sendMessage(
+                    "handle_api_thread_error",
+                    function_name=fn.__name__,
+                    exception_error=e.__class__,
+                    error_msg=e.message)
+
                 raise
 
         return res
@@ -71,7 +87,12 @@ def class_decorator(*method_names):
     return class_rebuilder
 
 
-@class_decorator("send_pair_sequence_files")
+@class_decorator(
+    "create_session", "get_projects", "get_samples", "get_sequence_files",
+    "send_project", "send_samples", "_send_pair_sequence_files"
+    "get_pair_seq_runs", "create_paired_seq_run",
+    "_set_pair_seq_run_upload_status"
+)
 class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
