@@ -1059,26 +1059,30 @@ class MainPanel(wx.Panel):
 
                         self.display_warning(err_msg)
 
-                pruned_list = self.prune_sample_sheets_check_miseqUploaderInfo(
-                    ss_list)
-                if len(pruned_list) == 0:
-                    err_msg = ("The following have already been uploaded:\n" +
-                               "{_dir}").format(_dir=",\n".join(ss_list))
+                if len(ss_list) > 0:
+                    pruned_list = (
+                        self.prune_sample_sheets_check_miseqUploaderInfo(
+                            ss_list))
+                    if len(pruned_list) == 0:
+                        err_msg = (
+                            "The following have already been uploaded:\n" +
+                            "{_dir}").format(_dir=",\n".join(ss_list))
 
-                    raise SampleSheetError(err_msg)
+                        raise SampleSheetError(err_msg)
 
-            self.sample_sheet_files = pruned_list
+                    self.sample_sheet_files = pruned_list
 
-            for ss in self.sample_sheet_files:
-                self.log_color_print("Processing: " + ss)
-                try:
-                    self.process_sample_sheet(ss)
-                except (SampleSheetError, SequenceFileError):
-                    self.log_color_print(
-                        "Stopping the processing of SampleSheet.csv " +
-                        "files due to failed validation of previous " +
-                        "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-                    break  # stop processing sheets if validation fails
+                    for ss in self.sample_sheet_files:
+                        self.log_color_print("Processing: " + ss)
+                        try:
+                            self.process_sample_sheet(ss)
+                        except (SampleSheetError, SequenceFileError):
+                            self.log_color_print(
+                                "Stopping the processing of SampleSheet.csv " +
+                                "files due to failed validation of previous " +
+                                "file: " + ss + "\n",
+                                self.LOG_PNL_ERR_TXT_COLOR)
+                            break  # stop processing sheets if validation fails
 
         except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
