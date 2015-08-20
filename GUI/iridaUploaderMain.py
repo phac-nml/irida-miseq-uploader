@@ -946,7 +946,7 @@ class MainPanel(wx.Panel):
         self.seq_run set to None
 
         arguments:
-                msg -- message to display in the warning dialog message box
+                msg -- message to display in warning dialog message box
 
         no return value
         """
