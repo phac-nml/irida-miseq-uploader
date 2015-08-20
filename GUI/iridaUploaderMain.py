@@ -1057,7 +1057,7 @@ class MainPanel(wx.Panel):
                                    "to be uploaded.").format(
                                     sheet_file=sr.sample_sheet_file)
 
-                        raise Warning(err_msg)
+                        self.display_warning(err_msg)
 
                 pruned_list = self.prune_sample_sheets_check_miseqUploaderInfo(
                     ss_list)
@@ -1082,9 +1082,6 @@ class MainPanel(wx.Panel):
 
         except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
-
-        except Warning, e:
-            self.display_warning(str(e))
 
     def process_sample_sheet(self, sample_sheet_file):
 
