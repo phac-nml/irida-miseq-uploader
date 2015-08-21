@@ -62,7 +62,7 @@ class MainPanel(wx.Panel):
         self.prev_uploaded_samples = []
         self.mui_created_in_handle_api_thread_error = False
 
-        self.LOG_PANEL_HEIGHT = 400
+        self.LOG_PANEL_HEIGHT = self.WINDOW_SIZE[1] * 0.50
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.CF_LABEL_TEXT_HEIGHT = 52
@@ -1334,7 +1334,14 @@ class MainFrame(wx.Frame):
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 800)
+        self.display_size = wx.GetDisplaySize()
+        self.num_of_monitors = wx.Display_GetCount()
+
+        X_PCT = 0.85
+        Y_PCT = 0.75
+        self.WINDOW_SIZE_X = (self.display_size.x/self.num_of_monitors) * X_PCT
+        self.WINDOW_SIZE_Y = (self.display_size.y) * Y_PCT
+        self.WINDOW_SIZE = (self.WINDOW_SIZE_X, self.WINDOW_SIZE_Y)
 
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
