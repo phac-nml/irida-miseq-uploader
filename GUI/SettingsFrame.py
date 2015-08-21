@@ -817,9 +817,8 @@ class SettingsPanel(wx.Panel):
             size=(self.LOG_PANEL_SIZE),
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
         value = ("Settings menu.\n" +
-                 "Click 'Save' to keep any changes you make.\n" +
-                 "Click 'Close' to go back to uploader window.\n" +
-                 "Click 'Default' to restore settings to default values.\n")
+                 "All changes enterred in to the text boxes will be saved.\n" +
+                 "Click 'Close' to save and go back to the uploader window.\n")
 
         self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
