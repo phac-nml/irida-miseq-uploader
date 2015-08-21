@@ -88,7 +88,7 @@ def class_decorator(*method_names):
 
 
 @class_decorator(
-    "create_session", "get_projects", "get_samples", "get_sequence_files",
+    "get_projects", "get_samples", "get_sequence_files",
     "send_project", "send_samples", "_send_pair_sequence_files"
     "get_pair_seq_runs", "create_paired_seq_run",
     "_set_pair_seq_run_upload_status"
