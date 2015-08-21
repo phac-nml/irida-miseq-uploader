@@ -30,7 +30,8 @@ class SettingsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path_to_module + "/../config.conf"
+        self.config_file = path.join(path_to_module,
+                                     path.pardir, "config.conf")
         self.conf_parser.read(self.config_file)
         self.config_dict = OrderedDict()
         self.load_curr_config()

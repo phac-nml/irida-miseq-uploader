@@ -8,6 +8,8 @@ from time import time
 from math import ceil
 from copy import deepcopy
 from Queue import Queue
+from ConfigParser import RawConfigParser
+
 
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
@@ -42,9 +44,15 @@ class MainPanel(wx.Panel):
 
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
+        self.conf_parser = RawConfigParser()
+        self.config_file = path.join(path_to_module,
+                                     path.pardir, "config.conf")
+        self.conf_parser.read(self.config_file)
+
         self.sample_sheet_files = []
         self.seq_run_list = []
-        self.browse_path = getcwd()
+        self.browse_path = self.get_config_default_dir()
+
         self.dir_dlg = None
         self.api = None
         self.upload_complete = None
@@ -141,6 +149,34 @@ class MainPanel(wx.Panel):
         self.Center()
         self.Show()
 
+    def get_config_default_dir(self):
+
+        """
+        If the config file doesn't have a section
+        "iridaUploaderMain" then it won't contain a default directory
+        key
+        So create one and set the default directory to be the user's
+        home directory
+
+        return the path to the default directory from the config file
+        """
+
+        section = "iridaUploaderMain"
+        key = "default_dir"
+        # if first run, default dir doesn't exist yet in config
+        if not self.conf_parser.has_section(section):
+            self.conf_parser.add_section(section)
+
+            # set default directory to be the user's home directory
+            default_dir_path = path.expanduser("~")
+            self.conf_parser.set(section, key,
+                                 default_dir_path)
+
+            with open(self.config_file, 'wb') as configfile:
+                self.conf_parser.write(configfile)
+
+        return self.conf_parser.get(section, key)
+
     def handle_send_seq_evt(self, evt):
 
         """
@@ -180,6 +216,7 @@ class MainPanel(wx.Panel):
             self, size=(-1, self.browse_button.GetSize()[1]),
             style=wx.TE_PROCESS_ENTER)
         self.dir_box.SetFont(self.TEXTBOX_FONT)
+        self.dir_box.SetValue(self.browse_path)
 
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
