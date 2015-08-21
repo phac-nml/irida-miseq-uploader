@@ -1063,6 +1063,11 @@ class MainPanel(wx.Panel):
 
         self.ov_progress_bar.SetValue(0)
 
+        # clear the list of sequencing runs and list of samplesheets when user
+        # selects a new directory
+        self.seq_run_list = []
+        self.sample_sheet_files = []
+
         try:
 
             ss_list = self.find_sample_sheet(self.browse_path,
@@ -1084,45 +1089,39 @@ class MainPanel(wx.Panel):
 
             else:
 
-                for sr in self.seq_run_list:
-                    if sr.sample_sheet_file in ss_list:
-                        ss_list.remove(sr.sample_sheet_file)
-                        err_msg = ("The SampleSheet file {sheet_file} " +
-                                   "that you are trying to upload has " +
-                                   "already been added to " +
-                                   "the list of Sequencing Runs " +
-                                   "to be uploaded.").format(
-                                    sheet_file=sr.sample_sheet_file)
+                pruned_list = (
+                    self.prune_sample_sheets_check_miseqUploaderInfo(
+                        ss_list))
+                if len(pruned_list) == 0:
+                    err_msg = (
+                        "The following have already been uploaded:\n" +
+                        "{_dir}").format(_dir=",\n".join(ss_list))
 
-                        self.display_warning(err_msg)
+                    raise SampleSheetError(err_msg)
 
-                if len(ss_list) > 0:
-                    pruned_list = (
-                        self.prune_sample_sheets_check_miseqUploaderInfo(
-                            ss_list))
-                    if len(pruned_list) == 0:
-                        err_msg = (
-                            "The following have already been uploaded:\n" +
-                            "{_dir}").format(_dir=",\n".join(ss_list))
+                self.sample_sheet_files = pruned_list
 
-                        raise SampleSheetError(err_msg)
-
-                    self.sample_sheet_files = pruned_list
-
-                    for ss in self.sample_sheet_files:
-                        self.log_color_print("Processing: " + ss)
-                        try:
-                            self.process_sample_sheet(ss)
-                        except (SampleSheetError, SequenceFileError):
-                            self.log_color_print(
-                                "Stopping the processing of SampleSheet.csv " +
-                                "files due to failed validation of previous " +
-                                "file: " + ss + "\n",
-                                self.LOG_PNL_ERR_TXT_COLOR)
-                            break  # stop processing sheets if validation fails
+                for ss in self.sample_sheet_files:
+                    self.log_color_print("Processing: " + ss)
+                    try:
+                        self.process_sample_sheet(ss)
+                    except (SampleSheetError, SequenceFileError):
+                        self.log_color_print(
+                            "Stopping the processing of SampleSheet.csv " +
+                            "files due to failed validation of previous " +
+                            "file: " + ss + "\n",
+                            self.LOG_PNL_ERR_TXT_COLOR)
+                        self.sample_sheet_files = []
+                        break  # stop processing sheets if validation fails
 
         except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
+
+        if len(self.sample_sheet_files) > 0:
+            self.log_color_print("List of SampleSheet files to be uploaded:")
+            for ss_file in self.sample_sheet_files:
+                self.log_color_print(ss_file)
+            self.log_color_print("\n")
 
     def process_sample_sheet(self, sample_sheet_file):
 
