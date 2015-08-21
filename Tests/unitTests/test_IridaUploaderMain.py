@@ -347,41 +347,6 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
-    def test_sample_sheet_invalid_seqfiles_no_project(self):
-
-        def handle_warn_dlg(self):
-
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
-
-            expected_txt = "Missing required data header(s): Sample_Project"
-
-            self.assertIn(expected_txt, self.frame.mp.warn_dlg.Message)
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
-
-            self.assertIn(expected_txt, self.frame.mp.log_panel.GetValue())
-
-        time_counter = {"value": 0}
-        h_func = handle_warn_dlg
-
-        self.frame.mp.browse_path = path.join(
-            PATH_TO_MODULE, "testSeqPairFiles", "noSampleProj", "child")
-
-        self.frame.mp.timer = wx.Timer(self.frame.mp)
-        self.frame.mp.Bind(wx.EVT_TIMER,
-                           lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
-                                                        handle_func=h_func),
-                           self.frame.mp.timer)
-        self.frame.mp.timer.Start(POLL_INTERVAL)
-
-        push_button(self.frame.mp.browse_button)
-
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
-        self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
     @patch("GUI.SettingsFrame.pub")
     @patch("GUI.SettingsFrame.SettingsPanel.attempt_connect_to_api")
     def test_open_settings(self, mock_connect_api, mock_pub_sub):
@@ -413,8 +378,6 @@ def load_test_suite():
         TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_project"))
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_open_settings"))
 

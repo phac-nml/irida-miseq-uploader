@@ -4,6 +4,7 @@ import httplib
 from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 from time import time
+from copy import deepcopy
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -29,8 +30,7 @@ def method_decorator(fn):
         """
         Run the function (fn) and if any errors are raised then
         the publisher sends a messaage which calls
-        handle_send_seq_pair_files_error() in
-        iridaUploaderMain.MainPanel
+        handle_api_thread_error() in iridaUploaderMain.MainPanel
         """
 
         res = None
@@ -38,12 +38,35 @@ def method_decorator(fn):
             res = fn(*args, **kwargs)
         except Exception, e:
 
-            if "callback" in kwargs.keys():
-                pub.sendMessage("handle_send_seq_pair_files_error",
-                                exception_error=e.__class__,
-                                error_msg=e.message)
+            if fn.__name__ == "send_pair_sequence_files":
+
+                if len(e.args) > 1:
+                    err_msg, uploaded_samples_q = e.args
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg="".join(err_msg),
+                        uploaded_samples_q=uploaded_samples_q)
+
+                else:
+
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg=e.message)
+
             else:
+
+                pub.sendMessage(
+                    "handle_api_thread_error",
+                    function_name=fn.__name__,
+                    exception_error=e.__class__,
+                    error_msg=e.message)
+
                 raise
+
         return res
 
     return decorator
@@ -64,7 +87,12 @@ def class_decorator(*method_names):
     return class_rebuilder
 
 
-@class_decorator("send_pair_sequence_files")
+@class_decorator(
+    "get_projects", "get_samples", "get_sequence_files",
+    "send_project", "send_samples", "_send_pair_sequence_files"
+    "get_pair_seq_runs", "create_paired_seq_run",
+    "_set_pair_seq_run_upload_status"
+)
 class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
@@ -483,8 +511,25 @@ class ApiCalls(object):
 
         return file_size_list
 
+    def prune_samples_list(self, prev_uploaded_samples, samples_list):
+
+        """
+        Remove each sequence file from samples_list that is in
+        prev_uploaded_samples
+
+        no return value
+        """
+
+        for sample_id in prev_uploaded_samples:
+            for sample in samples_list:
+                if sample_id == sample.get_id():
+                    samples_list.remove(sample)
+                    break
+
     def send_pair_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1):
+                                 upload_id=1,
+                                 prev_uploaded_samples=[],
+                                 uploaded_samples_q=None):
 
         """
         send pair sequence files found in each sample in samples_list
@@ -505,6 +550,9 @@ class ApiCalls(object):
 
         json_res_list = []
 
+        if len(prev_uploaded_samples) > 0:
+            self.prune_samples_list(prev_uploaded_samples, samples_list)
+
         file_size_list = self.get_file_size_list(samples_list)
         self.size_of_all_seq_files = sum(file_size_list)
 
@@ -512,8 +560,10 @@ class ApiCalls(object):
         self.start_time = time()
 
         for sample in samples_list:
+
             json_res = self._send_pair_sequence_files(sample, callback,
-                                                      upload_id)
+                                                      upload_id,
+                                                      uploaded_samples_q)
             json_res_list.append(json_res)
 
         if callback is not None:
@@ -521,7 +571,8 @@ class ApiCalls(object):
 
         return json_res_list
 
-    def _send_pair_sequence_files(self, sample, callback, upload_id):
+    def _send_pair_sequence_files(self, sample, callback, upload_id,
+                                  uploaded_samples_q):
 
         """
         post request to send pair sequence files found in given sample argument
@@ -592,7 +643,7 @@ class ApiCalls(object):
 
         monitor = encoder.MultipartEncoderMonitor(e, callback)
 
-        monitor.files = sample.get_pair_files()
+        monitor.files = deepcopy(sample.get_pair_files())
         monitor.total_bytes_read = self.total_bytes_read
         monitor.size_of_all_seq_files = self.size_of_all_seq_files
 
@@ -614,6 +665,9 @@ class ApiCalls(object):
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
+            if uploaded_samples_q is not None:
+                uploaded_samples_q.put(sample.get_id())
+
         else:
 
             err_msg = ("Error {status_code}: {err_msg}\n" +
@@ -622,7 +676,7 @@ class ApiCalls(object):
                        err_msg=response.reason,
                        ud=str(files))
 
-            raise SequenceFileError(err_msg)
+            raise SequenceFileError(err_msg, uploaded_samples_q)
 
         return json_res
 
@@ -725,6 +779,22 @@ class ApiCalls(object):
         """
 
         status = "COMPLETE"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def set_pair_seq_run_uploading(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "UPLOADING"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "UPLOADING"
         json_res = self._set_pair_seq_run_upload_status(identifier, status)
 
         return json_res
