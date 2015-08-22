@@ -40,7 +40,7 @@ class SettingsPanel(wx.Panel):
         self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 160)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
@@ -99,6 +99,8 @@ class SettingsPanel(wx.Panel):
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.completion_cmd_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.create_icon_images()
@@ -107,6 +109,7 @@ class SettingsPanel(wx.Panel):
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
+        self.add_completion_cmd_text_box()
         self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
@@ -139,6 +142,10 @@ class SettingsPanel(wx.Panel):
         self.top_sizer.Add(
             self.credentials_container, proportion=0,
             flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
+
+        self.top_sizer.Add(self.completion_cmd_sizer, proportion=0,
+                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
+                           border=self.SIZER_BORDER * 2)
 
         self.checkbox_log_container.Add(
             self.lp_checkbox_sizer,
@@ -179,6 +186,8 @@ class SettingsPanel(wx.Panel):
                                                              "client_id")
         self.config_dict["client_secret"] = self.conf_parser.get(
                                             "apiCalls", "client_secret")
+        self.config_dict["completion_cmd"] = self.conf_parser.get(
+                                            "apiCalls", "completion_cmd")
 
     def create_api_obj(self):
 
@@ -828,6 +837,36 @@ class SettingsPanel(wx.Panel):
         self.log_panel.Hide()
         self.log_panel_sizer.Add(self.log_panel)
 
+    def add_completion_cmd_text_box(self):
+
+        """
+        Adds text box for system command
+        System command will be executed when an upload completes
+
+
+        no return value
+        """
+
+        self.completion_cmd_label = wx.StaticText(
+            self, id=-1, label="Completion command")
+        self.completion_cmd_label.SetFont(self.LABEL_TXT_FONT)
+
+        self.completion_cmd_box = wx.TextCtrl(self,
+                                              size=(-1, self.ICON_HEIGHT))
+        self.completion_cmd_box.SetFont(self.TEXTBOX_FONT)
+        self.completion_cmd_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+        self.completion_cmd_box.SetValue(self.config_dict["completion_cmd"])
+
+        tip = "Command to be executed when an upload completes"
+        self.completion_cmd_label.SetToolTipString(tip)
+        self.completion_cmd_box.SetToolTipString(tip)
+
+        self.completion_cmd_sizer.Add(self.completion_cmd_label,
+                                      flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                      border=self.ICON_SPACE)
+        self.completion_cmd_sizer.Add(self.completion_cmd_box, proportion=1,
+                                      flag=wx.EXPAND)
+
     def print_config_to_log_panel(self, changes_dict):
 
         """
@@ -869,6 +908,7 @@ class SettingsPanel(wx.Panel):
         """
 
         changes_dict = self.get_changes_dict()
+
         if len(changes_dict) > 0:
             self.log_panel.Clear()
             self.log_panel.AppendText("Saving...\n")
@@ -940,6 +980,8 @@ class SettingsPanel(wx.Panel):
                 self.client_id_box.SetValue(self.config_dict["client_id"])
                 self.client_secret_box.SetValue(
                     self.config_dict["client_secret"])
+                self.completion_cmd_box.SetValue(
+                    self.config_dict["completion_cmd"])
 
                 self.prompt_dlg.Destroy()
 
@@ -1009,6 +1051,7 @@ class SettingsPanel(wx.Panel):
         val_dict["password"] = self.password_box.GetValue()
         val_dict["client_id"] = self.client_id_box.GetValue()
         val_dict["client_secret"] = self.client_secret_box.GetValue()
+        val_dict["completion_cmd"] = self.completion_cmd_box.GetValue()
 
         return val_dict
 
