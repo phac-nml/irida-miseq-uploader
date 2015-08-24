@@ -982,9 +982,11 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(str(session_response.status_code) + ": " +
                         session_response.text in str(err.exception))
 
+    @patch("API.apiCalls.RawConfigParser")
     @patch("__builtin__.open")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_):
+    def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_,
+                                            mock_config_parser):
 
         mock_cs.side_effect = [None]
 
