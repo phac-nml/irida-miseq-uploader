@@ -1352,11 +1352,20 @@ class MainFrame(wx.Frame):
         self.display_size = wx.GetDisplaySize()
         self.num_of_monitors = wx.Display_GetCount()
 
-        X_PCT = 0.85
-        Y_PCT = 0.75
-        self.WINDOW_SIZE_X = (self.display_size.x/self.num_of_monitors) * X_PCT
-        self.WINDOW_SIZE_Y = (self.display_size.y) * Y_PCT
-        self.WINDOW_SIZE = (self.WINDOW_SIZE_X, self.WINDOW_SIZE_Y)
+        WIDTH_PCT = 0.85
+        HEIGHT_PCT = 0.75
+        self.WINDOW_SIZE_WIDTH = (
+            self.display_size.x/self.num_of_monitors) * WIDTH_PCT
+        self.WINDOW_SIZE_HEIGHT = (self.display_size.y) * HEIGHT_PCT
+
+        self.WINDOW_MAX_WIDTH = 900
+        self.WINDOW_MAX_HEIGHT = 800
+        if self.WINDOW_SIZE_WIDTH > self.WINDOW_MAX_WIDTH:
+            self.WINDOW_SIZE_WIDTH = self.WINDOW_MAX_WIDTH
+        if self.WINDOW_SIZE_HEIGHT > self.WINDOW_MAX_HEIGHT:
+            self.WINDOW_SIZE_HEIGHT = self.WINDOW_MAX_HEIGHT
+
+        self.WINDOW_SIZE = (self.WINDOW_SIZE_WIDTH, self.WINDOW_SIZE_HEIGHT)
 
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
