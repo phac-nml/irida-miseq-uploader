@@ -943,9 +943,10 @@ class MainPanel(wx.Panel):
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
         completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
 
-        wx.CallAfter(self.log_color_print,
-                     "Executing completion command: " + completion_cmd)
-        system(completion_cmd)
+        if len(completion_cmd) > 0:
+            wx.CallAfter(self.log_color_print,
+                         "Executing completion command: " + completion_cmd)
+            system(completion_cmd)
 
         wx.CallAfter(self.Layout)
 
