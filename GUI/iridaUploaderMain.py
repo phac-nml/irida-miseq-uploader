@@ -914,6 +914,8 @@ class MainPanel(wx.Panel):
                 files=str(progress_data["curr_files_uploading"]),
                 pct=str(progress_data["curr_file_upload_pct"])))
 
+            if progress_data["overall_upload_pct"] > 100:
+                progress_data["overall_upload_pct"] = 100
             self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
