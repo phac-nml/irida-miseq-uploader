@@ -1,7 +1,7 @@
 import wx
 import sys
 import json
-from os import path, getcwd, pardir, listdir
+from os import path, getcwd, pardir, listdir, system
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -933,11 +933,18 @@ class MainPanel(wx.Panel):
                    args=(self.curr_upload_id,))
         t.daemon = True
         t.start()
+
         self.upload_complete = True
         self.create_miseq_uploader_info_file("Complete")
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
+        completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
+
+        wx.CallAfter(self.log_color_print,
+                     "Executing completion command: " + completion_cmd)
+        system(completion_cmd)
+
         wx.CallAfter(self.Layout)
 
     def create_miseq_uploader_info_file(self, upload_status):
@@ -1321,12 +1328,17 @@ class MainPanel(wx.Panel):
 
         if the updated self.api is not None re-enable the upload button
 
+        reload self.conf_parser in case it's value (e.g completion_cmd)
+        gets updated
+
         no return value
         """
 
         self.api = api
         if self.api is not None:
             self.upload_button.Enable()
+
+        self.conf_parser.read(self.config_file)
 
 
 class MainFrame(wx.Frame):
