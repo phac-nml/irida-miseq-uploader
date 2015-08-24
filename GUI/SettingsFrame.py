@@ -176,18 +176,18 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        self.config_dict["baseURL"] = self.conf_parser.get("apiCalls",
+        self.config_dict["baseURL"] = self.conf_parser.get("Settings",
                                                            "baseURL")
-        self.config_dict["username"] = self.conf_parser.get("apiCalls",
+        self.config_dict["username"] = self.conf_parser.get("Settings",
                                                             "username")
-        self.config_dict["password"] = self.conf_parser.get("apiCalls",
+        self.config_dict["password"] = self.conf_parser.get("Settings",
                                                             "password")
-        self.config_dict["client_id"] = self.conf_parser.get("apiCalls",
+        self.config_dict["client_id"] = self.conf_parser.get("Settings",
                                                              "client_id")
         self.config_dict["client_secret"] = self.conf_parser.get(
-                                            "apiCalls", "client_secret")
+                                            "Settings", "client_secret")
         self.config_dict["completion_cmd"] = self.conf_parser.get(
-                                            "apiCalls", "completion_cmd")
+                                            "Settings", "completion_cmd")
 
     def create_api_obj(self):
 
@@ -913,7 +913,7 @@ class SettingsPanel(wx.Panel):
             self.log_panel.Clear()
             self.log_panel.AppendText("Saving...\n")
 
-            targ_section = "apiCalls"
+            targ_section = "Settings"
             self.write_config_data(targ_section, changes_dict)
 
             self.load_curr_config()
@@ -969,7 +969,7 @@ class SettingsPanel(wx.Panel):
 
             user_choice = self.prompt_dlg.ShowModal()
             if user_choice == wx.ID_YES:
-                targ_section = "apiCalls"
+                targ_section = "Settings"
                 self.write_config_data(targ_section, changes_dict)
                 self.load_curr_config()
 
