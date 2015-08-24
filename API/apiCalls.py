@@ -5,6 +5,8 @@ from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
+from os import path, system
+from ConfigParser import RawConfigParser
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
@@ -20,6 +22,11 @@ from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
 from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
+
+
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 
 # https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/
@@ -116,6 +123,11 @@ class ApiCalls(object):
         self.username = username
         self.password = password
         self.max_wait_time = max_wait_time
+
+        self.conf_parser = RawConfigParser()
+        self.config_file = path.join(path_to_module,
+                                     path.pardir, "config.conf")
+        self.conf_parser.read(self.config_file)
 
         self.create_session()
 
@@ -568,6 +580,11 @@ class ApiCalls(object):
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
+            completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
+            if len(completion_cmd) > 0:
+                pub.sendMessage("display_completion_cmd_msg",
+                                completion_cmd=completion_cmd)
+                system(completion_cmd)
 
         return json_res_list
 

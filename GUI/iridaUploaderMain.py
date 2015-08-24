@@ -1,7 +1,7 @@
 import wx
 import sys
 import json
-from os import path, getcwd, pardir, listdir, system
+from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -142,6 +142,10 @@ class MainPanel(wx.Panel):
 
         # Updates upload speed and estimated remaining time labels
         pub.subscribe(self.update_remaining_time, "update_remaining_time")
+
+        # displays the completion command message in to the log panel
+        pub.subscribe(self.display_completion_cmd_msg,
+                      "display_completion_cmd_msg")
 
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
@@ -941,14 +945,13 @@ class MainPanel(wx.Panel):
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
-        completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
-
-        if len(completion_cmd) > 0:
-            wx.CallAfter(self.log_color_print,
-                         "Executing completion command: " + completion_cmd)
-            system(completion_cmd)
 
         wx.CallAfter(self.Layout)
+
+    def display_completion_cmd_msg(self, completion_cmd):
+
+        wx.CallAfter(self.log_color_print,
+                     "Executing completion command: " + completion_cmd)
 
     def create_miseq_uploader_info_file(self, upload_status):
 
