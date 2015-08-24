@@ -62,7 +62,6 @@ class MainPanel(wx.Panel):
         self.prev_uploaded_samples = []
         self.mui_created_in_handle_api_thread_error = False
 
-        self.LOG_PANEL_HEIGHT = self.WINDOW_SIZE[1] * 0.50
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.CF_LABEL_TEXT_HEIGHT = 52
@@ -103,10 +102,10 @@ class MainPanel(wx.Panel):
         # between directory box & credentials
 
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
+            self.log_panel_sizer, proportion=1, flag=wx.EXPAND |
             wx.ALIGN_CENTER)
 
-        self.top_sizer.AddSpacer(self.SECTION_SPACE)
+
         self.top_sizer.Add(
             self.progress_bar_sizer,
             flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
@@ -114,7 +113,7 @@ class MainPanel(wx.Panel):
         self.padding.Add(
             self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
             border=self.PADDING_LEN)
-        self.padding.AddStretchSpacer()
+
         self.padding.Add(
             self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=self.PADDING_LEN)
@@ -367,7 +366,7 @@ class MainPanel(wx.Panel):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="", size=(-1, self.LOG_PANEL_HEIGHT),
+            value="",
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
