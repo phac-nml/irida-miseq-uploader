@@ -6,4 +6,3 @@ Tests/integrationTests/repos/*
 *.log
 *.miseqUploaderInfo
 *.miseqUploaderComplete
-*.conf
