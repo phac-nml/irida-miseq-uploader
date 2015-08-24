@@ -105,7 +105,6 @@ class MainPanel(wx.Panel):
             self.log_panel_sizer, proportion=1, flag=wx.EXPAND |
             wx.ALIGN_CENTER)
 
-
         self.top_sizer.Add(
             self.progress_bar_sizer,
             flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
