@@ -40,7 +40,7 @@ class SettingsPanel(wx.Panel):
         self.SHORT_BOX_SIZE = (200, -1)  # user, pass, id, secret
         self.LABEL_TEXT_WIDTH = 70
         self.SIZER_BORDER = 5
-        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 160)
+        self.LOG_PANEL_SIZE = (self.WINDOW_SIZE[0]*0.95, 200)
         self.CREDENTIALS_CTNR_LOG_PNL_SPACE = 5
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
         self.LOG_PNL_UPDATED_TXT_COLOR = wx.BLUE
@@ -156,13 +156,12 @@ class SettingsPanel(wx.Panel):
             self.checkbox_log_container, proportion=0,
             flag=wx.ALIGN_CENTER | wx.EXPAND)
 
+        self.top_sizer.Add(
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
+            wx.LEFT | wx.RIGHT, border=self.SIZER_BORDER*2)
+
         self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND,
                          border=self.PADDING_LEN)
-
-        self.padding.AddStretchSpacer()
-        self.padding.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
-            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*3)
 
         self.Center()
         self.Layout()
@@ -1088,7 +1087,7 @@ class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 350)
+        self.WINDOW_SIZE = (700, 380)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",
