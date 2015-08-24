@@ -1362,6 +1362,8 @@ class MainFrame(wx.Frame):
 
         self.WINDOW_MAX_WIDTH = 900
         self.WINDOW_MAX_HEIGHT = 800
+        self.MIN_WIDTH_SIZE = 600
+        self.MIN_HEIGHT_SIZE = 400
         if self.WINDOW_SIZE_WIDTH > self.WINDOW_MAX_WIDTH:
             self.WINDOW_SIZE_WIDTH = self.WINDOW_MAX_WIDTH
         if self.WINDOW_SIZE_HEIGHT > self.WINDOW_MAX_HEIGHT:
@@ -1382,6 +1384,8 @@ class MainFrame(wx.Frame):
         self.add_options_menu()
         self.add_settings_option()
 
+        self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
+                          self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
         self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
         self.Center()
 
