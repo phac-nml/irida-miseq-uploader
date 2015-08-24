@@ -1358,8 +1358,7 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+                          style=wx.DEFAULT_FRAME_STYLE)
 
         self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
