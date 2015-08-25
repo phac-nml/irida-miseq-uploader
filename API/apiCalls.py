@@ -25,11 +25,6 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
-
-
 # https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/
 def method_decorator(fn):
 
