@@ -4,7 +4,7 @@ import distutils
 import distutils.core
 from shutil import move, copy2
 from os import path, mkdir
-from appdirs import user_cache_dir
+from appdirs import user_config_dir
 
 
 def readme():
@@ -22,13 +22,10 @@ distutils.core.setup(name="iridaUploader",
     zip_safe=False
 )
 
-config_dest = user_cache_dir("iridaUploader")
-# if config file alreay exists do not copy
+config_dest = user_config_dir("iridaUploader")
+# if config file already exists do not copy
 if not path.exists(path.join(config_dest, "config.conf")):
     if not path.isdir(config_dest):
         mkdir(config_dest)
 
     copy2("./config.conf", config_dest)
-
-img_dest = path.join(user_cache_dir("iridaUploader"), "images")
-distutils.dir_util.copy_tree("./GUI/images", img_dest)
