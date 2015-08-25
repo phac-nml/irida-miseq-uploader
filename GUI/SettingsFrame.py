@@ -1,18 +1,17 @@
-import wx
 import sys
 import logging
 from os import path
-from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
+
+import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from requests.exceptions import ConnectionError
 from pubsub import pub
+from appdirs import user_cache_dir
 
 from API.apiCalls import ApiCalls
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
 
 DEFAULT_BASE_URL = "http://localhost:8080/api/"
 DEFAULT_USERNAME = "admin"
@@ -30,8 +29,8 @@ class SettingsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(path_to_module,
-                                     path.pardir, "config.conf")
+        self.config_file = path.join(user_cache_dir("iridaUploader"),
+                                     "config.conf")
         self.conf_parser.read(self.config_file)
         self.config_dict = OrderedDict()
         self.load_curr_config()
@@ -712,17 +711,19 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
+        img_dir_path = path.join(user_cache_dir("iridaUploader"), "images")
+
         # success icon made by Google @ "http://www.google.com". CC BY 3.0
-        suc_img_path = path.join(path_to_module, "images", "Success.png")
+        suc_img_path = path.join(img_dir_path, "Success.png")
         self.suc_img = wx.Image(suc_img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
         # warning icon made by Freepik @ "http://www.freepik.com". CC BY 3.0
-        warn_img_path = path.join(path_to_module, "images", "Warning.png")
+        warn_img_path = path.join(img_dir_path, "Warning.png")
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
-        placeholder_img_path = path.join(path_to_module, "images",
+        placeholder_img_path = path.join(img_dir_path,
                                          "Placeholder.png")
         self.ph_img = wx.Image(placeholder_img_path,
                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()

@@ -1,4 +1,3 @@
-import wx
 import sys
 import json
 from os import path, getcwd, pardir, listdir
@@ -10,11 +9,12 @@ from copy import deepcopy
 from Queue import Queue
 from ConfigParser import RawConfigParser
 
-
+import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
 from pubsub import pub
+from appdirs import user_cache_dir
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -29,11 +29,6 @@ from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame, ConnectionError
 
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
-
-
 class MainPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -45,8 +40,8 @@ class MainPanel(wx.Panel):
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(path_to_module,
-                                     path.pardir, "config.conf")
+        self.config_file = path.join(user_cache_dir("iridaUploader"),
+                                     "config.conf")
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
