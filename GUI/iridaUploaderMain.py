@@ -14,7 +14,7 @@ from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
 from pubsub import pub
-from appdirs import user_cache_dir
+from appdirs import user_config_dir
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -40,7 +40,7 @@ class MainPanel(wx.Panel):
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_cache_dir("iridaUploader"),
+        self.config_file = path.join(user_config_dir("iridaUploader"),
                                      "config.conf")
         self.conf_parser.read(self.config_file)
 

@@ -13,7 +13,7 @@ from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
 from pubsub import pub
-from appdirs import user_cache_dir
+from appdirs import user_config_dir
 
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
@@ -121,7 +121,7 @@ class ApiCalls(object):
         self.max_wait_time = max_wait_time
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_cache_dir("iridaUploader"),
+        self.config_file = path.join(user_config_dir("iridaUploader"),
                                      "config.conf")
         self.conf_parser.read(self.config_file)
 

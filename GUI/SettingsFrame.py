@@ -8,7 +8,7 @@ import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from requests.exceptions import ConnectionError
 from pubsub import pub
-from appdirs import user_cache_dir
+from appdirs import user_config_dir
 
 from API.apiCalls import ApiCalls
 
@@ -20,6 +20,11 @@ DEFAULT_CLIENT_ID = "testClient"
 DEFAULT_CLIENT_SECRET = "testClientSecret"
 
 
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
+
+
 class SettingsPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -29,7 +34,7 @@ class SettingsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_cache_dir("iridaUploader"),
+        self.config_file = path.join(user_config_dir("iridaUploader"),
                                      "config.conf")
         self.conf_parser.read(self.config_file)
         self.config_dict = OrderedDict()
@@ -711,7 +716,7 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        img_dir_path = path.join(user_cache_dir("iridaUploader"), "images")
+        img_dir_path = path.join(path_to_module, "images")
 
         # success icon made by Google @ "http://www.google.com". CC BY 3.0
         suc_img_path = path.join(img_dir_path, "Success.png")
