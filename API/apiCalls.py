@@ -5,12 +5,15 @@ from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
+from os import path, system
+from ConfigParser import RawConfigParser
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
 from pubsub import pub
+from appdirs import user_config_dir
 
 from Model.SequenceFile import SequenceFile
 from Model.Project import Project
@@ -116,6 +119,11 @@ class ApiCalls(object):
         self.username = username
         self.password = password
         self.max_wait_time = max_wait_time
+
+        self.conf_parser = RawConfigParser()
+        self.config_file = path.join(user_config_dir("iridaUploader"),
+                                     "config.conf")
+        self.conf_parser.read(self.config_file)
 
         self.create_session()
 
@@ -568,6 +576,11 @@ class ApiCalls(object):
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
+            completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
+            if len(completion_cmd) > 0:
+                pub.sendMessage("display_completion_cmd_msg",
+                                completion_cmd=completion_cmd)
+                system(completion_cmd)
 
         return json_res_list
 

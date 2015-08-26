@@ -1,4 +1,3 @@
-import wx
 import sys
 import json
 from os import path, getcwd, pardir, listdir
@@ -10,11 +9,12 @@ from copy import deepcopy
 from Queue import Queue
 from ConfigParser import RawConfigParser
 
-
+import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
 from pubsub import pub
+from appdirs import user_config_dir
 
 from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
 from Model.SequencingRun import SequencingRun
@@ -29,11 +29,6 @@ from Exceptions.SequenceFileError import SequenceFileError
 from SettingsFrame import SettingsFrame, ConnectionError
 
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
-
-
 class MainPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -45,8 +40,8 @@ class MainPanel(wx.Panel):
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(path_to_module,
-                                     path.pardir, "config.conf")
+        self.config_file = path.join(user_config_dir("iridaUploader"),
+                                     "config.conf")
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
@@ -62,7 +57,6 @@ class MainPanel(wx.Panel):
         self.prev_uploaded_samples = []
         self.mui_created_in_handle_api_thread_error = False
 
-        self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.CF_LABEL_TEXT_HEIGHT = 52
@@ -103,10 +97,9 @@ class MainPanel(wx.Panel):
         # between directory box & credentials
 
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
+            self.log_panel_sizer, proportion=1, flag=wx.EXPAND |
             wx.ALIGN_CENTER)
 
-        self.top_sizer.AddSpacer(self.SECTION_SPACE)
         self.top_sizer.Add(
             self.progress_bar_sizer,
             flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
@@ -114,7 +107,7 @@ class MainPanel(wx.Panel):
         self.padding.Add(
             self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
             border=self.PADDING_LEN)
-        self.padding.AddStretchSpacer()
+
         self.padding.Add(
             self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=self.PADDING_LEN)
@@ -142,6 +135,10 @@ class MainPanel(wx.Panel):
 
         # Updates upload speed and estimated remaining time labels
         pub.subscribe(self.update_remaining_time, "update_remaining_time")
+
+        # displays the completion command message in to the log panel
+        pub.subscribe(self.display_completion_cmd_msg,
+                      "display_completion_cmd_msg")
 
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
@@ -363,7 +360,7 @@ class MainPanel(wx.Panel):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="", size=(-1, self.LOG_PANEL_HEIGHT),
+            value="",
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
@@ -914,6 +911,8 @@ class MainPanel(wx.Panel):
                 files=str(progress_data["curr_files_uploading"]),
                 pct=str(progress_data["curr_file_upload_pct"])))
 
+            if progress_data["overall_upload_pct"] > 100:
+                progress_data["overall_upload_pct"] = 100
             self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
@@ -933,12 +932,19 @@ class MainPanel(wx.Panel):
                    args=(self.curr_upload_id,))
         t.daemon = True
         t.start()
+
         self.upload_complete = True
         self.create_miseq_uploader_info_file("Complete")
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
+
         wx.CallAfter(self.Layout)
+
+    def display_completion_cmd_msg(self, completion_cmd):
+
+        wx.CallAfter(self.log_color_print,
+                     "Executing completion command: " + completion_cmd)
 
     def create_miseq_uploader_info_file(self, upload_status):
 
@@ -1321,6 +1327,9 @@ class MainPanel(wx.Panel):
 
         if the updated self.api is not None re-enable the upload button
 
+        reload self.conf_parser in case it's value (e.g completion_cmd)
+        gets updated
+
         no return value
         """
 
@@ -1328,19 +1337,38 @@ class MainPanel(wx.Panel):
         if self.api is not None:
             self.upload_button.Enable()
 
+        self.conf_parser.read(self.config_file)
+
 
 class MainFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 800)
+        self.display_size = wx.GetDisplaySize()
+        self.num_of_monitors = wx.Display_GetCount()
+
+        WIDTH_PCT = 0.85
+        HEIGHT_PCT = 0.75
+        self.WINDOW_SIZE_WIDTH = (
+            self.display_size.x/self.num_of_monitors) * WIDTH_PCT
+        self.WINDOW_SIZE_HEIGHT = (self.display_size.y) * HEIGHT_PCT
+
+        self.WINDOW_MAX_WIDTH = 900
+        self.WINDOW_MAX_HEIGHT = 800
+        self.MIN_WIDTH_SIZE = 600
+        self.MIN_HEIGHT_SIZE = 400
+        if self.WINDOW_SIZE_WIDTH > self.WINDOW_MAX_WIDTH:
+            self.WINDOW_SIZE_WIDTH = self.WINDOW_MAX_WIDTH
+        if self.WINDOW_SIZE_HEIGHT > self.WINDOW_MAX_HEIGHT:
+            self.WINDOW_SIZE_HEIGHT = self.WINDOW_MAX_HEIGHT
+
+        self.WINDOW_SIZE = (self.WINDOW_SIZE_WIDTH, self.WINDOW_SIZE_HEIGHT)
 
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+                          style=wx.DEFAULT_FRAME_STYLE)
 
         self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
@@ -1350,6 +1378,8 @@ class MainFrame(wx.Frame):
         self.add_options_menu()
         self.add_settings_option()
 
+        self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
+                          self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
         self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
         self.Center()
 

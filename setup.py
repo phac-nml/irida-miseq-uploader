@@ -1,10 +1,10 @@
-import sys
 import site
 import platform
 import distutils
 import distutils.core
 from shutil import move, copy2
-from os import path
+from os import path, mkdir
+from appdirs import user_config_dir
 
 
 def readme():
@@ -22,22 +22,10 @@ distutils.core.setup(name="iridaUploader",
     zip_safe=False
 )
 
-# Assuming only running on either Windows or Linux
-if platform.system() == "Windows":
-    py_version = str(sys.version_info.major) + str(sys.version_info.minor)
-    dest = path.join(site.USER_BASE, "python" + py_version, "site-packages")
-    copy2("./config.conf", dest)
+config_dest = user_config_dir("iridaUploader")
+# if config file already exists do not copy
+if not path.exists(path.join(config_dest, "config.conf")):
+    if not path.isdir(config_dest):
+        mkdir(config_dest)
 
-    img_dest = path.join(dest,"GUI","images")
-    distutils.dir_util.copy_tree("./GUI/images", img_dest)
-
-else:
-    ver_info = sys.version_info
-    py_version = str(ver_info.major) + "." + str(ver_info.minor)
-
-    dest = path.join(site.USER_BASE, "lib", "python" + py_version,
-                     "site-packages")
-    copy2("./config.conf", dest)
-
-    img_dest = path.join(dest,"GUI","images")
-    distutils.dir_util.copy_tree("./GUI/images", img_dest)
+    copy2("./config.conf", config_dest)
