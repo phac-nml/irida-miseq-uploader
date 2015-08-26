@@ -23,7 +23,7 @@ distutils.core.setup(name="iridaUploader",
         "iridaUploader/GUI/images": "iridaUploader/GUI/images"
     },
     package_data={
-        "iridaUploader.GUI": ["images/*.png"]
+        "iridaUploader.GUI": ["images/*.png", "images/*.ico"]
     }
 )
 
