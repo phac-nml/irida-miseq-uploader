@@ -73,6 +73,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.sp.config_dict["password"] = "password2"
         self.frame.sp.config_dict["client_id"] = "testClient2"
         self.frame.sp.config_dict["client_secret"] = "testSecret2"
+        self.frame.sp.config_dict["completion_cmd"] = "echo 2"
 
     def set_boxes(self):
 
@@ -86,6 +87,8 @@ class TestSettingsFrame(unittest.TestCase):
             self.frame.sp.config_dict["client_id"])
         self.frame.sp.client_secret_box.SetValue(
             self.frame.sp.config_dict["client_secret"])
+        self.frame.sp.completion_cmd_box.SetValue(
+            self.frame.sp.config_dict["completion_cmd"])
 
     @patch("iridaUploader.GUI.SettingsFrame.RawConfigParser")
     def setUp(self, mock_confparser):
@@ -327,7 +330,7 @@ class TestSettingsFrame(unittest.TestCase):
 
         push_button(self.frame.sp.close_btn)
 
-        expected_targ_section = "apiCalls"
+        expected_targ_section = "Settings"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
     @patch("iridaUploader.GUI.SettingsFrame.SettingsPanel.write_config_data")
