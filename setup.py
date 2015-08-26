@@ -1,11 +1,9 @@
-import site
-import platform
 import distutils
 import distutils.core
-from shutil import move, copy2
-from os import path, mkdir
+
 from appdirs import user_config_dir
 
+from post_installation import post_installation
 
 def readme():
     """Return the readme file"""
@@ -22,20 +20,12 @@ distutils.core.setup(name="iridaUploader",
               "iridaUploader.GUI", "iridaUploader.Model",
               "iridaUploader.Parsers", "iridaUploader.Validation"],
     package_dir={
-        "iridaUploader/GUI/images": "iridaUploader/GUI/images",
-        "iridaUploader": "iridaUploader"
+        "iridaUploader/GUI/images": "iridaUploader/GUI/images"
     },
     package_data={
-        "iridaUploader.GUI": ["images/*.png"],
-        "iridaUploader": ["*.conf"]
+        "iridaUploader.GUI": ["images/*.png"]
     }
 )
 
 
-config_dest = user_config_dir("iridaUploader")
-# if config file already exists do not copy
-if not path.exists(path.join(config_dest, "config.conf")):
-    if not path.isdir(config_dest):
-        mkdir(config_dest)
-
-    copy2("./config.conf", config_dest)
+post_installation()
