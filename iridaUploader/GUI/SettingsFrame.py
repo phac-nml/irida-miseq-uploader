@@ -1,24 +1,28 @@
-import wx
 import sys
 import logging
 from os import path
-from requests.exceptions import ConnectionError
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
+
+import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from requests.exceptions import ConnectionError
 from pubsub import pub
+from appdirs import user_config_dir
 
 from iridaUploader.API.apiCalls import ApiCalls
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
 
 DEFAULT_BASE_URL = "http://localhost:8080/api/"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "password1"
 DEFAULT_CLIENT_ID = "testClient"
 DEFAULT_CLIENT_SECRET = "testClientSecret"
+
+
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 
 class SettingsPanel(wx.Panel):
@@ -30,7 +34,8 @@ class SettingsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path_to_module + "/../config.conf"
+        self.config_file = path.join(user_config_dir("iridaUploader"),
+                                     "config.conf")
         self.conf_parser.read(self.config_file)
         self.config_dict = OrderedDict()
         self.load_curr_config()
@@ -98,6 +103,8 @@ class SettingsPanel(wx.Panel):
 
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.completion_cmd_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.create_icon_images()
@@ -106,6 +113,7 @@ class SettingsPanel(wx.Panel):
         self.add_password_section()
         self.add_client_id_section()
         self.add_client_secret_section()
+        self.add_completion_cmd_text_box()
         self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
@@ -139,6 +147,10 @@ class SettingsPanel(wx.Panel):
             self.credentials_container, proportion=0,
             flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
+        self.top_sizer.Add(self.completion_cmd_sizer, proportion=0,
+                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
+                           border=self.SIZER_BORDER * 2)
+
         self.checkbox_log_container.Add(
             self.lp_checkbox_sizer,
             flag=wx.ALIGN_LEFT | wx.LEFT, border=self.SIZER_BORDER*2)
@@ -148,13 +160,12 @@ class SettingsPanel(wx.Panel):
             self.checkbox_log_container, proportion=0,
             flag=wx.ALIGN_CENTER | wx.EXPAND)
 
+        self.top_sizer.Add(
+            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
+            wx.LEFT | wx.RIGHT, border=self.SIZER_BORDER*2)
+
         self.padding.Add(self.top_sizer, flag=wx.ALL | wx.EXPAND,
                          border=self.PADDING_LEN)
-
-        self.padding.AddStretchSpacer()
-        self.padding.Add(
-            self.buttons_sizer, flag=wx.ALIGN_BOTTOM | wx.EXPAND |
-            wx.LEFT | wx.RIGHT | wx.BOTTOM, border=self.SIZER_BORDER*3)
 
         self.Center()
         self.Layout()
@@ -168,16 +179,18 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        self.config_dict["baseURL"] = self.conf_parser.get("apiCalls",
+        self.config_dict["baseURL"] = self.conf_parser.get("Settings",
                                                            "baseURL")
-        self.config_dict["username"] = self.conf_parser.get("apiCalls",
+        self.config_dict["username"] = self.conf_parser.get("Settings",
                                                             "username")
-        self.config_dict["password"] = self.conf_parser.get("apiCalls",
+        self.config_dict["password"] = self.conf_parser.get("Settings",
                                                             "password")
-        self.config_dict["client_id"] = self.conf_parser.get("apiCalls",
+        self.config_dict["client_id"] = self.conf_parser.get("Settings",
                                                              "client_id")
         self.config_dict["client_secret"] = self.conf_parser.get(
-                                            "apiCalls", "client_secret")
+                                            "Settings", "client_secret")
+        self.config_dict["completion_cmd"] = self.conf_parser.get(
+                                            "Settings", "completion_cmd")
 
     def create_api_obj(self):
 
@@ -703,17 +716,19 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
+        img_dir_path = path.join(path_to_module, "images")
+
         # success icon made by Google @ "http://www.google.com". CC BY 3.0
-        suc_img_path = path.join(path_to_module, "images", "Success.png")
+        suc_img_path = path.join(img_dir_path, "Success.png")
         self.suc_img = wx.Image(suc_img_path,
                                 wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
         # warning icon made by Freepik @ "http://www.freepik.com". CC BY 3.0
-        warn_img_path = path.join(path_to_module, "images", "Warning.png")
+        warn_img_path = path.join(img_dir_path, "Warning.png")
         self.warn_img = wx.Image(warn_img_path,
                                  wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
-        placeholder_img_path = path.join(path_to_module, "images",
+        placeholder_img_path = path.join(img_dir_path,
                                          "Placeholder.png")
         self.ph_img = wx.Image(placeholder_img_path,
                                wx.BITMAP_TYPE_ANY).ConvertToBitmap()
@@ -817,9 +832,8 @@ class SettingsPanel(wx.Panel):
             size=(self.LOG_PANEL_SIZE),
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
         value = ("Settings menu.\n" +
-                 "Click 'Save' to keep any changes you make.\n" +
-                 "Click 'Close' to go back to uploader window.\n" +
-                 "Click 'Default' to restore settings to default values.\n")
+                 "All changes enterred in to the text boxes will be saved.\n" +
+                 "Click 'Close' to save and go back to the uploader window.\n")
 
         self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
@@ -827,6 +841,36 @@ class SettingsPanel(wx.Panel):
         self.log_panel.AppendText("\n")
         self.log_panel.Hide()
         self.log_panel_sizer.Add(self.log_panel)
+
+    def add_completion_cmd_text_box(self):
+
+        """
+        Adds text box for system command
+        System command will be executed when an upload completes
+
+
+        no return value
+        """
+
+        self.completion_cmd_label = wx.StaticText(
+            self, id=-1, label="Completion command")
+        self.completion_cmd_label.SetFont(self.LABEL_TXT_FONT)
+
+        self.completion_cmd_box = wx.TextCtrl(self,
+                                              size=(-1, self.ICON_HEIGHT))
+        self.completion_cmd_box.SetFont(self.TEXTBOX_FONT)
+        self.completion_cmd_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+        self.completion_cmd_box.SetValue(self.config_dict["completion_cmd"])
+
+        tip = "Command to be executed when an upload completes"
+        self.completion_cmd_label.SetToolTipString(tip)
+        self.completion_cmd_box.SetToolTipString(tip)
+
+        self.completion_cmd_sizer.Add(self.completion_cmd_label,
+                                      flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                      border=self.ICON_SPACE)
+        self.completion_cmd_sizer.Add(self.completion_cmd_box, proportion=1,
+                                      flag=wx.EXPAND)
 
     def print_config_to_log_panel(self, changes_dict):
 
@@ -869,11 +913,12 @@ class SettingsPanel(wx.Panel):
         """
 
         changes_dict = self.get_changes_dict()
+
         if len(changes_dict) > 0:
             self.log_panel.Clear()
             self.log_panel.AppendText("Saving...\n")
 
-            targ_section = "apiCalls"
+            targ_section = "Settings"
             self.write_config_data(targ_section, changes_dict)
 
             self.load_curr_config()
@@ -929,7 +974,7 @@ class SettingsPanel(wx.Panel):
 
             user_choice = self.prompt_dlg.ShowModal()
             if user_choice == wx.ID_YES:
-                targ_section = "apiCalls"
+                targ_section = "Settings"
                 self.write_config_data(targ_section, changes_dict)
                 self.load_curr_config()
 
@@ -940,6 +985,8 @@ class SettingsPanel(wx.Panel):
                 self.client_id_box.SetValue(self.config_dict["client_id"])
                 self.client_secret_box.SetValue(
                     self.config_dict["client_secret"])
+                self.completion_cmd_box.SetValue(
+                    self.config_dict["completion_cmd"])
 
                 self.prompt_dlg.Destroy()
 
@@ -1009,6 +1056,7 @@ class SettingsPanel(wx.Panel):
         val_dict["password"] = self.password_box.GetValue()
         val_dict["client_id"] = self.client_id_box.GetValue()
         val_dict["client_secret"] = self.client_secret_box.GetValue()
+        val_dict["completion_cmd"] = self.completion_cmd_box.GetValue()
 
         return val_dict
 
@@ -1045,7 +1093,7 @@ class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 350)
+        self.WINDOW_SIZE = (700, 380)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",

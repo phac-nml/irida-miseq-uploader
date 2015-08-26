@@ -5,12 +5,15 @@ from urllib2 import Request, urlopen, URLError, HTTPError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
+from os import path, system
+from ConfigParser import RawConfigParser
 
 from rauth import OAuth2Service, OAuth2Session
 from requests import Request
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
 from pubsub import pub
+from appdirs import user_config_dir
 
 from iridaUploader.Model.SequenceFile import SequenceFile
 from iridaUploader.Model.Project import Project
@@ -30,8 +33,7 @@ def method_decorator(fn):
         """
         Run the function (fn) and if any errors are raised then
         the publisher sends a messaage which calls
-        handle_send_seq_pair_files_error() in
-        iridaUploaderMain.MainPanel
+        handle_api_thread_error() in iridaUploaderMain.MainPanel
         """
 
         res = None
@@ -39,16 +41,33 @@ def method_decorator(fn):
             res = fn(*args, **kwargs)
         except Exception, e:
 
-            if "callback" in kwargs.keys():
+            if fn.__name__ == "send_pair_sequence_files":
 
-                err_msg, uploaded_samples_q = e.args
-                pub.sendMessage(
-                    "handle_send_seq_pair_files_error",
-                    exception_error=e.__class__,
-                    error_msg="".join(err_msg),
-                    uploaded_samples_q=uploaded_samples_q)
+                if len(e.args) > 1:
+                    err_msg, uploaded_samples_q = e.args
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg="".join(err_msg),
+                        uploaded_samples_q=uploaded_samples_q)
+
+                else:
+
+                    pub.sendMessage(
+                        "handle_api_thread_error",
+                        function_name=fn.__name__,
+                        exception_error=e.__class__,
+                        error_msg=e.message)
 
             else:
+
+                pub.sendMessage(
+                    "handle_api_thread_error",
+                    function_name=fn.__name__,
+                    exception_error=e.__class__,
+                    error_msg=e.message)
+
                 raise
 
         return res
@@ -71,7 +90,12 @@ def class_decorator(*method_names):
     return class_rebuilder
 
 
-@class_decorator("send_pair_sequence_files")
+@class_decorator(
+    "get_projects", "get_samples", "get_sequence_files",
+    "send_project", "send_samples", "_send_pair_sequence_files"
+    "get_pair_seq_runs", "create_paired_seq_run",
+    "_set_pair_seq_run_upload_status"
+)
 class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
@@ -95,6 +119,11 @@ class ApiCalls(object):
         self.username = username
         self.password = password
         self.max_wait_time = max_wait_time
+
+        self.conf_parser = RawConfigParser()
+        self.config_file = path.join(user_config_dir("iridaUploader"),
+                                     "config.conf")
+        self.conf_parser.read(self.config_file)
 
         self.create_session()
 
@@ -547,6 +576,11 @@ class ApiCalls(object):
 
         if callback is not None:
             pub.sendMessage("pair_seq_files_upload_complete")
+            completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
+            if len(completion_cmd) > 0:
+                pub.sendMessage("display_completion_cmd_msg",
+                                completion_cmd=completion_cmd)
+                system(completion_cmd)
 
         return json_res_list
 
@@ -758,6 +792,22 @@ class ApiCalls(object):
         """
 
         status = "COMPLETE"
+        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+
+        return json_res
+
+    def set_pair_seq_run_uploading(self, identifier):
+
+        """
+        Update a sequencing run's upload status to "UPLOADING"
+
+        arguments:
+            identifier -- the id of the sequencing run to be updated
+
+        returns result of patch request
+        """
+
+        status = "UPLOADING"
         json_res = self._set_pair_seq_run_upload_status(identifier, status)
 
         return json_res

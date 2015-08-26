@@ -1,4 +1,3 @@
-import wx
 import sys
 import json
 from os import path, getcwd, pardir, listdir
@@ -8,11 +7,14 @@ from time import time
 from math import ceil
 from copy import deepcopy
 from Queue import Queue
+from ConfigParser import RawConfigParser
 
+import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
 from pubsub import pub
+from appdirs import user_config_dir
 
 from iridaUploader.Parsers.miseqParser import (
     complete_parse_samples, parse_metadata)
@@ -29,11 +31,6 @@ from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
 from iridaUploader.GUI.SettingsFrame import SettingsFrame, ConnectionError
 
 
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
-
-
 class MainPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -44,9 +41,15 @@ class MainPanel(wx.Panel):
 
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
+        self.conf_parser = RawConfigParser()
+        self.config_file = path.join(user_config_dir("iridaUploader"),
+                                     "config.conf")
+        self.conf_parser.read(self.config_file)
+
         self.sample_sheet_files = []
         self.seq_run_list = []
-        self.browse_path = getcwd()
+        self.browse_path = self.get_config_default_dir()
+
         self.dir_dlg = None
         self.api = None
         self.upload_complete = None
@@ -54,9 +57,8 @@ class MainPanel(wx.Panel):
         self.loaded_upload_id = None
         self.uploaded_samples_q = None
         self.prev_uploaded_samples = []
-        self.mui_created_in_handle_send_seq_pair_files_error = False
+        self.mui_created_in_handle_api_thread_error = False
 
-        self.LOG_PANEL_HEIGHT = 400
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
         self.CF_LABEL_TEXT_HEIGHT = 52
@@ -97,10 +99,9 @@ class MainPanel(wx.Panel):
         # between directory box & credentials
 
         self.top_sizer.Add(
-            self.log_panel_sizer, proportion=0, flag=wx.EXPAND |
+            self.log_panel_sizer, proportion=1, flag=wx.EXPAND |
             wx.ALIGN_CENTER)
 
-        self.top_sizer.AddSpacer(self.SECTION_SPACE)
         self.top_sizer.Add(
             self.progress_bar_sizer,
             flag=wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER | wx.EXPAND, border=5)
@@ -108,7 +109,7 @@ class MainPanel(wx.Panel):
         self.padding.Add(
             self.top_sizer, proportion=1, flag=wx.ALL | wx.EXPAND,
             border=self.PADDING_LEN)
-        self.padding.AddStretchSpacer()
+
         self.padding.Add(
             self.upload_button_sizer, proportion=0,
             flag=wx.BOTTOM | wx.ALIGN_CENTER, border=self.PADDING_LEN)
@@ -124,10 +125,10 @@ class MainPanel(wx.Panel):
         pub.subscribe(self.pair_seq_files_upload_complete,
                       "pair_seq_files_upload_complete")
 
-        # Called by api.send_pair_sequence_files() when an error occurs
+        # Called by an api function
         # display error message and update sequencing run uploadStatus to ERROR
-        pub.subscribe(self.handle_send_seq_pair_files_error,
-                      "handle_send_seq_pair_files_error")
+        pub.subscribe(self.handle_api_thread_error,
+                      "handle_api_thread_error")
 
         # update self.api when Settings is closed
         # if it's not None (i.e can connect to API) enable the submit button
@@ -137,11 +138,43 @@ class MainPanel(wx.Panel):
         # Updates upload speed and estimated remaining time labels
         pub.subscribe(self.update_remaining_time, "update_remaining_time")
 
+        # displays the completion command message in to the log panel
+        pub.subscribe(self.display_completion_cmd_msg,
+                      "display_completion_cmd_msg")
+
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
         self.Show()
+
+    def get_config_default_dir(self):
+
+        """
+        If the config file doesn't have a section
+        "iridaUploaderMain" then it won't contain a default directory
+        key
+        So create one and set the default directory to be the user's
+        home directory
+
+        return the path to the default directory from the config file
+        """
+
+        section = "iridaUploaderMain"
+        key = "default_dir"
+        # if first run, default dir doesn't exist yet in config
+        if not self.conf_parser.has_section(section):
+            self.conf_parser.add_section(section)
+
+            # set default directory to be the user's home directory
+            default_dir_path = path.expanduser("~")
+            self.conf_parser.set(section, key,
+                                 default_dir_path)
+
+            with open(self.config_file, 'wb') as configfile:
+                self.conf_parser.write(configfile)
+
+        return self.conf_parser.get(section, key)
 
     def handle_send_seq_evt(self, evt):
 
@@ -182,6 +215,7 @@ class MainPanel(wx.Panel):
             self, size=(-1, self.browse_button.GetSize()[1]),
             style=wx.TE_PROCESS_ENTER)
         self.dir_box.SetFont(self.TEXTBOX_FONT)
+        self.dir_box.SetValue(self.browse_path)
 
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
@@ -328,7 +362,7 @@ class MainPanel(wx.Panel):
 
         self.log_panel = wx.TextCtrl(
             self, id=-1,
-            value="", size=(-1, self.LOG_PANEL_HEIGHT),
+            value="",
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
 
         value = ("Waiting for user to select directory containing " +
@@ -367,7 +401,8 @@ class MainPanel(wx.Panel):
 
         self.warn_dlg.Message = warn_msg  # for testing
         self.warn_dlg.ShowModal()
-        self.warn_dlg.Destroy()
+        if self.warn_dlg:
+            self.warn_dlg.Destroy()
 
     def log_color_print(self, msg, color=None):
 
@@ -406,7 +441,7 @@ class MainPanel(wx.Panel):
 
         in the event that the program is closed during mid-upload -
         if .miseqUploaderInfo was not already created in
-        handle_send_seq_pair_files_error() then try create it here
+        handle_api_thread_error() then try create it here
         write all uploaded sample id in to .miseqUploaderInfo
         if uploaded_samples_q is empty that should mean that the
         upload is complete and handle_upload_complete() already created
@@ -428,7 +463,7 @@ class MainPanel(wx.Panel):
                        args=(self.curr_upload_id,))
             t.start()
 
-            if not self.mui_created_in_handle_send_seq_pair_files_error:
+            if not self.mui_created_in_handle_api_thread_error:
                 uploaded_samples = []
                 while not self.uploaded_samples_q.empty():
                     uploaded_samples.append(self.uploaded_samples_q.get())
@@ -549,6 +584,7 @@ class MainPanel(wx.Panel):
                     # else it's a new upload so create a new seq run
                     if self.loaded_upload_id is not None:
                         self.curr_upload_id = self.loaded_upload_id
+                        api.set_pair_seq_run_uploading(self.curr_upload_id)
                     else:
                         json_res = api.create_paired_seq_run(
                             sr.get_all_metadata())
@@ -592,9 +628,9 @@ class MainPanel(wx.Panel):
                     self.seq_run_list.remove(sr)
 
         except Exception, e:
-            # this catches all api errors except send_pair_sequence_files
-            # it won't catch send_pair_sequence_files because it's threaded
-            # handle_send_seq_pair_files_error takes care of that
+            # this catches all non-api errors
+            # it won't catch api errors because they are on a diffrent thread
+            # handle_api_thread_error takes care of that
             if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
 
@@ -631,13 +667,14 @@ class MainPanel(wx.Panel):
         t.daemon = True
         t.start()
 
-    def handle_send_seq_pair_files_error(self, exception_error, error_msg,
-                                         uploaded_samples_q):
+    def handle_api_thread_error(self, function_name,
+                                exception_error, error_msg,
+                                uploaded_samples_q=None):
 
         """
-        Subscribed to "handle_send_seq_pair_files_error"
-        Called by api.send_pair_sequence_files() when an error occurs
-        It's set up this way because send_pair_sequence_files() is running
+        Subscribed to "handle_api_thread_error"
+        Called by any api method when an error occurs
+        It's set up this way because api is running
         in a different thread so the regular try-except block wasn't catching
         errors from this function
 
@@ -654,21 +691,27 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        uploaded_samples = []
-        while not uploaded_samples_q.empty():
-            uploaded_samples.append(uploaded_samples_q.get())
+        if uploaded_samples_q is not None:
+            uploaded_samples = []
+            while not uploaded_samples_q.empty():
+                uploaded_samples.append(uploaded_samples_q.get())
 
-        self.mui_created_in_handle_send_seq_pair_files_error = True
+            self.mui_created_in_handle_api_thread_error = True
 
-        self.create_miseq_uploader_info_file(uploaded_samples)
-        self.api.set_pair_seq_run_error(self.curr_upload_id)
+            self.create_miseq_uploader_info_file(uploaded_samples)
+
+        # upload_id might not yet be set if the api error is from before
+        # creating a sequencing run or the error is with the creation itself
+        if self.curr_upload_id is not None:
+            self.api.set_pair_seq_run_error(self.curr_upload_id)
 
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(
-            self.display_warning, "From ApiCalls.send_pair_sequence_files():" +
+            self.display_warning, "From {fname}".format(fname=function_name) +
             " {error_name}: {error_msg}".format(
                 error_name=exception_error.__name__,
-                error_msg=error_msg), dlg_msg="Server error")
+                error_msg=error_msg),
+            dlg_msg="API " + exception_error.__name__)
 
     def pair_seq_files_upload_complete(self):
 
@@ -870,6 +913,8 @@ class MainPanel(wx.Panel):
                 files=str(progress_data["curr_files_uploading"]),
                 pct=str(progress_data["curr_file_upload_pct"])))
 
+            if progress_data["overall_upload_pct"] > 100:
+                progress_data["overall_upload_pct"] = 100
             self.ov_progress_bar.SetValue(progress_data
                                           ["overall_upload_pct"])
             self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
@@ -889,12 +934,19 @@ class MainPanel(wx.Panel):
                    args=(self.curr_upload_id,))
         t.daemon = True
         t.start()
+
         self.upload_complete = True
         self.create_miseq_uploader_info_file("Complete")
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
+
         wx.CallAfter(self.Layout)
+
+    def display_completion_cmd_msg(self, completion_cmd):
+
+        wx.CallAfter(self.log_color_print,
+                     "Executing completion command: " + completion_cmd)
 
     def create_miseq_uploader_info_file(self, upload_status):
 
@@ -1019,6 +1071,11 @@ class MainPanel(wx.Panel):
 
         self.ov_progress_bar.SetValue(0)
 
+        # clear the list of sequencing runs and list of samplesheets when user
+        # selects a new directory
+        self.seq_run_list = []
+        self.sample_sheet_files = []
+
         try:
 
             ss_list = self.find_sample_sheet(self.browse_path,
@@ -1040,44 +1097,39 @@ class MainPanel(wx.Panel):
 
             else:
 
-                for sr in self.seq_run_list:
-                    if sr.sample_sheet_file in ss_list:
-                        ss_list.remove(sr.sample_sheet_file)
-                        err_msg = ("The SampleSheet file {sheet_file} " +
-                                   "that you are trying to upload has " +
-                                   "already been added to " +
-                                   "the list of Sequencing Runs " +
-                                   "to be uploaded.").format(
-                                    sheet_file=sr.sample_sheet_file)
-
-                        raise Warning(err_msg)
-
-                pruned_list = self.prune_sample_sheets_check_miseqUploaderInfo(
-                    ss_list)
+                pruned_list = (
+                    self.prune_sample_sheets_check_miseqUploaderInfo(
+                        ss_list))
                 if len(pruned_list) == 0:
-                    err_msg = ("The following have already been uploaded:\n" +
-                               "{_dir}").format(_dir=",\n".join(ss_list))
+                    err_msg = (
+                        "The following have already been uploaded:\n" +
+                        "{_dir}").format(_dir=",\n".join(ss_list))
 
                     raise SampleSheetError(err_msg)
 
-            self.sample_sheet_files = pruned_list
+                self.sample_sheet_files = pruned_list
 
-            for ss in self.sample_sheet_files:
-                self.log_color_print("Processing: " + ss)
-                try:
-                    self.process_sample_sheet(ss)
-                except (SampleSheetError, SequenceFileError):
-                    self.log_color_print(
-                        "Stopping the processing of SampleSheet.csv " +
-                        "files due to failed validation of previous " +
-                        "file: " + ss + "\n", self.LOG_PNL_ERR_TXT_COLOR)
-                    break  # stop processing sheets if validation fails
+                for ss in self.sample_sheet_files:
+                    self.log_color_print("Processing: " + ss)
+                    try:
+                        self.process_sample_sheet(ss)
+                    except (SampleSheetError, SequenceFileError):
+                        self.log_color_print(
+                            "Stopping the processing of SampleSheet.csv " +
+                            "files due to failed validation of previous " +
+                            "file: " + ss + "\n",
+                            self.LOG_PNL_ERR_TXT_COLOR)
+                        self.sample_sheet_files = []
+                        break  # stop processing sheets if validation fails
 
         except (SampleSheetError, OSError, IOError), e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
-        except Warning, e:
-            self.display_warning(str(e))
+        if len(self.sample_sheet_files) > 0:
+            self.log_color_print("List of SampleSheet files to be uploaded:")
+            for ss_file in self.sample_sheet_files:
+                self.log_color_print(ss_file)
+            self.log_color_print("\n")
 
     def process_sample_sheet(self, sample_sheet_file):
 
@@ -1277,6 +1329,9 @@ class MainPanel(wx.Panel):
 
         if the updated self.api is not None re-enable the upload button
 
+        reload self.conf_parser in case it's value (e.g completion_cmd)
+        gets updated
+
         no return value
         """
 
@@ -1284,19 +1339,38 @@ class MainPanel(wx.Panel):
         if self.api is not None:
             self.upload_button.Enable()
 
+        self.conf_parser.read(self.config_file)
+
 
 class MainFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
         self.parent = parent
-        self.WINDOW_SIZE = (900, 800)
+        self.display_size = wx.GetDisplaySize()
+        self.num_of_monitors = wx.Display_GetCount()
+
+        WIDTH_PCT = 0.85
+        HEIGHT_PCT = 0.75
+        self.WINDOW_SIZE_WIDTH = (
+            self.display_size.x/self.num_of_monitors) * WIDTH_PCT
+        self.WINDOW_SIZE_HEIGHT = (self.display_size.y) * HEIGHT_PCT
+
+        self.WINDOW_MAX_WIDTH = 900
+        self.WINDOW_MAX_HEIGHT = 800
+        self.MIN_WIDTH_SIZE = 600
+        self.MIN_HEIGHT_SIZE = 400
+        if self.WINDOW_SIZE_WIDTH > self.WINDOW_MAX_WIDTH:
+            self.WINDOW_SIZE_WIDTH = self.WINDOW_MAX_WIDTH
+        if self.WINDOW_SIZE_HEIGHT > self.WINDOW_MAX_HEIGHT:
+            self.WINDOW_SIZE_HEIGHT = self.WINDOW_MAX_HEIGHT
+
+        self.WINDOW_SIZE = (self.WINDOW_SIZE_WIDTH, self.WINDOW_SIZE_HEIGHT)
 
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="IRIDA Uploader",
                           size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^
-                          wx.MAXIMIZE_BOX)
+                          style=wx.DEFAULT_FRAME_STYLE)
 
         self.OPEN_SETTINGS_ID = 111  # arbitrary value
 
@@ -1306,6 +1380,8 @@ class MainFrame(wx.Frame):
         self.add_options_menu()
         self.add_settings_option()
 
+        self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
+                          self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
         self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
         self.Center()
 

@@ -156,12 +156,16 @@ def parse_samples(sample_sheet_file):
         i = 0
 
         if len(sample_dict.keys()) != len(line):
+            """
+            if there is one more Data header compared to the length of
+            data values then add an empty string to the end of data values
+            i.e the Description will be empty string
+            assumes the last Data header is going to be the Description
+            this handles the case where the last trailing comma is trimmed
 
-            # if there is one more Data header compared to the length of
-            # data values then add an empty string to the end of data values
-            # i.e the Description will be empty string
-            # assumes the last Data header is going to be the Description
-            # this handles the case where the last trailing comma is trimmed
+            Shaun said this issue may come up when a user edits the
+            SampleSheet from within the MiSeq software
+            """
             if len(sample_dict.keys()) - len(line) == 1:
                 line.append("")
             else:

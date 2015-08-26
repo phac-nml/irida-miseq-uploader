@@ -331,15 +331,18 @@ class TestOfflineValidation(unittest.TestCase):
         self.assertFalse(v_res.is_valid())
         self.assertEqual(v_res.error_count(), 3)
 
-        for sample in sample_list:
+        expected_err_msg1 = (
+            "{sid} missing Sample_Project").format(
+                sid=sample1.get_id())
+        self.assertIn(expected_err_msg1, v_res.get_errors())
 
-            expected_err_msg = (
-                "{sid} is missing at least one of the " +
-                "required values: " +
-                "Sample_Name, Sample_Project or Sample_Id"
-            ).format(sid=sample.get_id())
+        expected_err_msg2 = (
+            "{sid} missing Sample_Name").format(
+                sid=sample2.get_id())
+        self.assertIn(expected_err_msg2, v_res.get_errors())
 
-            self.assertIn(expected_err_msg, v_res.get_errors())
+        expected_err_msg3 = ("missing Sample_Id")
+        self.assertIn(expected_err_msg3, v_res.get_errors())
 
     def test_validateSampleList_invalid_name_and_id_mismatch(self):
 

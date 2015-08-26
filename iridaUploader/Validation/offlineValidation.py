@@ -179,22 +179,24 @@ def validate_sample_list(sample_list):
         valid = True
         for sample in sample_list:
 
-            res = sample_has_req_keys(sample)
-            if res is False:
+            missing = sample_has_req_keys(sample)
+            if len(missing) > 0:
                 valid = False
                 v_res.add_error_msg(
-                    ("{sid} is missing at least one of the required values: " +
-                     "Sample_Name, Sample_Project or Sample_Id").format(
-                        sid=sample.get_id()))
+                    ("{sid} missing {required_val}").format(
+                        sid=sample.get_id(),
+                        required_val=",".join(missing)))
 
             # Sample_ID and Sample_Name must be equal
             else:
                 res = sample_id_name_match(sample)
                 if res is False:
                     valid = False
-                    v_res.add_error_msg(sample.get_id() +
-                                        " does not match Sample_Name: " +
-                                        sample.get("sampleName"))
+                    v_res.add_error_msg(("Sample_ID {sid} does not match " +
+                                        "Sample_Name: {sname}").format(
+                                            sid=sample.get_id(),
+                                            sname=sample.get("sampleName")
+                                        ))
 
     else:
         v_res.add_error_msg(
@@ -229,15 +231,18 @@ def sample_has_req_keys(sample):
     return True if all required keys exist else False
     """
 
+    missing = []
     sample_proj = sample.get("sampleProject")
     sample_name = sample.get("sampleName")
     sample_id = sample.get_id()
-    return (sample_proj is not None and
-            len(sample_proj) > 0 and
-            sample_name is not None and
-            len(sample_name) > 0 and
-            sample_id is not None and
-            len(sample_id) > 0)
+
+    if sample_proj is None or len(sample_proj) == 0:
+        missing.append("Sample_Project")
+    if sample_name is None or len(sample_name) == 0:
+        missing.append("Sample_Name")
+    if sample_id is None or len(sample_id) == 0:
+        missing.append("Sample_Id")
+    return missing
 
 
 def validate_URL_form(url):
