@@ -31,6 +31,11 @@ from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
 from iridaUploader.GUI.SettingsFrame import SettingsFrame, ConnectionError
 
 
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
+
+
 class MainPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -1376,6 +1381,11 @@ class MainFrame(wx.Frame):
 
         self.mp = MainPanel(self)
         self.settings_frame = self.mp.settings_frame
+
+        img_dir_path = path.join(path_to_module, "images")
+        self.icon = wx.Icon(path.join(img_dir_path, "iu.ico"),
+                            wx.BITMAP_TYPE_ICO)
+        self.SetIcon(self.icon)
 
         self.add_options_menu()
         self.add_settings_option()
