@@ -1,6 +1,6 @@
 RequestExecutionLevel admin
 InstallDir $EXEDir
-
+Name "IRIDA Uploader"
 
 Section prerequisites
 
