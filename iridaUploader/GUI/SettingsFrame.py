@@ -1086,7 +1086,7 @@ class SettingsPanel(wx.Panel):
             makedirs(user_log_dir("iridaUploader"))
 
         server_msg_log_file_path = path.join(user_log_dir("iridaUploader"),
-                                     "server_msg.log")
+                                             "server_msg.log")
 
         logging.basicConfig(filename=server_msg_log_file_path,
                             level=logging.DEBUG,
