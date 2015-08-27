@@ -1,6 +1,7 @@
 RequestExecutionLevel admin
 InstallDir $EXEDir
 Name "IRIDA Uploader"
+Outfile "IRIDA_Uploader_Installer.exe"
 
 Section prerequisites
 
