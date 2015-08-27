@@ -24,7 +24,8 @@ distutils.core.setup(name="iridaUploader",
     },
     package_data={
         "iridaUploader.GUI": ["images/*.png", "images/*.ico"]
-    }
+    },
+	scripts=["iridaUploader/run_IRIDA_Uploader.py"]
 )
 
 
