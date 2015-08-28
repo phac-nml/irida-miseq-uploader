@@ -1,5 +1,6 @@
 .. _handling_errors:
 
+===============
 Handling Errors
 ===============
 

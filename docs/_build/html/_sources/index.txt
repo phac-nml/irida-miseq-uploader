@@ -6,9 +6,20 @@
 IRIDA Uploader documentation
 ==========================================
 
+Basic Usage
+-----------
+
 .. toctree::
    :maxdepth: 2
 	
    basic_usage.rst
+
+
+Handling Errors
+---------------
+
+.. toctree::
+   :maxdepth: 2
+
    handling_errors.rst
 
