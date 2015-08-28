@@ -62,7 +62,7 @@ You can comment out test_suites inside RunAllTests.py to not have them run
 
 ### Creating the Windows installer with NSIS
 
-The `iridaUploader.msi` is created with `python setup.py bdist_msi`  
+The `iridaUploader.msi` is created with `python setup.py bdist_msi` (Windows only)  
 This creates a `dist` folder in the working directory which contains the `iridaUploader.msi`  
 This needs to be moved into the `prerequisites` folder in order to compile the .nsi because that's where it's checking for python-2.7.10.msi, wxPython2.8-win32-unicode-2.8.12.1-py27.exe and iridaUploader.msi.  
 
