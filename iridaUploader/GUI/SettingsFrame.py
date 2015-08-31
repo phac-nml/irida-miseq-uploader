@@ -1,6 +1,6 @@
 import sys
 import logging
-from os import path
+from os import path, makedirs
 from ConfigParser import RawConfigParser
 from collections import OrderedDict
 
@@ -8,9 +8,9 @@ import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from requests.exceptions import ConnectionError
 from pubsub import pub
-from appdirs import user_config_dir
+from appdirs import user_config_dir, user_log_dir
 
-from API.apiCalls import ApiCalls
+from iridaUploader.API.apiCalls import ApiCalls
 
 
 DEFAULT_BASE_URL = "http://localhost:8080/api/"
@@ -1082,7 +1082,13 @@ class SettingsPanel(wx.Panel):
 
     def handle_showing_server_msg(self, err):
 
-        logging.basicConfig(filename='server_msg.log',
+        if not path.exists(user_log_dir("iridaUploader")):
+            makedirs(user_log_dir("iridaUploader"))
+
+        server_msg_log_file_path = path.join(user_log_dir("iridaUploader"),
+                                             "server_msg.log")
+
+        logging.basicConfig(filename=server_msg_log_file_path,
                             level=logging.DEBUG,
                             format="%(asctime)s %(message)s",
                             datefmt='%d/%m/%Y %I:%M:%S %p')

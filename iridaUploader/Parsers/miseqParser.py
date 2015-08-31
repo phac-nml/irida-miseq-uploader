@@ -5,10 +5,10 @@ from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 
-from Model.Sample import Sample
-from Model.SequenceFile import SequenceFile
-from Exceptions.SampleSheetError import SampleSheetError
-from Exceptions.SequenceFileError import SequenceFileError
+from iridaUploader.Model.Sample import Sample
+from iridaUploader.Model.SequenceFile import SequenceFile
+from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
+from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
 
 
 def parse_metadata(sample_sheet_file):

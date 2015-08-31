@@ -16,17 +16,24 @@ from wx.lib.newevent import NewEvent
 from pubsub import pub
 from appdirs import user_config_dir
 
-from Parsers.miseqParser import (complete_parse_samples, parse_metadata)
-from Model.SequencingRun import SequencingRun
-from Validation.onlineValidation import project_exists, sample_exists
-from Validation.offlineValidation import (validate_sample_sheet,
-                                          validate_pair_files,
-                                          validate_sample_list)
-from Exceptions.ProjectError import ProjectError
-from Exceptions.SampleError import SampleError
-from Exceptions.SampleSheetError import SampleSheetError
-from Exceptions.SequenceFileError import SequenceFileError
-from SettingsFrame import SettingsFrame, ConnectionError
+from iridaUploader.Parsers.miseqParser import (
+    complete_parse_samples, parse_metadata)
+from iridaUploader.Model.SequencingRun import SequencingRun
+from iridaUploader.Validation.onlineValidation import (
+    project_exists, sample_exists)
+from iridaUploader.Validation.offlineValidation import (validate_sample_sheet,
+                                                        validate_pair_files,
+                                                        validate_sample_list)
+from iridaUploader.Exceptions.ProjectError import ProjectError
+from iridaUploader.Exceptions.SampleError import SampleError
+from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
+from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
+from iridaUploader.GUI.SettingsFrame import SettingsFrame, ConnectionError
+
+
+path_to_module = path.dirname(__file__)
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 
 class MainPanel(wx.Panel):
@@ -1374,6 +1381,11 @@ class MainFrame(wx.Frame):
 
         self.mp = MainPanel(self)
         self.settings_frame = self.mp.settings_frame
+
+        img_dir_path = path.join(path_to_module, "images")
+        self.icon = wx.Icon(path.join(img_dir_path, "iu.ico"),
+                            wx.BITMAP_TYPE_ICO)
+        self.SetIcon(self.icon)
 
         self.add_options_menu()
         self.add_settings_option()
