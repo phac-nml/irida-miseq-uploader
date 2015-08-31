@@ -523,8 +523,10 @@ class MainPanel(wx.Panel):
                 for sample in sr.get_sample_list():
 
                     if project_exists(api, sample.get_project_id()) is False:
-                        msg = "Project ID: {id} doesn't exist".format(
-                               id=sample.get_project_id())
+                        msg = ("The Sample_Project: {pid} doesn't exist in " +
+                               "IRIDA for Sample_Id: {sid}").format(
+                                sid=sample.get_id(),
+                                pid=sample.get_project_id())
                         raise ProjectError(msg)
 
         except ProjectError, e:
