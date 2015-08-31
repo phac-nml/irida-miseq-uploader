@@ -13,12 +13,6 @@ def post_installation():
 
         copy2("./iridaUploader/config.conf", config_dest)
 
-    if not path.exists(path.join(config_dest, "docs")):
-        if not path.isdir(config_dest):
-            makedirs(config_dest)
-
-        copytree("./docs", path.join(config_dest, "docs"))
-
 
 if __name__ == "__main__":
     post_installation()
