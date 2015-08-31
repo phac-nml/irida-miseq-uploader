@@ -16,11 +16,11 @@ Uploading a single sequencing run
 
 .. image:: _static/basic_usage/Step1.png
 
-2. Select the directory containing the SampleSheet.csv file.
+2. Select the directory containing the `SampleSheet.csv` file.
 
 .. image:: _static/basic_usage/Step2.png
 
-3. If the SampleSheet.csv in the directory you selected is valid then the upload button will be displayed.  
+3. If the `SampleSheet.csv` in the directory you selected is valid then the upload button will be displayed.  
 If you see an error then see :ref:`handling_errors` for more information. 
 
 .. image:: _static/basic_usage/Step3.png
@@ -42,11 +42,9 @@ This is very similar to the steps in :ref:`upload_single_seq_run` except for **S
 For **Step 2**:   
 Select the directory containing the sub-directories that have the SampleSheet.csv files.
 
-Add image showing   
+.. image:: _static/basic_usage/Step2_Multiple.png
 
-dir_to_select
+In the image above: "selected_directory" is the directory to be selected and
+"sub-directory1" and "sub-directory2" each contain a `SampleSheet.csv` file.
 
-__subdir1
-
-__subdir2
-
+Continue with the same remaining steps as :ref:`upload_single_seq_run`.
