@@ -39,8 +39,28 @@
             
   <div class="section" id="handling-errors">
 <span id="id1"></span><h1>Handling Errors<a class="headerlink" href="#handling-errors" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="missing-sample-project-sample-name-sample-id">
-<h2>Missing [Sample_Project, Sample_Name, Sample_Id]<a class="headerlink" href="#missing-sample-project-sample-name-sample-id" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="missing-sample-project-or-sample-id">
+<h2>Missing Sample_Project or Sample_Id<a class="headerlink" href="#missing-sample-project-or-sample-id" title="Permalink to this headline">¶</a></h2>
+<p>Missing Sample_Project</p>
+<img alt="_images/missingSampleProject.png" src="_images/missingSampleProject.png" />
+<p>Missing Sample_Id</p>
+<img alt="_images/missingSampleId.png" src="_images/missingSampleId.png" />
+<p>You can fix either of these errors by editing the SampleSheet.csv file
+either with the Illumina Experiment Manager or any text editor.
+Simply fill in the missing value for the indicated field.</p>
+<p>e.g:</p>
+<p>Updating Sample_Id</p>
+<img alt="_images/fixMissingSampleId.png" src="_images/fixMissingSampleId.png" />
+<p>Updating Sample_Project</p>
+<img alt="_images/fixMissingSampleProject.png" src="_images/fixMissingSampleProject.png" />
+</div>
+<div class="section" id="sample-project-doesn-t-exist-in-irida">
+<h2>Sample_Project doesn&#8217;t exist in IRIDA<a class="headerlink" href="#sample-project-doesn-t-exist-in-irida" title="Permalink to this headline">¶</a></h2>
+<img alt="_images/projectIdNotInIRIDA.png" src="_images/projectIdNotInIRIDA.png" />
+<p>Check the Sample_Project field for the given Sample_Id in the error message
+to make sure that there are not typos in it. If the Sample_Project is correct
+then contact an IRIDA admin.</p>
+<img alt="_images/fixProjectIdNotInIRIDA.png" src="_images/fixProjectIdNotInIRIDA.png" />
 </div>
 </div>
 
@@ -53,7 +73,8 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Handling Errors</a><ul>
-<li><a class="reference internal" href="#missing-sample-project-sample-name-sample-id">Missing [Sample_Project, Sample_Name, Sample_Id]</a></li>
+<li><a class="reference internal" href="#missing-sample-project-or-sample-id">Missing Sample_Project or Sample_Id</a></li>
+<li><a class="reference internal" href="#sample-project-doesn-t-exist-in-irida">Sample_Project doesn&#8217;t exist in IRIDA</a></li>
 </ul>
 </li>
 </ul>
