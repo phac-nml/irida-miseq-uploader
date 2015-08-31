@@ -47,9 +47,11 @@
 <a class="reference external image-reference" href="_static/handling_errors/missingSampleProject.png"><img alt="_images/missingSampleProject.png" src="_images/missingSampleProject.png" /></a>
 <p>Missing Sample_Id</p>
 <a class="reference external image-reference" href="_static/handling_errors/missingSampleId.png"><img alt="_images/missingSampleId.png" src="_images/missingSampleId.png" /></a>
-<p>You can fix either of these errors by editing the <cite>SampleSheet.csv</cite> file
-either with the Illumina Experiment Manager or any text editor.
-Simply fill in the missing value for the indicated field.</p>
+<div class="line-block">
+<div class="line">You can fix either of these errors by editing the <cite>SampleSheet.csv</cite> file
+either with the Illumina Experiment Manager or any text editor.</div>
+<div class="line">Simply fill in the missing value for the indicated field.</div>
+</div>
 <p>e.g:</p>
 <p>Updating Sample_Id</p>
 <a class="reference external image-reference" href="_static/handling_errors/fixMissingSampleId.png"><img alt="_images/fixMissingSampleId.png" src="_images/fixMissingSampleId.png" /></a>
@@ -59,9 +61,11 @@ Simply fill in the missing value for the indicated field.</p>
 <div class="section" id="sample-project-doesn-t-exist-in-irida">
 <h3>Sample_Project doesn&#8217;t exist in IRIDA<a class="headerlink" href="#sample-project-doesn-t-exist-in-irida" title="Permalink to this headline">¶</a></h3>
 <a class="reference external image-reference" href="_static/handling_errors/projectIdNotInIRIDA.png"><img alt="_images/projectIdNotInIRIDA.png" src="_images/projectIdNotInIRIDA.png" /></a>
-<p>Check the Sample_Project field for the given Sample_Id in the error message
-to make sure that there are not typos in it. If the Sample_Project is correct
-then contact an IRIDA admin.</p>
+<div class="line-block">
+<div class="line">Check the Sample_Project field for the given Sample_Id in the error message
+to make sure that there are not typos in it.</div>
+<div class="line">If the Sample_Project is correct then contact an IRIDA admin.</div>
+</div>
 <a class="reference external image-reference" href="_static/handling_errors/fixProjectIdNotInIRIDA.png"><img alt="_images/fixProjectIdNotInIRIDA.png" src="_images/fixProjectIdNotInIRIDA.png" /></a>
 </div>
 <div class="section" id="sample-id-does-not-match-sample-name">
@@ -75,6 +79,38 @@ it&#8217;s Sample_Id.</p>
 </div>
 <div class="section" id="connection-error">
 <h2>Connection error<a class="headerlink" href="#connection-error" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="_static/handling_errors/connectionError.png"><img alt="_images/connectionError.png" src="_images/connectionError.png" /></a>
+<div class="line-block">
+<div class="line">The program cannot connect to the given IRIDA URL.</div>
+<div class="line">Go to Options-&gt;Settings to view the problem.</div>
+</div>
+<p>There are a few different possibilities to why a connection cannot be made:</p>
+<blockquote>
+<div><ul>
+<li><div class="first line-block">
+<div class="line">The IRIDA server may have been entered incorrectly.</div>
+<div class="line">Make sure that there are no typos in the IRIDA server URL.</div>
+<div class="line">If it is correct then the IRIDA server may be down.</div>
+<div class="line">Contact an IRIDA admin to let them know.</div>
+</div>
+<a class="reference external image-reference" href="_static/handling_errors/connectionError_URL.png"><img alt="_images/connectionError_URL.png" src="_images/connectionError_URL.png" /></a>
+</li>
+</ul>
+</div></blockquote>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<blockquote>
+<div><ul>
+<li><div class="first line-block">
+<div class="line">The credentials entered may be invalid.</div>
+<div class="line">Check for typos in the specified field.</div>
+<div class="line">If the values are correct then contact an IRIDA admin.</div>
+</div>
+<a class="reference external image-reference" href="_static/handling_errors/connectionError_clientID.png"><img alt="_images/connectionError_clientID.png" src="_images/connectionError_clientID.png" /></a>
+</li>
+</ul>
+</div></blockquote>
 </div>
 </div>
 
