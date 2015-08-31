@@ -1,5 +1,6 @@
 import sys
 import json
+import webbrowser
 from os import path, getcwd, pardir, listdir
 from fnmatch import filter as fnfilter
 from threading import Thread
@@ -1380,6 +1381,7 @@ class MainFrame(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE)
 
         self.OPEN_SETTINGS_ID = 111  # arbitrary value
+        self.OPEN_DOCS_ID = 222  # arbitrary value
 
         self.mp = MainPanel(self)
         self.settings_frame = self.mp.settings_frame
@@ -1391,6 +1393,7 @@ class MainFrame(wx.Frame):
 
         self.add_options_menu()
         self.add_settings_option()
+        self.add_documentation_option()
 
         self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
                           self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
@@ -1437,6 +1440,36 @@ class MainFrame(wx.Frame):
 
         self.settings_frame.Center()
         self.settings_frame.Show()
+
+    def add_documentation_option(self):
+
+        """
+        Adds Documentation on options menu
+        Clicking Documentation will call self.open_docs()
+        Accelerator: ALT + T + D
+
+        no return value
+        """
+
+        self.docs_menu_item = wx.MenuItem(self.options_menu,
+                                          self.OPEN_DOCS_ID,
+                                          "&Documentation")
+        self.options_menu.AppendItem(self.docs_menu_item)
+        self.Bind(wx.EVT_MENU, self.open_docs, id=self.OPEN_DOCS_ID)
+
+    def open_docs(self, evt):
+
+        """
+        Open documentation with user's default browser
+
+        no return value
+        """
+
+        config_dest = user_config_dir("iridaUploader")
+        docs_path = path.join(config_dest, "docs", "_build", "html",
+                              "index.html")
+
+        wx.CallAfter(webbrowser.open, docs_path)
 
 
 if __name__ == "__main__":
