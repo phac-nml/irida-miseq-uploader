@@ -1468,12 +1468,9 @@ class MainFrame(wx.Frame):
         docs_path = path.join(path_to_module, pardir, "docs", "_build", "html",
                               "index.html")
         if not path.isfile(docs_path):
-            currdir = getcwd()
-            docs_path = path.join(path_to_module, pardir, "docs")
-            chdir(docs_path)
-            system("make clean html")
-            chdir(currdir)
-        wx.CallAfter(webbrowser.open, docs_path)
+            wx.CallAfter(self.display_warning, "Documentation is not built.")
+        else:
+            wx.CallAfter(webbrowser.open, docs_path)
 
 
 if __name__ == "__main__":
