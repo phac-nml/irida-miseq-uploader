@@ -15,7 +15,7 @@ Missing Sample_Id
 
 .. image:: _static/handling_errors/missingSampleId.png
 
-You can fix either of these errors by editing the SampleSheet.csv file
+You can fix either of these errors by editing the `SampleSheet.csv` file
 either with the Illumina Experiment Manager or any text editor.
 Simply fill in the missing value for the indicated field.
 
@@ -42,3 +42,15 @@ then contact an IRIDA admin.
 
 .. image:: _static/handling_errors/fixProjectIdNotInIRIDA.png
 
+
+Sample_Id does not match Sample_Name
+---------------------------------------
+
+.. image:: _static/handling_errors/sample_ID_name_mismatch.png
+
+Edit the `SampleSheet.csv` file to make Sample_Id and Sample_Name be the same values.
+
+.. image:: _static/handling_errors/fix_sample_ID_name_mismatch.png
+
+**Note**: If the Sample_Name was left blank then it is automatically filled in with the same value as
+it's Sample_Id.
