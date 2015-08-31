@@ -1,7 +1,7 @@
 import sys
 import json
 import webbrowser
-from os import path, getcwd, pardir, listdir
+from os import path, getcwd, pardir, listdir, system, getcwd, chdir
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -1465,10 +1465,14 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        config_dest = user_config_dir("iridaUploader")
-        docs_path = path.join(config_dest, "docs", "_build", "html",
+        docs_path = path.join(path_to_module, pardir, "docs", "_build", "html",
                               "index.html")
-
+        if not path.isfile(docs_path):
+            currdir = getcwd()
+            docs_path = path.join(path_to_module, pardir, "docs")
+            chdir(docs_path)
+            system("make clean html")
+            chdir(currdir)
         wx.CallAfter(webbrowser.open, docs_path)
 
 
