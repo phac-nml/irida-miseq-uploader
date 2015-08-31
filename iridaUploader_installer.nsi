@@ -12,7 +12,7 @@ Section prerequisites
 
 
   File ".\prerequisites\wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
-  ExecWait "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
+  ExecWait "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe /SILENT"
 
 
   File ".\prerequisites\iridaUploader-0.1.win32.msi"
