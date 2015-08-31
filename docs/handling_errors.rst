@@ -4,8 +4,11 @@
 Handling Errors
 ===============
 
+SampleSheet errors
+------------------
+
 Missing Sample_Project or Sample_Id
------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Missing Sample_Project
 
@@ -36,7 +39,7 @@ Updating Sample_Project
 
 
 Sample_Project doesn't exist in IRIDA
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: _static/handling_errors/projectIdNotInIRIDA.png
     :target: _static/handling_errors/projectIdNotInIRIDA.png
@@ -50,7 +53,7 @@ then contact an IRIDA admin.
 
 
 Sample_Id does not match Sample_Name
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: _static/handling_errors/sample_ID_name_mismatch.png
     :target: _static/handling_errors/sample_ID_name_mismatch.png
@@ -62,3 +65,6 @@ Edit the `SampleSheet.csv` file to make Sample_Id and Sample_Name be the same va
 
 **Note**: If the Sample_Name was left blank then it is automatically filled in with the same value as
 it's Sample_Id.
+
+Connection error
+----------------

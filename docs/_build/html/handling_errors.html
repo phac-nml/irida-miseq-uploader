@@ -39,8 +39,10 @@
             
   <div class="section" id="handling-errors">
 <span id="id1"></span><h1>Handling Errors<a class="headerlink" href="#handling-errors" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="samplesheet-errors">
+<h2>SampleSheet errors<a class="headerlink" href="#samplesheet-errors" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="missing-sample-project-or-sample-id">
-<h2>Missing Sample_Project or Sample_Id<a class="headerlink" href="#missing-sample-project-or-sample-id" title="Permalink to this headline">¶</a></h2>
+<h3>Missing Sample_Project or Sample_Id<a class="headerlink" href="#missing-sample-project-or-sample-id" title="Permalink to this headline">¶</a></h3>
 <p>Missing Sample_Project</p>
 <a class="reference external image-reference" href="_static/handling_errors/missingSampleProject.png"><img alt="_images/missingSampleProject.png" src="_images/missingSampleProject.png" /></a>
 <p>Missing Sample_Id</p>
@@ -55,7 +57,7 @@ Simply fill in the missing value for the indicated field.</p>
 <a class="reference external image-reference" href="_static/handling_errors/fixMissingSampleProject.png"><img alt="_images/fixMissingSampleProject.png" src="_images/fixMissingSampleProject.png" /></a>
 </div>
 <div class="section" id="sample-project-doesn-t-exist-in-irida">
-<h2>Sample_Project doesn&#8217;t exist in IRIDA<a class="headerlink" href="#sample-project-doesn-t-exist-in-irida" title="Permalink to this headline">¶</a></h2>
+<h3>Sample_Project doesn&#8217;t exist in IRIDA<a class="headerlink" href="#sample-project-doesn-t-exist-in-irida" title="Permalink to this headline">¶</a></h3>
 <a class="reference external image-reference" href="_static/handling_errors/projectIdNotInIRIDA.png"><img alt="_images/projectIdNotInIRIDA.png" src="_images/projectIdNotInIRIDA.png" /></a>
 <p>Check the Sample_Project field for the given Sample_Id in the error message
 to make sure that there are not typos in it. If the Sample_Project is correct
@@ -63,12 +65,16 @@ then contact an IRIDA admin.</p>
 <a class="reference external image-reference" href="_static/handling_errors/fixProjectIdNotInIRIDA.png"><img alt="_images/fixProjectIdNotInIRIDA.png" src="_images/fixProjectIdNotInIRIDA.png" /></a>
 </div>
 <div class="section" id="sample-id-does-not-match-sample-name">
-<h2>Sample_Id does not match Sample_Name<a class="headerlink" href="#sample-id-does-not-match-sample-name" title="Permalink to this headline">¶</a></h2>
+<h3>Sample_Id does not match Sample_Name<a class="headerlink" href="#sample-id-does-not-match-sample-name" title="Permalink to this headline">¶</a></h3>
 <a class="reference external image-reference" href="_static/handling_errors/sample_ID_name_mismatch.png"><img alt="_images/sample_ID_name_mismatch.png" src="_images/sample_ID_name_mismatch.png" /></a>
 <p>Edit the <cite>SampleSheet.csv</cite> file to make Sample_Id and Sample_Name be the same values.</p>
 <a class="reference external image-reference" href="_static/handling_errors/fix_sample_ID_name_mismatch.png"><img alt="_images/fix_sample_ID_name_mismatch.png" src="_images/fix_sample_ID_name_mismatch.png" /></a>
 <p><strong>Note</strong>: If the Sample_Name was left blank then it is automatically filled in with the same value as
 it&#8217;s Sample_Id.</p>
+</div>
+</div>
+<div class="section" id="connection-error">
+<h2>Connection error<a class="headerlink" href="#connection-error" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -81,9 +87,13 @@ it&#8217;s Sample_Id.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Handling Errors</a><ul>
+<li><a class="reference internal" href="#samplesheet-errors">SampleSheet errors</a><ul>
 <li><a class="reference internal" href="#missing-sample-project-or-sample-id">Missing Sample_Project or Sample_Id</a></li>
 <li><a class="reference internal" href="#sample-project-doesn-t-exist-in-irida">Sample_Project doesn&#8217;t exist in IRIDA</a></li>
 <li><a class="reference internal" href="#sample-id-does-not-match-sample-name">Sample_Id does not match Sample_Name</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#connection-error">Connection error</a></li>
 </ul>
 </li>
 </ul>
