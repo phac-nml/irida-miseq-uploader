@@ -113,7 +113,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertTrue(len(sample_list) == 0)
 
         sample_dict = {
-            "sampleName": "integration_testSample",
+            "sampleName": "99-9999",
             "description": "integration_testSample description",
             "sequencerSampleId": "99-9999",
             "sampleProject": proj.get_id()
