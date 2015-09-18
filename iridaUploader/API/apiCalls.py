@@ -393,7 +393,7 @@ class ApiCalls(object):
         try:
             url = self.get_link(sample_URL, "sample/sequenceFiles",
                                 targ_dict={
-                                    "key": "sequencerSampleId",
+                                    "key": "sampleName",
                                     "value": sample_id
                                 })
 
@@ -620,7 +620,7 @@ class ApiCalls(object):
             sample_id = sample.get_id()
             seq_url = self.get_link(samples_url, "sample/sequenceFiles",
                                     targ_dict={
-                                        "key": "sequencerSampleId",
+                                        "key": "sampleName",
                                         "value": sample_id
                                     })
         except StopIteration:

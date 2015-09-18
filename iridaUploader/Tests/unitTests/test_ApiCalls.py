@@ -1105,7 +1105,7 @@ class TestApiCalls(unittest.TestCase):
         sample_id = "-1"
         sample = API.apiCalls.Sample({
             "sampleProject": proj_id,
-            "sequencerSampleId": sample_id
+            "sampleName": sample_id
         })
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)
