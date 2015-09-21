@@ -115,7 +115,6 @@ class TestApiIntegration(unittest.TestCase):
         sample_dict = {
             "sampleName": "99-9999",
             "description": "integration_testSample description",
-            "sequencerSampleId": "99-9999",
             "sampleProject": proj.get_id()
             # sequencer sample ID must have at least 3 characters
         }
@@ -130,8 +129,6 @@ class TestApiIntegration(unittest.TestCase):
                          server_response["resource"]["sampleName"])
         self.assertEqual(sample_dict["description"],
                          server_response["resource"]["description"])
-        self.assertEqual(sample_dict["sequencerSampleId"],
-                         server_response["resource"]["sequencerSampleId"])
         self.assertEqual("1",
                          server_response["resource"]["identifier"])
 
