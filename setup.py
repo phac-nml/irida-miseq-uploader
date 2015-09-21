@@ -12,7 +12,7 @@ def readme():
 
 
 distutils.core.setup(name="iridaUploader",
-    version="0.1",
+    version="1.0.0",
     url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
     author='Kevin Camba',
     author_email='kevin.camba@phac-aspc.gc.ca',
