@@ -187,17 +187,6 @@ def validate_sample_list(sample_list):
                         sid=sample.get_id(),
                         required_val=",".join(missing)))
 
-            # Sample_ID and Sample_Name must be equal
-            else:
-                res = sample_id_name_match(sample)
-                if res is False:
-                    valid = False
-                    v_res.add_error_msg(("Sample_ID {sid} does not match " +
-                                        "Sample_Name: {sname}").format(
-                                            sid=sample.get_id(),
-                                            sname=sample.get("sampleName")
-                                        ))
-
     else:
         v_res.add_error_msg(
             "The given list of samples is empty." +

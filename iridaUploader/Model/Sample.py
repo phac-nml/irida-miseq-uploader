@@ -13,7 +13,7 @@ class Sample:
         self.seq_file = None
 
     def get_id(self):
-        return self.get("sequencerSampleId")
+        return self.get("sampleName")
 
     def get_project_id(self):
         return self.get("sampleProject")
