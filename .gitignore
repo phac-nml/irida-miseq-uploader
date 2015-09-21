@@ -7,3 +7,5 @@
 *.miseqUploaderInfo
 *.miseqUploaderComplete
 *.conf
+iridaUploader/docs/_build/*
+build/

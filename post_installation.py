@@ -1,5 +1,5 @@
 #!C:\Python27\python.exe
-from shutil import copy2
+from shutil import copy2, copytree
 from os import path, makedirs
 from appdirs import user_config_dir
 
