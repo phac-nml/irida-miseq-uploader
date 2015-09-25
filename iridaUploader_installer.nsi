@@ -15,7 +15,7 @@ Section prerequisites
   ExecWait "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe /SILENT"
 
 
-  File ".\prerequisites\iridaUploader-0.1.win32.msi"
+  File ".\prerequisites\iridaUploader-1.0.0.win32.msi"
   ExecWait '"msiexec" /qb! /i "$TEMP\iridaUploader-0.1.win32.msi" TARGETDIR=C:\Python27'
 
 
