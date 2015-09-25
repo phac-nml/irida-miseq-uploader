@@ -646,7 +646,7 @@ class MainPanel(wx.Panel):
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(
                 self.display_warning, "{error_name}: {error_msg}".format(
-                    error_name=e.__class__.__name__, error_msg=e.message))
+                    error_name=e.__class__.__name__, error_msg=e.strerror))
 
     def upload_to_server(self, event):
 
