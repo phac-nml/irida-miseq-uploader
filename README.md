@@ -70,3 +70,5 @@ Download and install NSIS 3.0b2 at http://nsis.sourceforge.net/Download on Windo
 ![NSIS](https://irida.corefacility.ca/gitlab/uploads/rcamba/iridauploader/fbef81fd4a/NSIS.png)  
 
 You should now have the installer executable created.
+
+The MSI file that's created includes the current version number of the IRIDA MiSeq Uploader. When you're creating the installer with NSIS, you **must** change the version numbers of the MSI file in the `.nsi` file.
