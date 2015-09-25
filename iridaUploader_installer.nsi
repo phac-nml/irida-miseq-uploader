@@ -16,7 +16,7 @@ Section prerequisites
 
 
   File ".\prerequisites\iridaUploader-1.0.0.win32.msi"
-  ExecWait '"msiexec" /qb! /i "$TEMP\iridaUploader-0.1.win32.msi" TARGETDIR=C:\Python27'
+  ExecWait '"msiexec" /qb! /i "$TEMP\iridaUploader-1.0.0.win32.msi" TARGETDIR=C:\Python27'
 
 
 SectionEnd
