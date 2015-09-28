@@ -8,7 +8,7 @@ from rauth import OAuth2Service
 from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
 from requests.models import Response
-from iridaUploader.Model.SequenceFile import SequenceFile
+from Model.SequenceFile import SequenceFile
 
 import iridaUploader.API
 API = None

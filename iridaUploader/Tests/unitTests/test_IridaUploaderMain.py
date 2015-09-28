@@ -5,7 +5,7 @@ import traceback
 import sys
 from os import path, listdir
 
-from iridaUploader.GUI.iridaUploaderMain import MainFrame
+from GUI.iridaUploaderMain import MainFrame
 from mock import patch
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))

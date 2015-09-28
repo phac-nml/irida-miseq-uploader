@@ -4,14 +4,14 @@ from csv import reader
 from StringIO import StringIO
 from mock import patch
 
-from iridaUploader.Model.Sample import Sample
-from iridaUploader.Parsers.miseqParser import (
+from Model.Sample import Sample
+from Parsers.miseqParser import (
     parse_metadata, parse_samples, get_csv_reader,
     get_pair_files, get_all_fastq_files,
     parse_out_sequence_file,
     complete_parse_samples)
-from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
-from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
+from Exceptions.SampleSheetError import SampleSheetError
+from Exceptions.SequenceFileError import SequenceFileError
 
 path_to_module = path.abspath(path.dirname(__file__))
 if len(path_to_module) == 0:

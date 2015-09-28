@@ -1,5 +1,5 @@
 import wx
-from iridaUploader.GUI.iridaUploaderMain import MainFrame
+from GUI.iridaUploaderMain import MainFrame
 
 if __name__ == "__main__":
     app = wx.App(False)

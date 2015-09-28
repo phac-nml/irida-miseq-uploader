@@ -17,19 +17,19 @@ from wx.lib.newevent import NewEvent
 from pubsub import pub
 from appdirs import user_config_dir
 
-from iridaUploader.Parsers.miseqParser import (
+from Parsers.miseqParser import (
     complete_parse_samples, parse_metadata)
-from iridaUploader.Model.SequencingRun import SequencingRun
-from iridaUploader.Validation.onlineValidation import (
+from Model.SequencingRun import SequencingRun
+from Validation.onlineValidation import (
     project_exists, sample_exists)
-from iridaUploader.Validation.offlineValidation import (validate_sample_sheet,
+from Validation.offlineValidation import (validate_sample_sheet,
                                                         validate_pair_files,
                                                         validate_sample_list)
-from iridaUploader.Exceptions.ProjectError import ProjectError
-from iridaUploader.Exceptions.SampleError import SampleError
-from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
-from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
-from iridaUploader.GUI.SettingsFrame import SettingsFrame, ConnectionError
+from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
+from Exceptions.SampleSheetError import SampleSheetError
+from Exceptions.SequenceFileError import SequenceFileError
+from GUI.SettingsFrame import SettingsFrame, ConnectionError
 
 
 path_to_module = path.dirname(__file__)
@@ -1474,10 +1474,12 @@ class MainFrame(wx.Frame):
         else:
             wx.CallAfter(webbrowser.open, docs_path)
 
-
-if __name__ == "__main__":
+def main():
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
     frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()
