@@ -641,12 +641,14 @@ class MainPanel(wx.Panel):
             # handle_api_thread_error takes care of that
             if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
+		self.upload_complete = True
+		self.curr_upload_id = None
 
             wx.CallAfter(self.pulse_timer.Stop)
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(
                 self.display_warning, "{error_name}: {error_msg}".format(
-                    error_name=e.__class__.__name__, error_msg=e.message))
+                    error_name=e.__class__.__name__, error_msg=e.strerror))
 
     def upload_to_server(self, event):
 
