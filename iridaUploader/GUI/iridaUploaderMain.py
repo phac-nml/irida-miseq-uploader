@@ -1,7 +1,7 @@
 import sys
 import json
 import webbrowser
-from os import path, getcwd, pardir, listdir, system, getcwd, chdir
+from os import path, getcwd, pardir, listdir, system, getcwd, chdir, makedirs
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -9,6 +9,8 @@ from math import ceil
 from copy import deepcopy
 from Queue import Queue
 from ConfigParser import RawConfigParser
+
+from shutil import copy2
 
 import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
@@ -31,8 +33,10 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from GUI.SettingsFrame import SettingsFrame, ConnectionError
 
-
 path_to_module = path.dirname(__file__)
+user_config_dir = user_config_dir("iridaUploader")
+user_config_file = path.join(user_config_dir, "config.conf")
+
 if len(path_to_module) == 0:
     path_to_module = '.'
 
@@ -48,8 +52,7 @@ class MainPanel(wx.Panel):
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_config_dir("iridaUploader"),
-                                     "config.conf")
+        self.config_file = user_config_file
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
@@ -1466,15 +1469,24 @@ class MainFrame(wx.Frame):
 
         no return value
         """
-
-        docs_path = path.join(path_to_module, pardir, "docs", "_build", "html",
+        docs_path = path.join(path_to_module, "..", "..", "html",
                               "index.html")
         if not path.isfile(docs_path):
             wx.CallAfter(self.display_warning, "Documentation is not built.")
         else:
             wx.CallAfter(webbrowser.open, docs_path)
 
+def check_config_dirs():
+    if not path.exists(user_config_dir):
+        print "User config dir doesn't exist, making new one."
+        makedirs(user_config_dir)
+
+    if not path.exists(user_config_file):
+        print "User config file doesn't exist, using defaults."
+        copy2(path.join(path_to_module, "..", "..", "config.conf"), user_config_dir)
+
 def main():
+    check_config_dirs()
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
