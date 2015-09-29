@@ -1,24 +1,18 @@
-## Irida Uploader  
+IRIDA Uploader
+==============
 
 
-### Linux Installation
+Windows Installation
+--------------------
+
+Download the installer from https://irida.corefacility.ca/downloads/tools/
+
+Linux Installation
+------------------
 
 Install pip and wxpython:
 
     $ sudo apt-get install python-pip python-wxgtk2.8
-
-
-### Windows Installation
-
-pip:
-
-    https://pip.pypa.io/en/latest/installing.html
-
-wxpython:
-
-    http://sourceforge.net/projects/wxpython/files/wxPython/2.8.12.1/
-    Download wxPython2.8-win64-unicode-2.8.12.1-py27.exe for Windows 64 bit
-    or wxPython2.8-win32-unicode-2.8.12.1-py27.exe for Windows 32 bit
 
 ### virtualenv usage  
 
@@ -37,15 +31,12 @@ Build a virtualenv and install the dependencies:
     $ scripts/virtualenv_wx.sh
     $ python setup.py install
 
-Remember that wxPython must be already installed using:
-
-    $ sudo apt-get install python-wxgtk2.8
-
 Deactivate when finished:
 
     $ deactivate
 
-### Running Tests  
+Running Tests
+-------------
 
 Run unit tests and PEP8 verification with:
 
@@ -57,20 +48,22 @@ Google Chrome must be installed for selenium testing
     $ echo "grant all privileges on irida_uploader_test.* to 'test'@'localhost' identified by 'test';" | mysql -u mysql_user -p
     $ python RunAllTests.py --integration
 
-You can comment out test_suites inside RunAllTests.py to not have them run
+You can comment out `test_suites` inside RunAllTests.py to not have them run
 
+Creating the Windows installer
+------------------------------
 
-### Creating the Windows installer with NSIS
+### Requirements
 
-The `iridaUploader.msi` is created with `python setup.py bdist_msi` (Windows only)  
-This creates a `dist` folder in the working directory which contains the `iridaUploader.msi`  
-This needs to be moved into the `prerequisites` folder in order to compile the .nsi because that's where it's checking for python-2.7.10.msi, wxPython2.8-win32-unicode-2.8.12.1-py27.exe and iridaUploader.msi.  
+You must install several packages to build the Windows installer:
 
-Download and install NSIS 3.0b2 at http://nsis.sourceforge.net/Download on Windows. Right click the .nsi file and select compile NSIS script.
-![NSIS](https://irida.corefacility.ca/gitlab/uploads/rcamba/iridauploader/fbef81fd4a/NSIS.png)  
+    sudo apt-get install innoextract nsis python-pip python-virtualenv
 
-You should now have the installer executable created.
+### Building the Windows installer
 
-The MSI file that's created includes the current version number of the IRIDA MiSeq Uploader. When you're creating the installer with NSIS, you **must** change the version numbers of the MSI file in the `.nsi` file.
+From inside the `iridaUploader` directory, you can simply run:
 
-(For now) When you're updating this thing, you **must** go and delete the contents of the directory `C:\Python27\Lib\site-packages\iridaUploader`, otherwise the MSI installer thinks that there aren't any new files to update.
+    make windows
+
+This will build a Windows installer inside the `build/nsis/` directory, named something like `IRIDA_Uploader_1.0.0.exe`.
+
