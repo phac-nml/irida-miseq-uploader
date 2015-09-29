@@ -2,10 +2,10 @@ import unittest
 import ntpath
 from os import path
 
-from iridaUploader.API.apiCalls import ApiCalls
-from iridaUploader.Model.Project import Project
-from iridaUploader.Model.Sample import Sample
-from iridaUploader.Parsers.miseqParser import complete_parse_samples
+from API.apiCalls import ApiCalls
+from Model.Project import Project
+from Model.Sample import Sample
+from Parsers.miseqParser import complete_parse_samples
 
 from apiCalls_integration_data_setup import SetupIridaData
 

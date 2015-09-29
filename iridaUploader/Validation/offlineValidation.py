@@ -3,8 +3,8 @@ from copy import deepcopy
 from urlparse import urlparse
 from os import path
 
-from iridaUploader.Parsers.miseqParser import get_csv_reader
-from iridaUploader.Model.ValidationResult import ValidationResult
+from Parsers.miseqParser import get_csv_reader
+from Model.ValidationResult import ValidationResult
 
 
 def validate_sample_sheet(sample_sheet_file):

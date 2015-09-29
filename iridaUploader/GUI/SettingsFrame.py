@@ -10,7 +10,7 @@ from requests.exceptions import ConnectionError
 from pubsub import pub
 from appdirs import user_config_dir, user_log_dir
 
-from iridaUploader.API.apiCalls import ApiCalls
+from API.apiCalls import ApiCalls
 
 
 DEFAULT_BASE_URL = "http://localhost:8080/api/"

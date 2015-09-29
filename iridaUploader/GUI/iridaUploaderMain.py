@@ -1,7 +1,7 @@
 import sys
 import json
 import webbrowser
-from os import path, getcwd, pardir, listdir, system, getcwd, chdir
+from os import path, getcwd, pardir, listdir, system, getcwd, chdir, makedirs
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -10,6 +10,8 @@ from copy import deepcopy
 from Queue import Queue
 from ConfigParser import RawConfigParser
 
+from shutil import copy2
+
 import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
@@ -17,22 +19,24 @@ from wx.lib.newevent import NewEvent
 from pubsub import pub
 from appdirs import user_config_dir
 
-from iridaUploader.Parsers.miseqParser import (
+from Parsers.miseqParser import (
     complete_parse_samples, parse_metadata)
-from iridaUploader.Model.SequencingRun import SequencingRun
-from iridaUploader.Validation.onlineValidation import (
+from Model.SequencingRun import SequencingRun
+from Validation.onlineValidation import (
     project_exists, sample_exists)
-from iridaUploader.Validation.offlineValidation import (validate_sample_sheet,
+from Validation.offlineValidation import (validate_sample_sheet,
                                                         validate_pair_files,
                                                         validate_sample_list)
-from iridaUploader.Exceptions.ProjectError import ProjectError
-from iridaUploader.Exceptions.SampleError import SampleError
-from iridaUploader.Exceptions.SampleSheetError import SampleSheetError
-from iridaUploader.Exceptions.SequenceFileError import SequenceFileError
-from iridaUploader.GUI.SettingsFrame import SettingsFrame, ConnectionError
-
+from Exceptions.ProjectError import ProjectError
+from Exceptions.SampleError import SampleError
+from Exceptions.SampleSheetError import SampleSheetError
+from Exceptions.SequenceFileError import SequenceFileError
+from GUI.SettingsFrame import SettingsFrame, ConnectionError
 
 path_to_module = path.dirname(__file__)
+user_config_dir = user_config_dir("iridaUploader")
+user_config_file = path.join(user_config_dir, "config.conf")
+
 if len(path_to_module) == 0:
     path_to_module = '.'
 
@@ -48,8 +52,7 @@ class MainPanel(wx.Panel):
         self.send_seq_files_evt, self.EVT_SEND_SEQ_FILES = NewEvent()
 
         self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_config_dir("iridaUploader"),
-                                     "config.conf")
+        self.config_file = user_config_file
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
@@ -641,12 +644,14 @@ class MainPanel(wx.Panel):
             # handle_api_thread_error takes care of that
             if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
+		self.upload_complete = True
+		self.curr_upload_id = None
 
             wx.CallAfter(self.pulse_timer.Stop)
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(
                 self.display_warning, "{error_name}: {error_msg}".format(
-                    error_name=e.__class__.__name__, error_msg=e.message))
+                    error_name=e.__class__.__name__, error_msg=e.strerror))
 
     def upload_to_server(self, event):
 
@@ -1464,18 +1469,29 @@ class MainFrame(wx.Frame):
 
         no return value
         """
-
-        docs_path = path.join(path_to_module, pardir, "docs", "_build", "html",
+        docs_path = path.join(path_to_module, "..", "..", "html",
                               "index.html")
         if not path.isfile(docs_path):
             wx.CallAfter(self.display_warning, "Documentation is not built.")
         else:
             wx.CallAfter(webbrowser.open, docs_path)
 
+def check_config_dirs():
+    if not path.exists(user_config_dir):
+        print "User config dir doesn't exist, making new one."
+        makedirs(user_config_dir)
 
-if __name__ == "__main__":
+    if not path.exists(user_config_file):
+        print "User config file doesn't exist, using defaults."
+        copy2(path.join(path_to_module, "..", "..", "config.conf"), user_config_dir)
+
+def main():
+    check_config_dirs()
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
     frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()

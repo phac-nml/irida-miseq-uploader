@@ -6,7 +6,7 @@ import sys
 from os import path, listdir
 from requests.exceptions import ConnectionError
 from collections import OrderedDict
-import iridaUploader.GUI.SettingsFrame
+import GUI.SettingsFrame
 from mock import MagicMock, patch
 
 
