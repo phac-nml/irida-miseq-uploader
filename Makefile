@@ -1,5 +1,13 @@
 SHELL=/bin/bash
 
+clean:
+	rm -rf pynsist_pkgs
+	rm -rf .virtualenv
+	rm -rf build
+	rm -rf docs/_build
+	rm -rf wxPython3.0-win32-3.0.2.0-py27.exe
+	find -name "*pyc" -delete
+
 requirements:
 	virtualenv .virtualenv
 	source .virtualenv/bin/activate
