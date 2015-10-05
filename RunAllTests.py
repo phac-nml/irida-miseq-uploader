@@ -45,16 +45,6 @@ def load_unit_tests(suite_list):
     settings_ts = test_SettingsFrame.load_test_suite()
     suite_list.append(settings_ts)
 
-
-def run_verify_PEP8():
-
-    if platform.system() == "Linux" and "scripts" in listdir(getcwd()):
-        print "Running PEP8 verification"
-        res = system("./scripts/verifyPEP8.sh")
-
-    return res
-
-
 if __name__ == "__main__":
 
     suite_list = []
@@ -81,15 +71,5 @@ if __name__ == "__main__":
     if setup_handler is not None:
         setup_handler.stop_irida()
 
-    pep8_result = run_verify_PEP8()
-
     if len(test_result.failures)>0 or len(test_result.errors)>0:
-        exit_with_failure = True
-
-    if pep8_result == 0:
-        print "No PEP8 errors"
-    else:
-        exit_with_failure = True
-
-    if exit_with_failure:
         sys.exit(1)
