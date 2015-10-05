@@ -28,7 +28,10 @@ Build a virtualenv and install the dependencies:
     $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
     $ cd iridauploader
     $ pip install -r requirements.txt --allow-external pypubsub
-    $ scripts/virtualenv_wx.sh
+    $ ./scripts/virtualenv_wx.sh
+    $ cd docs
+    $ make html
+    $ cd ..
     $ python setup.py install
 
 Deactivate when finished:
