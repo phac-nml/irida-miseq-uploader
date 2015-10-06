@@ -90,7 +90,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.sp.completion_cmd_box.SetValue(
             self.frame.sp.config_dict["completion_cmd"])
 
-    @patch("iridaUploader.GUI.SettingsFrame.RawConfigParser")
+    @patch("GUI.SettingsFrame.RawConfigParser")
     def setUp(self, mock_confparser):
 
         """
@@ -111,7 +111,7 @@ class TestSettingsFrame(unittest.TestCase):
         # this gives a self.config_dict with empty string for all the keys
         # then we configure it with set_config_dict & update boxes w/ set_boxes
 
-        self.frame = iridaUploader.GUI.SettingsFrame.SettingsFrame()
+        self.frame = GUI.SettingsFrame.SettingsFrame()
         self.set_config_dict()
         self.set_boxes()
 
@@ -122,7 +122,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.frame.Destroy()
         self.app.Destroy()
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_valid_credentials(self, mock_apicalls):
 
         self.frame.sp.attempt_connect_to_api()
@@ -142,7 +142,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_invalid_connection(self, mock_apicalls):
 
         mock_apicalls.side_effect = [ConnectionError()]
@@ -165,7 +165,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_user_or_pass(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("Bad credentials")]
@@ -190,7 +190,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_id(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("clientId does not exist")]
@@ -215,7 +215,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_warn_icon.Label, "warning")
         self.assertEqual(self.frame.sp.client_secret_warn_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_key_err_invalid_client_secret(self, mock_apicalls):
 
         mock_apicalls.side_effect = [KeyError("Bad client credentials")]
@@ -241,7 +241,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(
             self.frame.sp.client_secret_warn_icon.Label, "warning")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_value_err(self, mock_apicalls):
 
         mock_apicalls.side_effect = [ValueError()]
@@ -258,7 +258,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.ApiCalls")
+    @patch("GUI.SettingsFrame.ApiCalls")
     def test_unexpected_err(self, mock_apicalls):
 
         mock_apicalls.side_effect = [SyntaxError()]
@@ -273,7 +273,7 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
 
-    @patch("iridaUploader.GUI.SettingsFrame.SettingsPanel.write_config_data")
+    @patch("GUI.SettingsFrame.SettingsPanel.write_config_data")
     def test_close_with_unsaved_changes_save(self, mock_wcd):
         new_baseURL = "new_baseURL"
         new_username = "new_username"
@@ -333,7 +333,7 @@ class TestSettingsFrame(unittest.TestCase):
         expected_targ_section = "Settings"
         mock_wcd.assert_called_with(expected_targ_section, expected_dict)
 
-    @patch("iridaUploader.GUI.SettingsFrame.SettingsPanel.write_config_data")
+    @patch("GUI.SettingsFrame.SettingsPanel.write_config_data")
     def test_close_with_unsaved_changes_dont_save(self, mock_wcd):
 
         new_baseURL = "new_baseURL"

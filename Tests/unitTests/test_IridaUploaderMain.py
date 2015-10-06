@@ -347,9 +347,9 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
-    @patch("iridaUploader.GUI.SettingsFrame.pub")
+    @patch("GUI.SettingsFrame.pub")
     @patch(
-        "iridaUploader.GUI.SettingsFrame.SettingsPanel.attempt_connect_to_api")
+        "GUI.SettingsFrame.SettingsPanel.attempt_connect_to_api")
     def test_open_settings(self, mock_connect_api, mock_pub_sub):
 
         menu_evt = wx.PyCommandEvent(wx.EVT_MENU.typeId,

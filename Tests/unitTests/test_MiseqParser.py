@@ -40,6 +40,28 @@ class TestMiSeqParser(unittest.TestCase):
                                "SampleSheet.csv")
         csv_reader = get_csv_reader(sheet_file)
 
+    def test_parse_metadata_extra_commas(self):
+
+        sheet_file = path.join(path_to_module, "testValidSheetTrailingCommas",
+                               "SampleSheet.csv")
+        meta_data = parse_metadata(sheet_file)
+
+        correct_metadata = {"readLengths": ["251", "250"],
+                            "assay": "Nextera XT",
+                            "description": "Superbug",
+                            "application": "FASTQ Only",
+                            "investigatorName": "Some Guy",
+                            "adapter": "AAAAGGGGAAAAGGGGAAA",
+                            "workflow": "GenerateFASTQ",
+                            "reversecomplement": "0",
+                            "iemfileversion": "4",
+                            "date": "10/15/2013",
+                            "experimentName": "1",
+                            "chemistry": "Amplicon"}
+
+        self.assertEqual(correct_metadata, meta_data)
+
+
     def test_parse_metadata(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
@@ -151,7 +173,7 @@ class TestMiSeqParser(unittest.TestCase):
         sample_list_values = [sample.get_dict() for sample in sample_list]
         self.assertEqual(correct_samples, sample_list_values)
 
-    @patch("iridaUploader.Parsers.miseqParser.get_csv_reader")
+    @patch("Parsers.miseqParser.get_csv_reader")
     def test_parse_samples_no_trail_comma(self, mock_csv_reader):
 
         headers = ("Sample_ID,Sample_Name,Sample_Plate,Sample_Well," +
@@ -203,7 +225,7 @@ class TestMiSeqParser(unittest.TestCase):
 
             self.assertEqual(sample.get("description"), "")
 
-    @patch("iridaUploader.Parsers.miseqParser.get_csv_reader")
+    @patch("Parsers.miseqParser.get_csv_reader")
     def test_parse_samples_unequal_data_and_field_length(self,
                                                          mock_csv_reader):
 
@@ -348,6 +370,8 @@ def load_test_suite():
         TestMiSeqParser("test_get_pair_files_valid_dir_invalid_id"))
     parser_test_suite.addTest(
         TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_parse_metadata_extra_commas"))
 
     return parser_test_suite
 
