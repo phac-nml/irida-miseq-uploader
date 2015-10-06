@@ -1,7 +1,8 @@
 import sys
 import json
 import webbrowser
-from os import path, getcwd, pardir, listdir, system, getcwd, chdir, makedirs
+import re
+from os import path, getcwd, pardir, listdir, system, getcwd, chdir, makedirs, sep
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -1062,8 +1063,15 @@ class MainPanel(wx.Panel):
         # agwStyle to disable "Create new folder"
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
-            self.browse_path = self.dir_dlg.GetPaths()[0].replace(
-                "Home directory", path.expanduser("~"))
+            selected_directory = self.dir_dlg.GetPaths()[0]
+            # unabashedly stolen from AnyBackup, where they reported something similar here: http://sourceforge.net/p/anybackup/tickets/136/
+            if (selected_directory.find("(") > -1):
+		# Basically: with wx3 and Windows, the drive label gets inserted into the value
+		# returned by GetPaths(), so this strips out the label.
+                self.browse_path = re.sub('.*\(', '', selected_directory).replace(')', '').strip(sep)
+            else:
+		# On non-Windows hosts the drive label doesn't show up, so just use whatever is selected.
+                self.browse_path = selected_directory
 
             self.start_sample_sheet_processing()
 
