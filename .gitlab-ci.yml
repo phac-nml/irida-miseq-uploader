@@ -1,0 +1,4 @@
+job1:
+    script: make test
+job2:
+    script: "scripts/verifyPEP8.sh"
