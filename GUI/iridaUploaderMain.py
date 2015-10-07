@@ -1073,7 +1073,7 @@ class MainPanel(wx.Panel):
                 # wxWidgets (in GTK2.0) tries to place a friendly "Home Directory" and "Desktop" entry
                 # in the file chooser. Calling "GetPaths" from wxPython ultimately asks for `GetItemText`
                 # on a `TreeCtrl` object, when it should really be interrogating `GetItemData` and asking
-                # for the path.
+                # for the path. This is reported at http://trac.wxwidgets.org/ticket/17190
                 self.browse_path = selected_directory.replace("Home directory", path.expanduser("~"))
             else:
 		# On non-Windows hosts the drive label doesn't show up, so just use whatever is selected.
