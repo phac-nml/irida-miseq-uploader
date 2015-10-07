@@ -113,7 +113,8 @@ class SetupIridaData:
         self.driver.find_element_by_id("emailTF").send_keys(self.user)
         self.driver.find_element_by_id("passwordTF").clear()
         self.driver.find_element_by_id("passwordTF").send_keys(self.password)
-        self.driver.find_element_by_id("submitBtn").click()
+        with self.wait_for_page_load(timeout=10):
+                self.driver.find_element_by_id("submitBtn").click()
 
     def set_new_admin_pw(self):
 
@@ -132,14 +133,6 @@ class SetupIridaData:
         self.driver.find_element_by_id(
             "clientId").send_keys(self.IRIDA_AUTH_CODE_ID)
 
-        auth_select = self.driver.find_element_by_id(
-            's2id_authorizedGrantTypes')
-        auth_select.click()
-        webdriver.ActionChains(self.driver).move_to_element_with_offset(
-            self.driver.find_element_by_xpath(
-                "//*[contains(text(), 'password')]"), 5, 0).click().perform()
-
-        self.driver.find_element_by_id("scope_auto_read").click()
         self.driver.find_element_by_id("scope_write").click()  # for sending
         with self.wait_for_page_load(timeout=10):
             self.driver.find_element_by_id("create-client-submit").click()
