@@ -3,6 +3,7 @@
 path_of_this_file=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 iu_path=$(dirname  $path_of_this_file)
 pushd ..
+make requirements
 source .virtualenv/bin/activate
 popd
 pep8 --exclude="Tests/integrationTests/repos/*",".git","bin","include","lib",\
