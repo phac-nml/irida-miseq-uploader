@@ -1069,6 +1069,12 @@ class MainPanel(wx.Panel):
 		# Basically: with wx3 and Windows, the drive label gets inserted into the value
 		# returned by GetPaths(), so this strips out the label.
                 self.browse_path = re.sub('.*\(', '', selected_directory).replace(')', '').strip(sep)
+            elif selected_directory.find("Home directory") > -1:
+                # wxWidgets (in GTK2.0) tries to place a friendly "Home Directory" and "Desktop" entry
+                # in the file chooser. Calling "GetPaths" from wxPython ultimately asks for `GetItemText`
+                # on a `TreeCtrl` object, when it should really be interrogating `GetItemData` and asking
+                # for the path.
+                self.browse_path = selected_directory.replace("Home directory", path.expanduser("~"))
             else:
 		# On non-Windows hosts the drive label doesn't show up, so just use whatever is selected.
                 self.browse_path = selected_directory
