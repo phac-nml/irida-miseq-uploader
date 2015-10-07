@@ -56,20 +56,24 @@ if __name__ == "__main__":
                         help="Run integration tests (can take a long time)")
     args = parser.parse_args()
 
-    if args.integration:
-        load_integration_tests(suite_list)
+    try:
+        if args.integration:
+            load_integration_tests(suite_list)
 
-        print "Starting setup"
-        setup_handler = apiCalls_integration.start_setup()
+            print "Starting setup"
+            setup_handler = apiCalls_integration.start_setup()
 
-    load_unit_tests(suite_list)
+        load_unit_tests(suite_list)
 
-    full_suite = unittest.TestSuite(suite_list)
-    runner = unittest.TextTestRunner()
-    test_result = runner.run(full_suite)
+        full_suite = unittest.TestSuite(suite_list)
+        runner = unittest.TextTestRunner()
+        test_result = runner.run(full_suite)
 
-    if setup_handler is not None:
-        setup_handler.stop_irida()
+    # if **anything** fails, make sure we tear down IRIDA.
+    except:
+	if setup_handler is not None:
+            setup_handler.stop_irida()
+        sys.exit(1)
 
     if len(test_result.failures)>0 or len(test_result.errors)>0:
         sys.exit(1)
