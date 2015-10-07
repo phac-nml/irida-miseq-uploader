@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.support import expected_conditions as EC
+from contextlib import contextmanager
 from urllib2 import urlopen, URLError
 from os import path
 from time import time, sleep
@@ -56,6 +57,14 @@ class SetupIridaData:
 
         self.REPO_PATH = path.join(self.PATH_TO_MODULE, "repos")
         self.IRIDA_PATH = path.join(self.REPO_PATH, "irida")
+
+    @contextmanager
+    def wait_for_page_load(self, timeout=30):
+        old_page = self.driver.find_element_by_tag_name('html')
+        yield
+        WebDriverWait(self.driver, timeout).until(
+            EC.staleness_of(old_page)
+        )
 
     def install_irida(self):
         install_proc = subprocess.Popen(
@@ -114,7 +123,8 @@ class SetupIridaData:
         self.driver.find_element_by_id("confirmPassword").clear()
         self.driver.find_element_by_id(
             "confirmPassword").send_keys(self.IRIDA_PASSWORD)
-        self.driver.find_element_by_xpath("//button[@type='submit']").click()
+        with self.wait_for_page_load(timeout=10):
+            self.driver.find_element_by_xpath("//button[@type='submit']").click()
 
     def create_client(self):
 
@@ -131,7 +141,8 @@ class SetupIridaData:
 
         self.driver.find_element_by_id("scope_auto_read").click()
         self.driver.find_element_by_id("scope_write").click()  # for sending
-        self.driver.find_element_by_id("create-client-submit").click()
+        with self.wait_for_page_load(timeout=10):
+            self.driver.find_element_by_id("create-client-submit").click()
 
     def get_irida_secret(self):
 
