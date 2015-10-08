@@ -2,7 +2,7 @@ import sys
 import json
 import webbrowser
 import re
-from os import path, getcwd, pardir, listdir
+from os import path, getcwd, pardir, listdir, walk
 from os import system, getcwd, chdir, makedirs, sep
 from fnmatch import filter as fnfilter
 from threading import Thread
@@ -170,6 +170,9 @@ class MainPanel(wx.Panel):
 
         return the path to the default directory from the config file
         """
+        # before we do anything, check to see if we should be creating the
+        # config file and directory:
+        check_config_dirs()
 
         section = "iridaUploaderMain"
         key = "default_dir"
@@ -1502,14 +1505,37 @@ class MainFrame(wx.Frame):
 
 
 def check_config_dirs():
+    """
+    Checks to see if the config directories are set up for this user. Will
+    create the user config directory and copy a default config file if they
+    do not exist
+
+    no return value
+    """
+
     if not path.exists(user_config_dir):
         print "User config dir doesn't exist, making new one."
         makedirs(user_config_dir)
 
     if not path.exists(user_config_file):
+        # find the default config dir from (at least) two directory levels
+        # above this directory
+        conf_file = find("config.conf", path.join(path_to_module, "..", ".."))
+
         print "User config file doesn't exist, using defaults."
-        copy2(path.join(path_to_module, "..", "..", "config.conf"),
-              user_config_dir)
+        copy2(conf_file, user_config_dir)
+
+
+def find(name, start_dir):
+    """
+    Find a file by name in the given path
+
+
+    return the file (if found) otherwise undef
+    """
+    for root, dirs, files in walk(start_dir):
+        if name in files:
+            return path.join(root, name)
 
 
 def main():

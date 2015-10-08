@@ -1,7 +1,7 @@
 import sys
 import logging
 from os import path, makedirs
-from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser, NoSectionError
 from collections import OrderedDict
 
 import wx
@@ -170,6 +170,20 @@ class SettingsPanel(wx.Panel):
         self.Center()
         self.Layout()
 
+
+    def _get_config_value(self, section, key, default = ""):
+        """
+        Convenience method to get a key from a settings file optionally
+        suppressing exceptions when the key or section does not exist.
+
+        return the value requested or the default value
+        """
+        try:
+            return self.conf_parser.get(section, key)
+        except NoSectionError:
+            return default
+
+
     def load_curr_config(self):
 
         """
@@ -179,18 +193,19 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        self.config_dict["baseURL"] = self.conf_parser.get("Settings",
-                                                           "baseURL")
-        self.config_dict["username"] = self.conf_parser.get("Settings",
-                                                            "username")
-        self.config_dict["password"] = self.conf_parser.get("Settings",
-                                                            "password")
-        self.config_dict["client_id"] = self.conf_parser.get("Settings",
-                                                             "client_id")
-        self.config_dict["client_secret"] = self.conf_parser.get(
-                                            "Settings", "client_secret")
-        self.config_dict["completion_cmd"] = self.conf_parser.get(
-                                            "Settings", "completion_cmd")
+        self.config_dict["baseURL"] = self._get_config_value("Settings",
+                                                           "baseURL", "")
+        self.config_dict["username"] = self._get_config_value("Settings",
+                                                            "username", "")
+        self.config_dict["password"] = self._get_config_value("Settings",
+                                                            "password", "")
+        self.config_dict["client_id"] = self._get_config_value("Settings",
+                                                             "client_id", "")
+        self.config_dict["client_secret"] = self._get_config_value(
+                                            "Settings", "client_secret", "")
+        self.config_dict["completion_cmd"] = self._get_config_value(
+                                            "Settings", "completion_cmd", "")
+
 
     def create_api_obj(self):
 
