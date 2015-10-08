@@ -926,9 +926,10 @@ class SettingsPanel(wx.Panel):
 
             self.attempt_connect_to_api()
 
-	# Pass the event along to everyone else so any other "focus lost"-related
-	# event handling junk still happens (like unhighlighting the field, etc.)
-	evt.Skip()
+        # Pass the event along to everyone else so any other "focus lost"-
+        # related event handling junk still happens (like unhighlighting the
+        # field, etc.)
+        evt.Skip()
 
     def add_close_btn(self):
 

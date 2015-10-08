@@ -125,7 +125,9 @@ class SetupIridaData:
         self.driver.find_element_by_id(
             "confirmPassword").send_keys(self.IRIDA_PASSWORD)
         with self.wait_for_page_load(timeout=10):
-            self.driver.find_element_by_xpath("//button[@type='submit']").click()
+            xpath = "//button[@type='submit']"
+            submit = self.driver.find_element_by_xpath(xpath)
+            submit.click()
 
     def create_client(self):
 

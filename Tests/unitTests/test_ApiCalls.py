@@ -1117,8 +1117,6 @@ class TestApiCalls(unittest.TestCase):
 
 
 def load_test_suite():
-
-
     api_test_suite = unittest.TestSuite()
 
     api_test_suite.addTest(TestApiCalls("test_validate_URL_existence_url_ok"))

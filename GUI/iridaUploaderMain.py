@@ -2,7 +2,8 @@ import sys
 import json
 import webbrowser
 import re
-from os import path, getcwd, pardir, listdir, system, getcwd, chdir, makedirs, sep
+from os import path, getcwd, pardir, listdir
+from os import system, getcwd, chdir, makedirs, sep
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
@@ -26,8 +27,8 @@ from Model.SequencingRun import SequencingRun
 from Validation.onlineValidation import (
     project_exists, sample_exists)
 from Validation.offlineValidation import (validate_sample_sheet,
-                                                        validate_pair_files,
-                                                        validate_sample_list)
+                                          validate_pair_files,
+                                          validate_sample_list)
 from Exceptions.ProjectError import ProjectError
 from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
@@ -645,8 +646,8 @@ class MainPanel(wx.Panel):
             # handle_api_thread_error takes care of that
             if self.curr_upload_id is not None:
                 self.api.set_pair_seq_run_error(self.curr_upload_id)
-		self.upload_complete = True
-		self.curr_upload_id = None
+                self.upload_complete = True
+                self.curr_upload_id = None
 
             wx.CallAfter(self.pulse_timer.Stop)
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
@@ -1064,19 +1065,28 @@ class MainPanel(wx.Panel):
         if self.dir_dlg.ShowModal() == wx.ID_OK:
 
             selected_directory = self.dir_dlg.GetPaths()[0]
-            # unabashedly stolen from AnyBackup, where they reported something similar here: http://sourceforge.net/p/anybackup/tickets/136/
+            # unabashedly stolen from AnyBackup, where they reported something
+            # similar here: http://sourceforge.net/p/anybackup/tickets/136/
             if (selected_directory.find("(") > -1):
-		# Basically: with wx3 and Windows, the drive label gets inserted into the value
-		# returned by GetPaths(), so this strips out the label.
-                self.browse_path = re.sub('.*\(', '', selected_directory).replace(')', '').strip(sep)
+                # Basically: with wx3 and Windows, the drive label gets
+                # inserted into the value returned by GetPaths(), so this
+                # strips out the label.
+                selected_directory = re.sub('.*\(', '', selected_directory)
+                selected_directory = selected_directory.replace(')', '')
+                self.browse_path = selected_directory.strip(sep)
             elif selected_directory.find("Home directory") > -1:
-                # wxWidgets (in GTK2.0) tries to place a friendly "Home Directory" and "Desktop" entry
-                # in the file chooser. Calling "GetPaths" from wxPython ultimately asks for `GetItemText`
-                # on a `TreeCtrl` object, when it should really be interrogating `GetItemData` and asking
-                # for the path. This is reported at http://trac.wxwidgets.org/ticket/17190
-                self.browse_path = selected_directory.replace("Home directory", path.expanduser("~"))
+                # wxWidgets (in GTK2.0) tries to place a friendly
+                # "Home Directory" and "Desktop" entry in the file chooser.
+                # Calling "GetPaths" from wxPython ultimately asks for
+                # `GetItemText` on a `TreeCtrl` object, when it should really
+                # be interrogating `GetItemData` and asking for the path. This
+                # is reported at http://trac.wxwidgets.org/ticket/17190
+                home_dir = path.expanduser("~")
+                self.browse_path = selected_directory.replace("Home directory",
+                                                              home_dir)
             else:
-		# On non-Windows hosts the drive label doesn't show up, so just use whatever is selected.
+                # On non-Windows hosts the drive label doesn't show up, so just
+                # use whatever is selected.
                 self.browse_path = selected_directory
 
             self.start_sample_sheet_processing()
@@ -1490,6 +1500,7 @@ class MainFrame(wx.Frame):
         else:
             wx.CallAfter(webbrowser.open, docs_path)
 
+
 def check_config_dirs():
     if not path.exists(user_config_dir):
         print "User config dir doesn't exist, making new one."
@@ -1497,7 +1508,9 @@ def check_config_dirs():
 
     if not path.exists(user_config_file):
         print "User config file doesn't exist, using defaults."
-        copy2(path.join(path_to_module, "..", "..", "config.conf"), user_config_dir)
+        copy2(path.join(path_to_module, "..", "..", "config.conf"),
+              user_config_dir)
+
 
 def main():
     check_config_dirs()

@@ -61,7 +61,6 @@ class TestMiSeqParser(unittest.TestCase):
 
         self.assertEqual(correct_metadata, meta_data)
 
-
     def test_parse_metadata(self):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",

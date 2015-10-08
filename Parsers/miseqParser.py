@@ -236,7 +236,7 @@ def get_csv_reader(sample_sheet_file):
     if path.isfile(sample_sheet_file):
         csv_file = open(sample_sheet_file, "rb")
         # strip any trailing newline characters from the end of the line
-	csv_lines = [x.rstrip('\n') for x in csv_file]
+        csv_lines = [x.rstrip('\n') for x in csv_file]
         # strip any trailing commas added by excel from the end of the line.
         csv_lines = [x.rstrip(',') for x in csv_lines]
         print csv_lines
@@ -245,7 +245,8 @@ def get_csv_reader(sample_sheet_file):
         # reader
         csv_reader = reader(csv_lines)
     else:
-        msg = sample_sheet_file + " is not a valid SampleSheet file (it's not a valid CSV file)."
+        msg = sample_sheet_file + " is not a valid SampleSheet file (it's"
+        msg += "not a valid CSV file)."
         raise SampleSheetError(msg)
 
     return csv_reader
