@@ -34,6 +34,10 @@ Build a virtualenv and install the dependencies:
     $ cd ..
     $ python setup.py install
 
+You can then run the uploader by running:
+
+    $ ./run_IRIDA_Uploader.py
+
 Deactivate when finished:
 
     $ deactivate
