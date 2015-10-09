@@ -7,8 +7,8 @@ Windows Installation
 
 Download the installer from https://irida.corefacility.ca/downloads/tools/
 
-Linux Installation
-------------------
+Running in Linux
+----------------
 
 Install pip and wxpython:
 
@@ -32,7 +32,6 @@ Build a virtualenv and install the dependencies:
     $ cd docs
     $ make html
     $ cd ..
-    $ python setup.py install
 
 You can then run the uploader by running:
 
