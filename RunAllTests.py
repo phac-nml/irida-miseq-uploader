@@ -63,7 +63,6 @@ if __name__ == "__main__":
         setup_handler = apiCalls_integration.start_setup()
 
     load_unit_tests(suite_list)
-
     full_suite = unittest.TestSuite(suite_list)
     runner = unittest.TextTestRunner()
     test_result = runner.run(full_suite)

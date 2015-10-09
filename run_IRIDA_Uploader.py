@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import wx
 from GUI.iridaUploaderMain import MainFrame
 

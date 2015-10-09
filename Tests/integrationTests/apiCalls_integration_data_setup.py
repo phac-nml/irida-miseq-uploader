@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.support import expected_conditions as EC
+from contextlib import contextmanager
 from urllib2 import urlopen, URLError
 from os import path
 from time import time, sleep
@@ -57,6 +58,14 @@ class SetupIridaData:
         self.REPO_PATH = path.join(self.PATH_TO_MODULE, "repos")
         self.IRIDA_PATH = path.join(self.REPO_PATH, "irida")
 
+    @contextmanager
+    def wait_for_page_load(self, timeout=30):
+        old_page = self.driver.find_element_by_tag_name('html')
+        yield
+        WebDriverWait(self.driver, timeout).until(
+            EC.staleness_of(old_page)
+        )
+
     def install_irida(self):
         install_proc = subprocess.Popen(
             [self.INSTALL_IRIDA_EXEC], cwd=self.PATH_TO_MODULE)
@@ -104,7 +113,8 @@ class SetupIridaData:
         self.driver.find_element_by_id("emailTF").send_keys(self.user)
         self.driver.find_element_by_id("passwordTF").clear()
         self.driver.find_element_by_id("passwordTF").send_keys(self.password)
-        self.driver.find_element_by_id("submitBtn").click()
+        with self.wait_for_page_load(timeout=10):
+                self.driver.find_element_by_id("submitBtn").click()
 
     def set_new_admin_pw(self):
 
@@ -114,7 +124,10 @@ class SetupIridaData:
         self.driver.find_element_by_id("confirmPassword").clear()
         self.driver.find_element_by_id(
             "confirmPassword").send_keys(self.IRIDA_PASSWORD)
-        self.driver.find_element_by_xpath("//button[@type='submit']").click()
+        with self.wait_for_page_load(timeout=10):
+            xpath = "//button[@type='submit']"
+            submit = self.driver.find_element_by_xpath(xpath)
+            submit.click()
 
     def create_client(self):
 
@@ -122,16 +135,9 @@ class SetupIridaData:
         self.driver.find_element_by_id(
             "clientId").send_keys(self.IRIDA_AUTH_CODE_ID)
 
-        auth_select = self.driver.find_element_by_id(
-            's2id_authorizedGrantTypes')
-        auth_select.click()
-        webdriver.ActionChains(self.driver).move_to_element_with_offset(
-            self.driver.find_element_by_xpath(
-                "//*[contains(text(), 'password')]"), 5, 0).click().perform()
-
-        self.driver.find_element_by_id("scope_auto_read").click()
         self.driver.find_element_by_id("scope_write").click()  # for sending
-        self.driver.find_element_by_id("create-client-submit").click()
+        with self.wait_for_page_load(timeout=10):
+            self.driver.find_element_by_id("create-client-submit").click()
 
     def get_irida_secret(self):
 

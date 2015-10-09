@@ -1,5 +1,7 @@
 SHELL=/bin/bash
 
+all: clean requirements documentation windows
+
 clean:
 	rm -rf pynsist_pkgs
 	rm -rf .virtualenv
@@ -7,6 +9,7 @@ clean:
 	rm -rf docs/_build
 	rm -rf wxPython3.0-win32-3.0.2.0-py27.exe
 	find -name "*pyc" -delete
+	rm -rf Tests/integrationTests/repos/
 
 requirements:
 	virtualenv .virtualenv
@@ -27,5 +30,10 @@ windows: documentation requirements
 	rm -rf pynsist_pkgs/{app,code*}
 	source .virtualenv/bin/activate
 	pynsist irida-uploader.cfg 2>&1 > /dev/null
+
+test: clean requirements documentation
+	source .virtualenv/bin/activate
+	./scripts/virtualenv_wx.sh
+	xvfb-run python RunAllTests.py --integration
 
 .ONESHELL:

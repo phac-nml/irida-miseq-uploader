@@ -7,8 +7,8 @@ Windows Installation
 
 Download the installer from https://irida.corefacility.ca/downloads/tools/
 
-Linux Installation
-------------------
+Running in Linux
+----------------
 
 Install pip and wxpython:
 
@@ -25,33 +25,21 @@ Build a virtualenv and install the dependencies:
     $ mkdir iu; cd iu
     $ virtualenv .
     $ source bin/activate
-    $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
-    $ cd iridauploader
+    $ git clone https://irida.corefacility.ca/irida/irida-miseq-uploader.git
+    $ cd irida-miseq-uploader
     $ pip install -r requirements.txt --allow-external pypubsub
     $ ./scripts/virtualenv_wx.sh
     $ cd docs
     $ make html
     $ cd ..
-    $ python setup.py install
+
+You can then run the uploader by running:
+
+    $ ./run_IRIDA_Uploader.py
 
 Deactivate when finished:
 
     $ deactivate
-
-Running Tests
--------------
-
-Run unit tests and PEP8 verification with:
-
-    $ python RunAllTests.py
-
-Running integration tests in addition to unit tests and PEP8 verification: (can take a while)
-Google Chrome must be installed for selenium testing
-
-    $ echo "grant all privileges on irida_uploader_test.* to 'test'@'localhost' identified by 'test';" | mysql -u mysql_user -p
-    $ python RunAllTests.py --integration
-
-You can comment out `test_suites` inside RunAllTests.py to not have them run
 
 Creating the Windows installer
 ------------------------------
@@ -70,3 +58,16 @@ From inside the `iridaUploader` directory, you can simply run:
 
 This will build a Windows installer inside the `build/nsis/` directory, named something like `IRIDA_Uploader_1.0.0.exe`.
 
+Running Tests
+-------------
+
+You can run all tests (unit and integration) by running:
+
+    $ echo "grant all privileges on irida_uploader_test.* to 'test'@'localhost' identified by 'test';" | mysql -u mysql_user -p
+    $ make test
+
+You can verify PEP8 conformity by running:
+
+    $ ./scripts/verifyPEP8.sh
+
+Note: No output is produced (other than `pip`-related output) if the PEP8 verification succeeds.
