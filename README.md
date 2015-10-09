@@ -25,10 +25,13 @@ Build a virtualenv and install the dependencies:
     $ mkdir iu; cd iu
     $ virtualenv .
     $ source bin/activate
-    $ git clone http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git
-    $ cd iridauploader
+    $ git clone https://irida.corefacility.ca/irida/irida-miseq-uploader.git
+    $ cd irida-miseq-uploader
     $ pip install -r requirements.txt --allow-external pypubsub
     $ scripts/virtualenv_wx.sh
+    $ cd docs
+    $ make html
+    $ cd ..
     $ python setup.py install
 
 Deactivate when finished:
