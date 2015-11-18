@@ -413,15 +413,6 @@ class MainPanel(wx.Panel):
         else:
             msg = warn_msg
 
-        self.warn_dlg = GMD(
-            parent=self, message=msg, caption="Warning!",
-            agwStyle=wx.OK | wx.ICON_EXCLAMATION)
-
-        self.warn_dlg.Message = warn_msg  # for testing
-        self.warn_dlg.ShowModal()
-        if self.warn_dlg:
-            self.warn_dlg.Destroy()
-
     def log_color_print(self, msg, color=None):
 
         """
