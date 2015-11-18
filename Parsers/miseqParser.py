@@ -37,6 +37,7 @@ def parse_metadata(sample_sheet_file):
         'Application': 'application',
         'Investigator Name': 'investigatorName',
         'Adapter': 'adapter',
+	'AdapterRead2': 'adapterread2',
         'Workflow': 'workflow',
         'ReverseComplement': 'reversecomplement',
         'IEMFileVersion': 'iemfileversion',
@@ -236,7 +237,9 @@ def get_csv_reader(sample_sheet_file):
     if path.isfile(sample_sheet_file):
         csv_file = open(sample_sheet_file, "rb")
         # strip any trailing newline characters from the end of the line
+        # including Windows newline characters (\r\n)
         csv_lines = [x.rstrip('\n') for x in csv_file]
+        csv_lines = [x.rstrip('\r') for x in csv_lines]
         # strip any trailing commas added by excel from the end of the line.
         csv_lines = [x.rstrip(',') for x in csv_lines]
         print csv_lines

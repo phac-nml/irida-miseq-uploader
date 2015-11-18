@@ -46,17 +46,18 @@ class TestMiSeqParser(unittest.TestCase):
                                "SampleSheet.csv")
         meta_data = parse_metadata(sheet_file)
 
-        correct_metadata = {"readLengths": ["251", "250"],
-                            "assay": "Nextera XT",
-                            "description": "Superbug",
+        correct_metadata = {"readLengths": ["301", "301"],
+                            "assay": "TruSeq HT",
+                            "description": "252",
                             "application": "FASTQ Only",
-                            "investigatorName": "Some Guy",
-                            "adapter": "AAAAGGGGAAAAGGGGAAA",
+                            "investigatorName": "McClarty",
+                            "adapter": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+			    "adapterread2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
                             "workflow": "GenerateFASTQ",
                             "reversecomplement": "0",
                             "iemfileversion": "4",
-                            "date": "10/15/2013",
-                            "experimentName": "1",
+                            "date": "2015-11-12",
+                            "experimentName": "252",
                             "chemistry": "Amplicon"}
 
         self.assertEqual(correct_metadata, meta_data)
