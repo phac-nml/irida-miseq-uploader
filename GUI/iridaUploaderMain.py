@@ -158,6 +158,10 @@ class MainPanel(wx.Panel):
         self.settings_frame.Hide()
         self.Center()
         self.Show()
+	# auto-scan the currently selected directory (which should be the directory
+	# that's set in the preferences file).
+        self.browse_path = self.dir_box.GetValue()
+        self.start_sample_sheet_processing()
 
     def get_config_default_dir(self):
 
