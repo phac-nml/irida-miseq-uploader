@@ -50,7 +50,7 @@ class TestMiSeqParser(unittest.TestCase):
                             "assay": "TruSeq HT",
                             "description": "252",
                             "application": "FASTQ Only",
-                            "investigatorName": "McClarty",
+                            "investigatorName": "Investigator",
                             "adapter": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
 			    "adapterread2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
                             "workflow": "GenerateFASTQ",
