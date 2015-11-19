@@ -414,10 +414,10 @@ class MainPanel(wx.Panel):
             msg = warn_msg
 
         self.warn_dlg = GMD(
-            parent = self, message = msg, caption = "Warning!",
-            agwStyle = wx.OK | wx.ICON_EXCLAMATION)
+            parent=self, message=msg, caption="Warning!",
+            agwStyle=wx.OK | wx.ICON_EXCLAMATION)
 
-        self.warn_dlg.Message = warn_msg
+        self.warn_dlg.Message = warn_msg  # for testing
         self.warn_dlg.ShowModal()
         if self.warn_dlg:
             self.warn_dlg.Destroy()
