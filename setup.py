@@ -8,7 +8,7 @@ def readme():
 
 
 distutils.core.setup(name="iridaUploader",
-    version="1.0.0",
+    version="1.1.0",
     url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
     author='Kevin Camba',
     author_email='kevin.camba@phac-aspc.gc.ca',
