@@ -161,7 +161,7 @@ class MainPanel(wx.Panel):
 	# auto-scan the currently selected directory (which should be the directory
 	# that's set in the preferences file).
         self.browse_path = self.dir_box.GetValue()
-        self.start_sample_sheet_processing()
+        self.start_sample_sheet_processing(first_start = True)
 
     def get_config_default_dir(self):
 
@@ -412,6 +412,15 @@ class MainPanel(wx.Panel):
             msg = dlg_msg
         else:
             msg = warn_msg
+
+        self.warn_dlg = GMD(
+            parent = self, message = msg, caption = "Warning!",
+            agwStyle = wx.OK | wx.ICON_EXCLAMATION)
+
+        self.warn_dlg.Message = warn_msg
+        self.warn_dlg.ShowModal()
+        if self.warn_dlg:
+            self.warn_dlg.Destroy()
 
     def log_color_print(self, msg, color=None):
 
@@ -1091,8 +1100,13 @@ class MainPanel(wx.Panel):
 
         self.dir_dlg.Destroy()
 
-    def start_sample_sheet_processing(self):
+    def start_sample_sheet_processing(self, first_start=False):
 
+        """
+        first_start is an optional argument to pass to start_sample_sheet_processing
+        to prevent it from showing an unexpected error message on startup if the
+        default directory does not have any sample sheets within it.
+        """
         self.dir_box.SetValue(self.browse_path)
         self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
@@ -1127,8 +1141,9 @@ class MainPanel(wx.Panel):
                 if len(sub_dirs) > 0:
                     err_msg = (err_msg + " or its " +
                                "subdirectories:\n" + ", ".join(sub_dirs))
-
-                raise SampleSheetError(err_msg)
+                # Supress any error messages if the application is just starting up
+                if not first_start:
+                    raise SampleSheetError(err_msg)
 
             else:
 
