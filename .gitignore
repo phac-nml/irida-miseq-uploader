@@ -2,10 +2,12 @@
 *.swp
 *.coverage
 *.bak
-*/Tests/integrationTests/repos/*
+Tests/integrationTests/repos/*
 *.log
 *.miseqUploaderInfo
 *.miseqUploaderComplete
-*.conf
-iridaUploader/docs/_build/*
+docs/_build/*
 build/
+pynsist_pkgs
+wxPython*
+.virtualenv

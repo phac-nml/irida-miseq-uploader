@@ -1,10 +1,6 @@
 import distutils
 import distutils.core
 
-from appdirs import user_config_dir
-
-from post_installation import post_installation
-
 def readme():
     """Return the readme file"""
     with open("README.md") as f:
@@ -12,38 +8,35 @@ def readme():
 
 
 distutils.core.setup(name="iridaUploader",
-    version="1.0.0",
+    version="1.1.0",
     url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
     author='Kevin Camba',
     author_email='kevin.camba@phac-aspc.gc.ca',
-    packages=["iridaUploader", "iridaUploader.API", "iridaUploader.Exceptions",
-              "iridaUploader.GUI", "iridaUploader.Model",
-              "iridaUploader.Parsers", "iridaUploader.Validation",
-              "iridaUploader.docs", "iridaUploader.docs._static",
-              "iridaUploader.docs._static.basic_usage",
-              "iridaUploader.docs._static.handling_errors",
-			  "iridaUploader.docs._build",
-			  "iridaUploader.docs._build.html",
-			  "iridaUploader.docs._build.html._images",
-			  "iridaUploader.docs._build.html._sources",
-			  "iridaUploader.docs._build.html._static"],
+    packages=["API", "Exceptions",
+              "GUI", "Model",
+              "Parsers", "Validation",
+              "docs", "docs._static",
+              "docs._static.basic_usage",
+              "docs._static.handling_errors",
+			  "docs._build",
+			  "docs._build.html",
+			  "docs._build.html._images",
+			  "docs._build.html._sources",
+			  "docs._build.html._static"],
     package_dir={
-        "iridaUploader/GUI/images": "iridaUploader/GUI/images",
-        "iridaUploader/docs/_static": "iridaUploader/docs/_static",
-		"iridaUploader/docs/_build": "iridaUploader/docs/_build"
+        "GUI/images": "GUI/images",
+        "docs/_static": "docs/_static",
+		"docs/_build": "docs/_build"
     },
     package_data={
-        "iridaUploader.GUI": ["images/*.png", "images/*.ico"],
-        "iridaUploader.docs._static.basic_usage": ["*.png", "*.gif"],
-        "iridaUploader.docs._static.handling_errors": ["*.png", "*.gif"],
-		"iridaUploader.docs._build": ["*"],
-		"iridaUploader.docs._build.html": ["*"],
-		"iridaUploader.docs._build.html._images": ["*"],
-		"iridaUploader.docs._build.html._sources": ["*"],
-		"iridaUploader.docs._build.html._static": ["*"]
+        "GUI": ["images/*.png", "images/*.ico"],
+        "docs._static.basic_usage": ["*.png", "*.gif"],
+        "docs._static.handling_errors": ["*.png", "*.gif"],
+		"docs._build": ["*"],
+		"docs._build.html": ["*"],
+		"docs._build.html._images": ["*"],
+		"docs._build.html._sources": ["*"],
+		"docs._build.html._static": ["*"]
     },
-	scripts=["iridaUploader/run_IRIDA_Uploader.py"]
+	scripts=["run_IRIDA_Uploader.py"]
 )
-
-
-post_installation()
