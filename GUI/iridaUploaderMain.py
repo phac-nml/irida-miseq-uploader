@@ -418,7 +418,6 @@ class MainPanel(wx.Panel):
             agwStyle=wx.OK | wx.ICON_EXCLAMATION)
 
         self.warn_dlg.Message = warn_msg  # for testing
-#        self.warn_dlg.ShowModal()
         if self.warn_dlg:
             self.warn_dlg.Destroy()
 
@@ -1154,7 +1153,6 @@ class MainPanel(wx.Panel):
                     err_msg = (
                         "The following have already been uploaded:\n" +
                         "{_dir}").format(_dir=",\n".join(ss_list))
-#                    if not first_start:
                     raise SampleSheetError(err_msg)
 
                 self.sample_sheet_files = pruned_list
