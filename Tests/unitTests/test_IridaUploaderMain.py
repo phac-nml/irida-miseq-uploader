@@ -22,7 +22,7 @@ def push_button(targ_obj):
     targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
 
-def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
+def poll_for_dir_dlg(self, time_counter,
                      handle_func=None):
     """
     poll_warn_dlg and handle_func are used by functions that are expecting
@@ -35,10 +35,10 @@ def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
     if (self.frame.mp.dir_dlg is not None or
             time_counter["value"] == MAX_WAIT_TIME):
         self.frame.mp.timer.Stop()
-        handle_dir_dlg(self, poll_warn_dlg, handle_func)
+        handle_dir_dlg(self, handle_func)
 
 
-def handle_dir_dlg(self, poll_warn_dlg, handle_func):
+def handle_dir_dlg(self, handle_func):
 
     try:
         self.assertTrue(self.frame.mp.dir_dlg.IsShown())
