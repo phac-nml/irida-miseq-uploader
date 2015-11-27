@@ -418,7 +418,6 @@ class MainPanel(wx.Panel):
             agwStyle=wx.OK | wx.ICON_EXCLAMATION)
 
         self.warn_dlg.Message = warn_msg  # for testing
-        self.warn_dlg.ShowModal()
         if self.warn_dlg:
             self.warn_dlg.Destroy()
 
@@ -1154,7 +1153,6 @@ class MainPanel(wx.Panel):
                     err_msg = (
                         "The following have already been uploaded:\n" +
                         "{_dir}").format(_dir=",\n".join(ss_list))
-
                     raise SampleSheetError(err_msg)
 
                 self.sample_sheet_files = pruned_list
@@ -1227,8 +1225,6 @@ class MainPanel(wx.Panel):
         """
         Traverse through a directory and a level below it searching for
             a file that matches the given SampleSheet pattern.
-        Raises an exception if a SampleSheet file is found at both the top lvl
-            directory and also inside one of its subdirectories
 
         arguments:
             top_dir -- top level directory to start searching from
@@ -1241,39 +1237,10 @@ class MainPanel(wx.Panel):
         result_list = []
 
         if path.isdir(top_dir):
-
-            targ_dirs = [top_dir]
-            targ_dirs.extend([path.join(top_dir, item)
-                             for item in listdir(top_dir)
-                             if path.isdir(path.join(top_dir, item))])
-
-            top_dir_ss_found = False
-
-            for _dir in targ_dirs:  # dir is a keyword
-                for filename in fnfilter(listdir(_dir), ss_pattern):
-                    full_path = path.join(_dir, filename)
-                    if path.isfile(full_path):
-
-                        if _dir == top_dir and top_dir_ss_found is False:
-                            top_dir_ss_found = True
-                            result_list.append(full_path)
-
-                        elif _dir != top_dir and top_dir_ss_found:
-                            raise SampleSheetError(
-                                ("Found SampleSheet.csv in both top level " +
-                                 "directory:\n {t_dir}\nand subdirectory:\n" +
-                                 " {_dir}\nYou can only have either:\n" +
-                                 "  One SampleSheet.csv on the top level " +
-                                 "directory\n  Or multiple SampleSheet.csv " +
-                                 "files in the the subdirectories").format(
-                                    t_dir=top_dir, _dir=_dir))
-                        else:
-                            result_list.append(full_path)
-
-        else:
-            msg = "Invalid directory " + top_dir
-            raise IOError(msg)
-
+            for root, dirs, files in walk(top_dir):
+                for filename in fnfilter(files, ss_pattern):
+                    result_list.append(path.join(root, filename))
+        
         return result_list
 
     def prune_sample_sheets_check_miseqUploaderInfo(self, ss_list):

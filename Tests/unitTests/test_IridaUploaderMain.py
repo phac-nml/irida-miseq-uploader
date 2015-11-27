@@ -6,6 +6,7 @@ import sys
 from os import path, listdir
 
 from GUI.iridaUploaderMain import MainFrame
+from GUI.iridaUploaderMain import MainPanel
 from mock import patch
 
 PATH_TO_MODULE = path.dirname(path.abspath(__file__))
@@ -21,7 +22,7 @@ def push_button(targ_obj):
     targ_obj.GetEventHandler().ProcessEvent(button_evt)
 
 
-def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
+def poll_for_dir_dlg(self, time_counter,
                      handle_func=None):
     """
     poll_warn_dlg and handle_func are used by functions that are expecting
@@ -34,24 +35,15 @@ def poll_for_dir_dlg(self, time_counter, poll_warn_dlg=False,
     if (self.frame.mp.dir_dlg is not None or
             time_counter["value"] == MAX_WAIT_TIME):
         self.frame.mp.timer.Stop()
-        handle_dir_dlg(self, poll_warn_dlg, handle_func)
+        handle_dir_dlg(self, handle_func)
 
 
-def handle_dir_dlg(self, poll_warn_dlg, handle_func):
+def handle_dir_dlg(self, handle_func):
 
     try:
         self.assertTrue(self.frame.mp.dir_dlg.IsShown())
         self.frame.mp.dir_dlg.EndModal(wx.ID_OK)
         self.assertFalse(self.frame.mp.dir_dlg.IsShown())
-
-        if poll_warn_dlg:
-            time_counter2 = {"value": 0}
-            self.frame.mp.timer2 = wx.Timer(self.frame.mp)
-            self.frame.mp.Bind(wx.EVT_TIMER,
-                               lambda evt: poll_for_warn_dlg(
-                                self, time_counter2, handle_func),
-                               self.frame.mp.timer2)
-            self.frame.mp.timer2.Start(POLL_INTERVAL)
 
     except (AssertionError, AttributeError):
         print traceback.format_exc()
@@ -80,7 +72,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
         self.app = wx.App(False)
-        self.frame = MainFrame()
         # print self.frame.mp.dir_dlg
 
     def tearDown(self):
@@ -88,6 +79,7 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.mp.Destroy()
         self.app.Destroy()
 
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "fake_ngs_data"))
     def test_sample_sheet_valid(self):
 
         """
@@ -110,8 +102,8 @@ class TestIridaUploaderMain(unittest.TestCase):
         print a traceback of what caused them to be raised and then calls
         sys.exit to prevent the GUI program from hanging waiting for input
         """
-
         time_counter = {"value": 0}
+        self.frame = MainFrame()
 
         # dir_dlg uses parent of browse_path; need /child to get /fake_ngs_data
         self.frame.mp.browse_path = path.join(PATH_TO_MODULE, "fake_ngs_data",
@@ -130,12 +122,12 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertTrue(self.frame.mp.upload_button.IsEnabled())
 
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testMultiValidSheets"))
     def test_sample_sheet_multiple_valid(self):
 
         time_counter = {"value": 0}
 
-        self.frame.mp.browse_path = path.join(PATH_TO_MODULE,
-                                              "testMultiValidSheets", "child")
+        self.frame = MainFrame()
 
         self.frame.mp.timer = wx.Timer(self.frame.mp)
         self.frame.mp.Bind(wx.EVT_TIMER,
@@ -143,31 +135,23 @@ class TestIridaUploaderMain(unittest.TestCase):
                            self.frame.mp.timer)
         self.frame.mp.timer.Start(POLL_INTERVAL)
 
-        push_button(self.frame.mp.browse_button)
-
         self.assertEqual(self.frame.mp.log_panel.GetValue().count(
                          "SampleSheet.csv is valid"), 2)
         self.assertEqual(self.frame.mp.VALID_SAMPLESHEET_BG_COLOR,
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertTrue(self.frame.mp.upload_button.IsEnabled())
 
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSampleSheets"))
     def test_sample_sheet_invalid_no_sheets(self):
 
         def handle_warn_dlg(self):
 
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
-
             expected_txt = ("SampleSheet.csv file not found in the selected " +
                             "directory:\n" + self.frame.mp.browse_path)
-            self.assertIn(expected_txt,
-                          self.frame.mp.warn_dlg.Message)
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
-
             self.assertIn(expected_txt, self.frame.mp.log_panel.GetValue())
 
         time_counter = {"value": 0}
+        self.frame = MainFrame()
         h_func = handle_warn_dlg  # shorten name to avoid pep8 79 char limit
 
         self.frame.mp.browse_path = path.join(PATH_TO_MODULE,
@@ -175,7 +159,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.mp.timer = wx.Timer(self.frame.mp)
         self.frame.mp.Bind(wx.EVT_TIMER,
                            lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
                                                         handle_func=h_func),
                            self.frame.mp.timer)
         self.frame.mp.timer.Start(POLL_INTERVAL)
@@ -186,64 +169,16 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
-    def test_sample_sheet_invalid_top_sub_ss(self):
-        #  samplesheet found in both top of directory and subdirectory
-
-        def handle_warn_dlg(self):
-
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
-
-            expected_txt1 = ("Found SampleSheet.csv in both top level " +
-                             "directory:\n {t_dir}\nand subdirectory".
-                             format(t_dir=self.frame.mp.browse_path))
-            self.assertIn(expected_txt1, self.frame.mp.warn_dlg.Message)
-
-            expected_txt2 = ("You can only have either:\n" +
-                             "  One SampleSheet.csv on the top level " +
-                             "directory\n  Or multiple SampleSheet.csv " +
-                             "files in the the subdirectories")
-            self.assertIn(expected_txt2, self.frame.mp.warn_dlg.Message)
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
-
-            self.assertIn(expected_txt1, self.frame.mp.log_panel.GetValue())
-            self.assertIn(expected_txt2, self.frame.mp.log_panel.GetValue())
-
-        time_counter = {"value": 0}
-        h_func = handle_warn_dlg
-
-        self.frame.mp.browse_path = path.join(PATH_TO_MODULE,
-                                              "testSeqPairFiles", "child")
-        self.frame.mp.timer = wx.Timer(self.frame.mp)
-        self.frame.mp.Bind(wx.EVT_TIMER,
-                           lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
-                                                        handle_func=h_func),
-                           self.frame.mp.timer)
-        self.frame.mp.timer.Start(POLL_INTERVAL)
-
-        push_button(self.frame.mp.browse_button)
-
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
-        self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "invalidSeqFiles"))
     def test_sample_sheet_invalid_seqfiles(self):
 
         def handle_warn_dlg(self):
 
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
-
             expected_txt = "doesn't contain either 'R1' or 'R2' in filename."
-            self.assertIn(expected_txt, self.frame.mp.warn_dlg.Message)
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
-
             self.assertIn(expected_txt, self.frame.mp.log_panel.GetValue())
 
         time_counter = {"value": 0}
+        self.frame = MainFrame()
         h_func = handle_warn_dlg
 
         self.frame.mp.browse_path = path.join(
@@ -253,7 +188,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.mp.timer = wx.Timer(self.frame.mp)
         self.frame.mp.Bind(wx.EVT_TIMER,
                            lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
                                                         handle_func=h_func),
                            self.frame.mp.timer)
         self.frame.mp.timer.Start(POLL_INTERVAL)
@@ -264,24 +198,16 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "noPair"))
     def test_sample_sheet_invalid_seqfiles_no_pair(self):
 
         def handle_warn_dlg(self):
 
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
-
             pattern1 = ("No pair sequence file found for: .+" +
                         re.escape("01-1111_S1_L001_R1_001.fastq.gz"))
-            match1 = re.search(pattern1, self.frame.mp.warn_dlg.Message)
-            self.assertIsNotNone(match1.group())
 
             pattern2 = ("Required matching sequence file: .+" +
                         re.escape("01-1111_S1_L001_R2_001.fastq.gz"))
-            match2 = re.search(pattern2, self.frame.mp.warn_dlg.Message)
-            self.assertIsNotNone(match2.group())
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
 
             match3 = re.search(pattern1, self.frame.mp.log_panel.GetValue())
             match4 = re.search(pattern2, self.frame.mp.log_panel.GetValue())
@@ -290,6 +216,7 @@ class TestIridaUploaderMain(unittest.TestCase):
             self.assertIsNotNone(match4.group())
 
         time_counter = {"value": 0}
+        self.frame = MainFrame()
         h_func = handle_warn_dlg
 
         self.frame.mp.browse_path = path.join(
@@ -298,7 +225,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.mp.timer = wx.Timer(self.frame.mp)
         self.frame.mp.Bind(wx.EVT_TIMER,
                            lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
                                                         handle_func=h_func),
                            self.frame.mp.timer)
         self.frame.mp.timer.Start(POLL_INTERVAL)
@@ -309,26 +235,21 @@ class TestIridaUploaderMain(unittest.TestCase):
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
+    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "oddLength"))
     def test_sample_sheet_invalid_seqfiles_odd_len(self):
 
         def handle_warn_dlg(self):
-
-            self.assertTrue(self.frame.mp.warn_dlg.IsShown())
 
             expected_txt1 = "The given file list has an odd number of files."
             expected_txt2 = ("Requires an even number of files " +
                              "in order for each sequence file to have a pair.")
 
-            self.assertIn(expected_txt1, self.frame.mp.warn_dlg.Message)
-            self.assertIn(expected_txt2, self.frame.mp.warn_dlg.Message)
-
-            self.frame.mp.warn_dlg.EndModal(wx.ID_OK)
-            self.assertFalse(self.frame.mp.warn_dlg.IsShown())
-
             self.assertIn(expected_txt1, self.frame.mp.log_panel.GetValue())
             self.assertIn(expected_txt2, self.frame.mp.log_panel.GetValue())
 
+
         time_counter = {"value": 0}
+        self.frame = MainFrame()
         h_func = handle_warn_dlg
 
         self.frame.mp.browse_path = path.join(
@@ -336,7 +257,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.frame.mp.timer = wx.Timer(self.frame.mp)
         self.frame.mp.Bind(wx.EVT_TIMER,
                            lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        poll_warn_dlg=True,
                                                         handle_func=h_func),
                            self.frame.mp.timer)
         self.frame.mp.timer.Start(POLL_INTERVAL)
@@ -346,20 +266,6 @@ class TestIridaUploaderMain(unittest.TestCase):
         self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
                          self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
-    @patch("GUI.SettingsFrame.pub")
-    @patch(
-        "GUI.SettingsFrame.SettingsPanel.attempt_connect_to_api")
-    def test_open_settings(self, mock_connect_api, mock_pub_sub):
-
-        menu_evt = wx.PyCommandEvent(wx.EVT_MENU.typeId,
-                                     self.frame.OPEN_SETTINGS_ID)
-        self.frame.mp.GetEventHandler().ProcessEvent(menu_evt)
-        self.assertTrue(self.frame.mp.settings_frame.IsShown())
-
-        push_button(self.frame.mp.settings_frame.close_btn)
-        self.assertFalse(self.frame.mp.settings_frame.IsShown())
-
 
 def load_test_suite():
 
@@ -372,15 +278,11 @@ def load_test_suite():
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
     gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_top_sub_ss"))
-    gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_open_settings"))
 
     return gui_test_suite
 
