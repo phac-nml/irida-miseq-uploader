@@ -343,6 +343,18 @@ class TestMiSeqParser(unittest.TestCase):
                       "BaseCalls", "01-1111_S1_L001_R2_001.fastq.gz")]
         self.assertEqual(correct_pair_list, pair_file_list)
 
+    def test_common_prefix_sample_names(self):
+        sheet_file = path.join(path_to_module, "testCommonPrefixSampleName",
+                               "SampleSheet.csv")
+        sample_list = parse_samples(sheet_file)
+
+	fastq_files = get_all_fastq_files(path.join(path_to_module, "testCommonPrefixSampleName"))
+
+	for sample in sample_list:
+		sample_id = sample['sequencerSampleId']
+		pair_file_list = get_pair_files(fastq_files, sample_id)
+		self.assertEquals(len(pair_file_list), 2)
+
 
 def load_test_suite():
 
@@ -372,6 +384,8 @@ def load_test_suite():
         TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
     parser_test_suite.addTest(
         TestMiSeqParser("test_parse_metadata_extra_commas"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_common_prefix_sample_names"))
 
     return parser_test_suite
 
