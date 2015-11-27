@@ -297,10 +297,11 @@ def get_pair_files(fastq_file_list, sample_id):
 
     pair_file_list = []
 
-    pattern = re.escape(sample_id) + "(.+)_R(\\d+)_\\S+\\.fastq.*$"
-    # from https://irida.corefacility.ca/gitlab/irida/irida-tools/blob/
-    # development/src/main/java/ca/corefacility/bioinformatics/
-    # irida/iridatools/sequencer/miseq/MiSeqRunUploader.java#L44
+    pattern = re.escape(sample_id) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+    # this is the Illumina-defined pattern for naming fastq files, from:
+    # http://support.illumina.com/content/dam/illumina-support/help/BaseSpaceHelp_v2/Content/Vault/Informatics/Sequencing_Analysis/BS/swSEQ_mBS_FASTQFiles.htm
+    # and also referred to in BaseSpace:
+    # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
 
     for fastq_file in fastq_file_list:
         match = re.search(pattern, fastq_file)
