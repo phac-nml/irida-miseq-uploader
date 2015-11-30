@@ -659,7 +659,7 @@ class MainPanel(wx.Panel):
             wx.CallAfter(self.cf_progress_bar.SetValue, 0)
             wx.CallAfter(
                 self.display_warning, "{error_name}: {error_msg}".format(
-                    error_name=e.__class__.__name__, error_msg=e.strerror))
+                    error_name=e.__class__.__name__, error_msg=e))
 
     def upload_to_server(self, event):
 
@@ -1308,12 +1308,18 @@ class MainPanel(wx.Panel):
 
         try:
             m_dict = parse_metadata(sample_sheet_file)
+            print "  create_seq_run m_dict"
+            print m_dict
             s_list = complete_parse_samples(sample_sheet_file)
+            print "  create_seq_run s_list"
+            print s_list
 
         except SequenceFileError, e:
+            print e
             raise SequenceFileError(str(e))
 
         except SampleSheetError, e:
+            print e
             raise SampleSheetError(str(e))
 
         v_res = validate_sample_list(s_list)
