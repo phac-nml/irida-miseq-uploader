@@ -355,6 +355,29 @@ class TestMiSeqParser(unittest.TestCase):
 		pair_file_list = get_pair_files(fastq_files, sample_id)
 		self.assertEquals(len(pair_file_list), 2)
 
+    def test_parse_metadata_empty_description(self):
+
+        sheet_file = path.join(path_to_module, "testValidSheetEmptyDescription",
+                               "SampleSheet.csv")
+        meta_data = parse_metadata(sheet_file)
+
+        correct_metadata = {"readLengths": ["301", "301"],
+                            "assay": "TruSeq HT",
+                            "description": "",
+                            "application": "FASTQ Only",
+                            "investigatorName": "Investigator",
+                            "adapter": "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+			    "adapterread2": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+                            "workflow": "GenerateFASTQ",
+                            "reversecomplement": "0",
+                            "iemfileversion": "4",
+                            "date": "2015-11-12",
+                            "experimentName": "252",
+                            "chemistry": "Amplicon"}
+
+        self.assertEqual(correct_metadata, meta_data)
+
+
 
 def load_test_suite():
 
@@ -386,6 +409,8 @@ def load_test_suite():
         TestMiSeqParser("test_parse_metadata_extra_commas"))
     parser_test_suite.addTest(
         TestMiSeqParser("test_common_prefix_sample_names"))
+    parser_test_suite.addTest(
+        TestMiSeqParser("test_parse_metadata_empty_description"))
 
     return parser_test_suite
 

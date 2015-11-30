@@ -241,8 +241,7 @@ def get_csv_reader(sample_sheet_file):
         csv_lines = [x.rstrip('\n') for x in csv_file]
         csv_lines = [x.rstrip('\r') for x in csv_lines]
         # strip any trailing commas added by excel from the end of the line.
-        csv_lines = [x.rstrip(',') for x in csv_lines]
-        print csv_lines
+        csv_lines = [re.sub(',{2,}$', '', x) for x in csv_lines]
 
         # open and read file in binary then send it to be parsed by csv's
         # reader
