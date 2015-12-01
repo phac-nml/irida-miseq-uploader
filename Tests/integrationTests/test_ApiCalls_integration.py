@@ -277,7 +277,7 @@ def data_setup(setup):
     return(setup.IRIDA_AUTH_CODE_ID, irida_secret, setup.IRIDA_PASSWORD)
 
 
-def start_setup():
+def start_setup(branch):
 
     global base_URL
     global username
@@ -286,7 +286,7 @@ def start_setup():
     global client_secret
 
     setup = SetupIridaData(
-        base_URL[:base_URL.index("/api")], username, password)
+        base_URL[:base_URL.index("/api")], username, password, branch)
     client_id, client_secret, password = data_setup(setup)
 
     return setup
