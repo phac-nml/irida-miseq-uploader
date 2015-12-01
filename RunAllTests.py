@@ -54,13 +54,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--integration", action="store_true",
                         help="Run integration tests (can take a long time)")
+    parser.add_argument("--irida-version", 
+			help="Specify the branch to check out of the IRIDA project")
     args = parser.parse_args()
 
     if args.integration:
         load_integration_tests(suite_list)
 
         print "Starting setup"
-        setup_handler = apiCalls_integration.start_setup()
+        setup_handler = apiCalls_integration.start_setup(args.irida_version)
 
     load_unit_tests(suite_list)
     full_suite = unittest.TestSuite(suite_list)
