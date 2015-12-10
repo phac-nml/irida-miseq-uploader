@@ -176,23 +176,21 @@ class MainPanel(wx.Panel):
         """
         # before we do anything, check to see if we should be creating the
         # config file and directory:
-        check_config_dirs()
+        check_config_dirs(self)
 
-        section = "iridaUploaderMain"
+        default_dir_path = "";
+
+        section = "Settings"
         key = "default_dir"
         # if first run, default dir doesn't exist yet in config
         if not self.conf_parser.has_section(section):
-            self.conf_parser.add_section(section)
 
             # set default directory to be the user's home directory
             default_dir_path = path.expanduser("~")
-            self.conf_parser.set(section, key,
-                                 default_dir_path)
+        else:
+            default_dir_path = self.conf_parser.get(section, key)
 
-            with open(self.config_file, 'wb') as configfile:
-                self.conf_parser.write(configfile)
-
-        return self.conf_parser.get(section, key)
+        return default_dir_path
 
     def handle_send_seq_evt(self, evt):
 
@@ -1240,7 +1238,7 @@ class MainPanel(wx.Panel):
             for root, dirs, files in walk(top_dir):
                 for filename in fnfilter(files, ss_pattern):
                     result_list.append(path.join(root, filename))
-        
+
         return result_list
 
     def prune_sample_sheets_check_miseqUploaderInfo(self, ss_list):
@@ -1481,7 +1479,7 @@ class MainFrame(wx.Frame):
             wx.CallAfter(webbrowser.open, docs_path)
 
 
-def check_config_dirs():
+def check_config_dirs(self):
     """
     Checks to see if the config directories are set up for this user. Will
     create the user config directory and copy a default config file if they
@@ -1502,6 +1500,8 @@ def check_config_dirs():
         print "User config file doesn't exist, using defaults."
         copy2(conf_file, user_config_dir)
 
+        self.conf_parser.read(self.config_file)
+
 
 def find(name, start_dir):
     """
@@ -1516,7 +1516,7 @@ def find(name, start_dir):
 
 
 def main():
-    check_config_dirs()
+    check_config_dirs(self)
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
