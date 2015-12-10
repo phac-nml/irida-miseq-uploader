@@ -910,7 +910,6 @@ class SettingsPanel(wx.Panel):
                                                path=self.config_dict["default_dir"])
         self.default_dir_box.SetFont(self.TEXTBOX_FONT)
         self.default_dir_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
-        #self.default_dir_box.SetInitialDirectory(self.config_dict["default_dir"])
 
         tip = "Default directory to scan for uploads"
         default_dir_label.SetToolTipString(tip)
