@@ -210,6 +210,8 @@ class SettingsPanel(wx.Panel):
                                             "Settings", "client_secret", "")
         self.config_dict["completion_cmd"] = self._get_config_value(
                                             "Settings", "completion_cmd", "")
+        self.config_dict["default_dir"] = self._get_config_value(
+                                            "Settings", "default_dir", "")
 
     def create_api_obj(self):
 
@@ -904,11 +906,11 @@ class SettingsPanel(wx.Panel):
             self, id=-1, label="Default directory")
         default_dir_label.SetFont(self.LABEL_TXT_FONT)
 
-        self.default_dir_box = wx.TextCtrl(self,
-                                              size=(-1, self.ICON_HEIGHT))
+        self.default_dir_box = wx.DirPickerCtrl(self,
+                                               path=self.config_dict["default_dir"])
         self.default_dir_box.SetFont(self.TEXTBOX_FONT)
         self.default_dir_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
-        self.default_dir_box.SetValue(self.config_dict["completion_cmd"])
+        #self.default_dir_box.SetInitialDirectory(self.config_dict["default_dir"])
 
         tip = "Default directory to scan for uploads"
         default_dir_label.SetToolTipString(tip)
@@ -1110,6 +1112,7 @@ class SettingsPanel(wx.Panel):
         val_dict["client_id"] = self.client_id_box.GetValue()
         val_dict["client_secret"] = self.client_secret_box.GetValue()
         val_dict["completion_cmd"] = self.completion_cmd_box.GetValue()
+        val_dict["default_dir"] = self.default_dir_box.GetPath()
 
         return val_dict
 
