@@ -105,6 +105,8 @@ class SettingsPanel(wx.Panel):
 
         self.completion_cmd_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.basedir_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.create_icon_images()
@@ -114,6 +116,7 @@ class SettingsPanel(wx.Panel):
         self.add_client_id_section()
         self.add_client_secret_section()
         self.add_completion_cmd_text_box()
+        self.addDefaultDirectory()
         self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
@@ -148,6 +151,10 @@ class SettingsPanel(wx.Panel):
             flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
         self.top_sizer.Add(self.completion_cmd_sizer, proportion=0,
+                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
+                           border=self.SIZER_BORDER * 2)
+
+        self.top_sizer.Add(self.basedir_sizer, proportion=0,
                            flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
                            border=self.SIZER_BORDER * 2)
 
@@ -884,6 +891,35 @@ class SettingsPanel(wx.Panel):
         self.completion_cmd_sizer.Add(self.completion_cmd_box, proportion=1,
                                       flag=wx.EXPAND)
 
+    def addDefaultDirectory(self):
+
+        """
+        Add a field to set the default runs directr
+
+
+        no return value
+        """
+
+        default_dir_label = wx.StaticText(
+            self, id=-1, label="Default directory")
+        default_dir_label.SetFont(self.LABEL_TXT_FONT)
+
+        self.default_dir_box = wx.TextCtrl(self,
+                                              size=(-1, self.ICON_HEIGHT))
+        self.default_dir_box.SetFont(self.TEXTBOX_FONT)
+        self.default_dir_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+        self.default_dir_box.SetValue(self.config_dict["completion_cmd"])
+
+        tip = "Default directory to scan for uploads"
+        default_dir_label.SetToolTipString(tip)
+        self.default_dir_box.SetToolTipString(tip)
+
+        self.basedir_sizer.Add(default_dir_label,
+                                      flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                      border=self.ICON_SPACE)
+        self.basedir_sizer.Add(self.default_dir_box, proportion=1,
+                                      flag=wx.EXPAND)
+
     def print_config_to_log_panel(self, changes_dict):
 
         """
@@ -1116,7 +1152,7 @@ class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 380)
+        self.WINDOW_SIZE = (700, 430)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",
