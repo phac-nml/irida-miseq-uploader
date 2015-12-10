@@ -126,6 +126,8 @@ class ApiCalls(object):
         self.conf_parser.read(self.config_file)
 
         self.create_session()
+        self.cached_projects = None
+        self.cached_samples = {}
 
     def create_session(self):
         """
@@ -305,27 +307,30 @@ class ApiCalls(object):
         returns list containing projects. each project is Project object.
         """
 
-        url = self.get_link(self.base_URL, "projects")
-        response = self.session.get(url)
+        if self.cached_projects is None:
 
-        result = response.json()["resource"]["resources"]
-        try:
-            project_list = [
-                Project(
-                    projDict["name"],
-                    projDict["projectDescription"],
-                    projDict["identifier"]
-                )
-                for projDict in result
-            ]
+            url = self.get_link(self.base_URL, "projects")
+            response = self.session.get(url)
 
-        except KeyError, e:
-            e.args = map(str, e.args)
-            msg_arg = " ".join(e.args)
-            raise KeyError(msg_arg + " not found." + " Available keys: " +
-                           ", ".join(result[0].keys()))
+            result = response.json()["resource"]["resources"]
+            try:
+                project_list = [
+                    Project(
+                        projDict["name"],
+                        projDict["projectDescription"],
+                        projDict["identifier"]
+                    )
+                    for projDict in result
+                ]
 
-        return project_list
+            except KeyError, e:
+                e.args = map(str, e.args)
+                msg_arg = " ".join(e.args)
+                raise KeyError(msg_arg + " not found." + " Available keys: " +
+                               ", ".join(result[0].keys()))
+            self.cached_projects = project_list
+
+        return self.cached_projects
 
     def get_samples(self, project=None, sample=None):
         """
@@ -345,23 +350,27 @@ class ApiCalls(object):
         else:
             raise Exception("Missing project or sample object.")
 
-        try:
-            proj_URL = self.get_link(self.base_URL, "projects")
-            url = self.get_link(proj_URL, "project/samples",
-                                targ_dict={
-                                    "key": "identifier",
-                                    "value": project_id
-                                })
+        if project_id not in self.cached_samples:
+            print "No cached samples, loading from server."
+            try:
+                proj_URL = self.get_link(self.base_URL, "projects")
+                url = self.get_link(proj_URL, "project/samples",
+                                    targ_dict={
+                                        "key": "identifier",
+                                        "value": project_id
+                                    })
 
-        except StopIteration:
-            raise ProjectError("The given project ID: " +
-                               project_id + " doesn't exist")
+            except StopIteration:
+                raise ProjectError("The given project ID: " +
+                                   project_id + " doesn't exist")
 
-        response = self.session.get(url)
-        result = response.json()["resource"]["resources"]
-        sample_list = [Sample(sample_dict) for sample_dict in result]
+            response = self.session.get(url)
+            result = response.json()["resource"]["resources"]
+            self.cached_samples[project_id] = [Sample(sample_dict) for sample_dict in result]
+        else:
+            print "Using cached samples for project id " + project_id
 
-        return sample_list
+        return self.cached_samples[project_id]
 
     def get_sequence_files(self, sample):
         """
@@ -423,6 +432,7 @@ class ApiCalls(object):
         when post fails then an error will be raised so return statement is
             not even reached.
         """
+        self.cached_projects = None
 
         json_res = {}
         if len(project.get_name()) >= 5:
@@ -463,6 +473,7 @@ class ApiCalls(object):
         returns a list containing dictionaries of the result of post request.
         """
 
+        self.cached_samples = {} # reset the cache, we're updating stuff
         json_res_list = []
 
         for sample in samples_list:
