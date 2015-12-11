@@ -2,8 +2,8 @@ import sys
 import json
 import webbrowser
 import re
-from os import path, getcwd, pardir, listdir
-from os import system, getcwd, chdir, makedirs, sep, walk
+from os import path, getcwd, pardir, listdir, walk
+from os import system, getcwd, chdir, makedirs, sep
 from fnmatch import filter as fnfilter
 from threading import Thread
 from time import time
