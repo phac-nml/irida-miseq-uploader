@@ -178,7 +178,6 @@ class MainPanel(wx.Panel):
         # if the path is not set, set to home directory
         if not default_dir_path:
 
-            # set default directory to be the user's home directory
             default_dir_path = path.expanduser("~")
 
         return default_dir_path
@@ -1114,6 +1113,14 @@ class MainPanel(wx.Panel):
         self.sample_sheet_files = []
 
         try:
+
+            # if it's the first start and the default directory doesn't exist
+            # warn the user.
+            if first_start and not path.exists(self.browse_path):
+                err_msg = ("Directory " + self.browse_path + " does not " +
+                "exist.  You can update the default directory in the " +
+                " settings dialog.")
+                raise SampleSheetError(err_msg)
 
             ss_list = self.find_sample_sheet(self.browse_path,
                                              "SampleSheet.csv")
