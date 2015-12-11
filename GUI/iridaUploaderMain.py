@@ -55,6 +55,7 @@ class MainPanel(wx.Panel):
 
         self.conf_parser = RawConfigParser()
         self.config_file = user_config_file
+        check_config_dirs(self.conf_parser)
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
@@ -176,7 +177,6 @@ class MainPanel(wx.Panel):
         """
         # before we do anything, check to see if we should be creating the
         # config file and directory:
-        check_config_dirs(self)
 
         default_dir_path = "";
 
@@ -1479,7 +1479,7 @@ class MainFrame(wx.Frame):
             wx.CallAfter(webbrowser.open, docs_path)
 
 
-def check_config_dirs(self):
+def check_config_dirs(conf_parser):
     """
     Checks to see if the config directories are set up for this user. Will
     create the user config directory and copy a default config file if they
@@ -1500,7 +1500,7 @@ def check_config_dirs(self):
         print "User config file doesn't exist, using defaults."
         copy2(conf_file, user_config_dir)
 
-        self.conf_parser.read(self.config_file)
+        conf_parser.read(conf_file)
 
 
 def find(name, start_dir):
@@ -1516,7 +1516,6 @@ def find(name, start_dir):
 
 
 def main():
-    check_config_dirs(self)
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
