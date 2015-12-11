@@ -351,7 +351,6 @@ class ApiCalls(object):
             raise Exception("Missing project or sample object.")
 
         if project_id not in self.cached_samples:
-            print "No cached samples, loading from server."
             try:
                 proj_URL = self.get_link(self.base_URL, "projects")
                 url = self.get_link(proj_URL, "project/samples",
@@ -367,8 +366,6 @@ class ApiCalls(object):
             response = self.session.get(url)
             result = response.json()["resource"]["resources"]
             self.cached_samples[project_id] = [Sample(sample_dict) for sample_dict in result]
-        else:
-            print "Using cached samples for project id " + project_id
 
         return self.cached_samples[project_id]
 
