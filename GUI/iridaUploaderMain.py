@@ -167,28 +167,19 @@ class MainPanel(wx.Panel):
     def get_config_default_dir(self):
 
         """
-        If the config file doesn't have a section
-        "iridaUploaderMain" then it won't contain a default directory
-        key
-        So create one and set the default directory to be the user's
-        home directory
+        Check if the config has a default_dir.  If not set to
+        the user's home directory.
 
         return the path to the default directory from the config file
         """
-        # before we do anything, check to see if we should be creating the
-        # config file and directory:
 
-        default_dir_path = "";
+        default_dir_path = self.conf_parser.get("Settings", "default_dir")
 
-        section = "Settings"
-        key = "default_dir"
-        # if first run, default dir doesn't exist yet in config
-        if not self.conf_parser.has_section(section):
+        # if the path is not set, set to home directory
+        if not default_dir_path:
 
             # set default directory to be the user's home directory
             default_dir_path = path.expanduser("~")
-        else:
-            default_dir_path = self.conf_parser.get(section, key)
 
         return default_dir_path
 
