@@ -116,7 +116,7 @@ class SettingsPanel(wx.Panel):
         self.add_client_id_section()
         self.add_client_secret_section()
         self.add_completion_cmd_text_box()
-        self.addDefaultDirectory()
+        self.add_default_directory()
         self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
@@ -893,7 +893,7 @@ class SettingsPanel(wx.Panel):
         self.completion_cmd_sizer.Add(self.completion_cmd_box, proportion=1,
                                       flag=wx.EXPAND)
 
-    def addDefaultDirectory(self):
+    def add_default_directory(self):
 
         """
         Add a field to set the default runs directr
