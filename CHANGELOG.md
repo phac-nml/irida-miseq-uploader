@@ -2,6 +2,7 @@
 ==============
 * Added caching for some responses from the server so that we don't have to do a round-trip for every sample.
 * Added default directory setting to settings panel.
+* Limiting depth of directory scanning to 2 levels.
 
 1.2.0 to 1.2.1
 ==============

@@ -1233,7 +1233,7 @@ class MainPanel(wx.Panel):
         result_list = []
 
         if path.isdir(top_dir):
-            for root, dirs, files in walk(top_dir):
+            for root, dirs, files in walklevel(top_dir, level=2):
                 for filename in fnfilter(files, ss_pattern):
                     result_list.append(path.join(root, filename))
 
@@ -1522,3 +1522,16 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+## This method is gracelessly borrowed from:
+## http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
+def walklevel(some_dir, level=1):
+    some_dir = some_dir.rstrip(path.sep)
+    assert path.isdir(some_dir)
+    num_sep = some_dir.count(path.sep)
+    for root, dirs, files in walk(some_dir):
+        yield root, dirs, files
+        num_sep_this = root.count(path.sep)
+        if num_sep + level <= num_sep_this:
+            del dirs[:]
