@@ -12,7 +12,7 @@ Running in Linux
 
 Install pip and wxpython:
 
-    $ sudo apt-get install python-pip python-wxgtk2.8
+    $ sudo apt-get install python-pip python-wxgtk3.0
 
 ### virtualenv usage  
 

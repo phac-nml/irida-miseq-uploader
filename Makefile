@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+IRIDA_VERSION?=master
 
 all: clean requirements documentation windows
 
@@ -34,6 +35,6 @@ windows: documentation requirements
 test: clean requirements documentation
 	source .virtualenv/bin/activate
 	./scripts/virtualenv_wx.sh
-	xvfb-run python RunAllTests.py --integration
+	xvfb-run python RunAllTests.py --integration --irida-version $(IRIDA_VERSION)
 
 .ONESHELL:

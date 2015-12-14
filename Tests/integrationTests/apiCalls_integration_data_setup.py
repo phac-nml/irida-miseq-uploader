@@ -17,12 +17,13 @@ import httplib
 
 class SetupIridaData:
 
-    def __init__(self, base_URL, user, password):
+    def __init__(self, base_URL, user, password, branch):
 
         self.base_URL = base_URL
         self.user = user
         self.password = password
         self.driver = None
+	self.branch = branch
 
         self.IRIDA_PASSWORD_ID = 'password_client'
         self.IRIDA_AUTH_CODE_ID = 'auth_code_client'
@@ -68,7 +69,7 @@ class SetupIridaData:
 
     def install_irida(self):
         install_proc = subprocess.Popen(
-            [self.INSTALL_IRIDA_EXEC], cwd=self.PATH_TO_MODULE)
+            [self.INSTALL_IRIDA_EXEC, self.branch], cwd=self.PATH_TO_MODULE)
         proc_res = install_proc.wait()
         if proc_res == 1:  # failed to execute
             sys.exit(1)

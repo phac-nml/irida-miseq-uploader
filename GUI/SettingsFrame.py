@@ -105,6 +105,8 @@ class SettingsPanel(wx.Panel):
 
         self.completion_cmd_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.basedir_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         self.buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.create_icon_images()
@@ -114,6 +116,7 @@ class SettingsPanel(wx.Panel):
         self.add_client_id_section()
         self.add_client_secret_section()
         self.add_completion_cmd_text_box()
+        self.add_default_directory()
         self.add_show_log_panel_checkbox()
         self.add_log_panel_section()
 
@@ -148,6 +151,10 @@ class SettingsPanel(wx.Panel):
             flag=wx.ALIGN_CENTER | wx.BOTTOM, border=self.SIZER_BORDER*2)
 
         self.top_sizer.Add(self.completion_cmd_sizer, proportion=0,
+                           flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
+                           border=self.SIZER_BORDER * 2)
+
+        self.top_sizer.Add(self.basedir_sizer, proportion=0,
                            flag=wx.ALL | wx.ALIGN_CENTER | wx.EXPAND,
                            border=self.SIZER_BORDER * 2)
 
@@ -203,6 +210,8 @@ class SettingsPanel(wx.Panel):
                                             "Settings", "client_secret", "")
         self.config_dict["completion_cmd"] = self._get_config_value(
                                             "Settings", "completion_cmd", "")
+        self.config_dict["default_dir"] = self._get_config_value(
+                                            "Settings", "default_dir", "")
 
     def create_api_obj(self):
 
@@ -884,6 +893,34 @@ class SettingsPanel(wx.Panel):
         self.completion_cmd_sizer.Add(self.completion_cmd_box, proportion=1,
                                       flag=wx.EXPAND)
 
+    def add_default_directory(self):
+
+        """
+        Add a field to set the default runs directr
+
+
+        no return value
+        """
+
+        default_dir_label = wx.StaticText(
+            self, id=-1, label="Default directory")
+        default_dir_label.SetFont(self.LABEL_TXT_FONT)
+
+        self.default_dir_box = wx.DirPickerCtrl(self,
+                                               path=self.config_dict["default_dir"])
+        self.default_dir_box.SetFont(self.TEXTBOX_FONT)
+        self.default_dir_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
+
+        tip = "Default directory to scan for uploads"
+        default_dir_label.SetToolTipString(tip)
+        self.default_dir_box.SetToolTipString(tip)
+
+        self.basedir_sizer.Add(default_dir_label,
+                                      flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                      border=self.ICON_SPACE)
+        self.basedir_sizer.Add(self.default_dir_box, proportion=1,
+                                      flag=wx.EXPAND)
+
     def print_config_to_log_panel(self, changes_dict):
 
         """
@@ -1074,6 +1111,7 @@ class SettingsPanel(wx.Panel):
         val_dict["client_id"] = self.client_id_box.GetValue()
         val_dict["client_secret"] = self.client_secret_box.GetValue()
         val_dict["completion_cmd"] = self.completion_cmd_box.GetValue()
+        val_dict["default_dir"] = self.default_dir_box.GetPath()
 
         return val_dict
 
@@ -1116,7 +1154,7 @@ class SettingsFrame(wx.Frame):
 
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 380)
+        self.WINDOW_SIZE = (700, 430)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",

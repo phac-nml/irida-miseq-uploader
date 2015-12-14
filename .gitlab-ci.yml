@@ -1,4 +1,6 @@
-job1:
-    script: make test
+build-against-irida-master:
+    script: make test IRIDA_VERSION=master
+build-against-irida-development:
+    script: make test IRIDA_VERSION=development
 job2:
     script: "scripts/verifyPEP8.sh"

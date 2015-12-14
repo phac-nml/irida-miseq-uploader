@@ -55,6 +55,7 @@ class MainPanel(wx.Panel):
 
         self.conf_parser = RawConfigParser()
         self.config_file = user_config_file
+        check_config_dirs(self.conf_parser)
         self.conf_parser.read(self.config_file)
 
         self.sample_sheet_files = []
@@ -166,33 +167,20 @@ class MainPanel(wx.Panel):
     def get_config_default_dir(self):
 
         """
-        If the config file doesn't have a section
-        "iridaUploaderMain" then it won't contain a default directory
-        key
-        So create one and set the default directory to be the user's
-        home directory
+        Check if the config has a default_dir.  If not set to
+        the user's home directory.
 
         return the path to the default directory from the config file
         """
-        # before we do anything, check to see if we should be creating the
-        # config file and directory:
-        check_config_dirs()
 
-        section = "iridaUploaderMain"
-        key = "default_dir"
-        # if first run, default dir doesn't exist yet in config
-        if not self.conf_parser.has_section(section):
-            self.conf_parser.add_section(section)
+        default_dir_path = self.conf_parser.get("Settings", "default_dir")
 
-            # set default directory to be the user's home directory
+        # if the path is not set, set to home directory
+        if not default_dir_path:
+
             default_dir_path = path.expanduser("~")
-            self.conf_parser.set(section, key,
-                                 default_dir_path)
 
-            with open(self.config_file, 'wb') as configfile:
-                self.conf_parser.write(configfile)
-
-        return self.conf_parser.get(section, key)
+        return default_dir_path
 
     def handle_send_seq_evt(self, evt):
 
@@ -1126,6 +1114,14 @@ class MainPanel(wx.Panel):
 
         try:
 
+            # if it's the first start and the default directory doesn't exist
+            # warn the user.
+            if first_start and not path.exists(self.browse_path):
+                err_msg = ("Directory " + self.browse_path + " does not " +
+                "exist.  You can update the default directory in the " +
+                " settings dialog.")
+                raise SampleSheetError(err_msg)
+
             ss_list = self.find_sample_sheet(self.browse_path,
                                              "SampleSheet.csv")
 
@@ -1237,10 +1233,10 @@ class MainPanel(wx.Panel):
         result_list = []
 
         if path.isdir(top_dir):
-            for root, dirs, files in walk(top_dir):
+            for root, dirs, files in walklevel(top_dir, level=2):
                 for filename in fnfilter(files, ss_pattern):
                     result_list.append(path.join(root, filename))
-        
+
         return result_list
 
     def prune_sample_sheets_check_miseqUploaderInfo(self, ss_list):
@@ -1481,7 +1477,7 @@ class MainFrame(wx.Frame):
             wx.CallAfter(webbrowser.open, docs_path)
 
 
-def check_config_dirs():
+def check_config_dirs(conf_parser):
     """
     Checks to see if the config directories are set up for this user. Will
     create the user config directory and copy a default config file if they
@@ -1502,6 +1498,8 @@ def check_config_dirs():
         print "User config file doesn't exist, using defaults."
         copy2(conf_file, user_config_dir)
 
+        conf_parser.read(conf_file)
+
 
 def find(name, start_dir):
     """
@@ -1516,7 +1514,6 @@ def find(name, start_dir):
 
 
 def main():
-    check_config_dirs()
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
@@ -1525,3 +1522,16 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+## This method is gracelessly borrowed from:
+## http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
+def walklevel(some_dir, level=1):
+    some_dir = some_dir.rstrip(path.sep)
+    assert path.isdir(some_dir)
+    num_sep = some_dir.count(path.sep)
+    for root, dirs, files in walk(some_dir):
+        yield root, dirs, files
+        num_sep_this = root.count(path.sep)
+        if num_sep + level <= num_sep_this:
+            del dirs[:]
