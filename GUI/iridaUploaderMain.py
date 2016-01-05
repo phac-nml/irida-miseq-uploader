@@ -60,7 +60,6 @@ class MainPanel(wx.Panel):
 
         self.sample_sheet_files = []
         self.seq_run_list = []
-        self.browse_path = self.get_config_default_dir()
 
         self.dir_dlg = None
         self.api = None
@@ -155,14 +154,14 @@ class MainPanel(wx.Panel):
                       "display_completion_cmd_msg")
 
         self.Bind(self.EVT_SEND_SEQ_FILES, self.handle_send_seq_evt)
+        self.Bind(wx.EVT_DIRPICKER_CHANGED, self.start_sample_sheet_processing)
         self.settings_frame = SettingsFrame(self)
         self.settings_frame.Hide()
         self.Center()
         self.Show()
 	# auto-scan the currently selected directory (which should be the directory
 	# that's set in the preferences file).
-        self.browse_path = self.dir_box.GetValue()
-        self.start_sample_sheet_processing(first_start = True)
+        self.start_sample_sheet_processing()
 
     def get_config_default_dir(self):
 
@@ -213,42 +212,18 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        self.browse_button = wx.Button(self, label="Choose directory")
-        self.browse_button.SetFocus()
+        self.browse_button = wx.DirPickerCtrl(self,
+                                              path=self.get_config_default_dir())
         self.dir_label = wx.StaticText(parent=self, id=-1, label="File path")
         self.dir_label.SetFont(self.LABEL_TXT_FONT)
-        self.dir_box = wx.TextCtrl(
-            self, size=(-1, self.browse_button.GetSize()[1]),
-            style=wx.TE_PROCESS_ENTER)
-        self.dir_box.SetFont(self.TEXTBOX_FONT)
-        self.dir_box.SetValue(self.browse_path)
 
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.directory_sizer.Add(self.dir_box, proportion=1, flag=wx.EXPAND)
-        self.directory_sizer.Add(self.browse_button)
+        self.directory_sizer.Add(self.browse_button, proportion=1, flag=wx.EXPAND)
 
         tip = "Select the directory containing the SampleSheet.csv file " + \
             "to be uploaded"
-        self.dir_box.SetToolTipString(tip)
         self.dir_label.SetToolTipString(tip)
         self.browse_button.SetToolTipString(tip)
-
-        self.Bind(wx.EVT_BUTTON, self.open_dir_dlg, self.browse_button)
-        self.Bind(wx.EVT_TEXT_ENTER, self.manually_enter_dir, self.dir_box)
-
-    def manually_enter_dir(self, evt):
-
-        """
-        Function bound to user typing in to the dir_box and then pressing
-        the enter key.
-        Sets self.browse_path to the value enterred by the user because
-        self.browse_path is used in self.start_sample_sheet_processing()
-
-        no return value
-        """
-
-        self.browse_path = self.dir_box.GetValue()
-        self.start_sample_sheet_processing()
 
     def add_curr_file_progress_bar(self):
 
@@ -1005,7 +980,6 @@ class MainPanel(wx.Panel):
         no return value
         """
 
-        self.dir_box.SetBackgroundColour(self.INVALID_SAMPLESHEET_BG_COLOR)
         self.display_warning(msg)
         self.upload_button.Disable()
 
@@ -1030,71 +1004,12 @@ class MainPanel(wx.Panel):
 
         self.seq_run = None
 
-    def open_dir_dlg(self, event):
+    def start_sample_sheet_processing(self, evt=None):
 
         """
-        Function bound to browseButton being clicked and dir_box being
-            clicked or tabbbed/focused
-        Opens dir dialog for user to select directory containing
-            SampleSheet.csv
-        Validates the found SampleSheet.csv
-        If it's valid then proceed to create the sequence run (create_seq_run)
-        else displays warning messagebox containing the error(s)
-
-        arguments:
-            event -- EVT_BUTTON when browse button is clicked
-                    or EVT_SET_FOCUS when dir_box is focused via tabbing
-                    or EVT_LEFT_DOWN when dir_box is clicked
-
-        no return value
+        evt is an optional argument that gets passed when this method is invoked
+        by an event handler instead of being manually invoked (as at startup)
         """
-
-        self.browse_button.SetFocus()
-
-        self.dir_dlg = MDD(
-            self, "Select directory containing Samplesheet.csv",
-            defaultPath=path.dirname(self.browse_path),
-            agwStyle=wx.lib.agw.multidirdialog.DD_DIR_MUST_EXIST)
-        # agwStyle to disable "Create new folder"
-        if self.dir_dlg.ShowModal() == wx.ID_OK:
-
-            selected_directory = self.dir_dlg.GetPaths()[0]
-            # unabashedly stolen from AnyBackup, where they reported something
-            # similar here: http://sourceforge.net/p/anybackup/tickets/136/
-            if (selected_directory.find("(") > -1):
-                # Basically: with wx3 and Windows, the drive label gets
-                # inserted into the value returned by GetPaths(), so this
-                # strips out the label.
-                selected_directory = re.sub('.*\(', '', selected_directory)
-                selected_directory = selected_directory.replace(')', '')
-                self.browse_path = selected_directory.strip(sep)
-            elif selected_directory.find("Home directory") > -1:
-                # wxWidgets (in GTK2.0) tries to place a friendly
-                # "Home Directory" and "Desktop" entry in the file chooser.
-                # Calling "GetPaths" from wxPython ultimately asks for
-                # `GetItemText` on a `TreeCtrl` object, when it should really
-                # be interrogating `GetItemData` and asking for the path. This
-                # is reported at http://trac.wxwidgets.org/ticket/17190
-                home_dir = path.expanduser("~")
-                self.browse_path = selected_directory.replace("Home directory",
-                                                              home_dir)
-            else:
-                # On non-Windows hosts the drive label doesn't show up, so just
-                # use whatever is selected.
-                self.browse_path = selected_directory
-
-            self.start_sample_sheet_processing()
-
-        self.dir_dlg.Destroy()
-
-    def start_sample_sheet_processing(self, first_start=False):
-
-        """
-        first_start is an optional argument to pass to start_sample_sheet_processing
-        to prevent it from showing an unexpected error message on startup if the
-        default directory does not have any sample sheets within it.
-        """
-        self.dir_box.SetValue(self.browse_path)
         self.cf_progress_label.SetLabel(self.cf_init_label)
         self.cf_progress_bar.SetValue(0)
         self.ov_progress_label.SetLabel(self.ov_init_label)
@@ -1116,28 +1031,28 @@ class MainPanel(wx.Panel):
 
             # if it's the first start and the default directory doesn't exist
             # warn the user.
-            if first_start and not path.exists(self.browse_path):
-                err_msg = ("Directory " + self.browse_path + " does not " +
+            browse_path = self.browse_button.GetPath()
+            if evt and not path.exists(browse_path):
+                err_msg = ("Directory " + browse_path + " does not " +
                 "exist.  You can update the default directory in the " +
                 " settings dialog.")
                 raise SampleSheetError(err_msg)
 
-            ss_list = self.find_sample_sheet(self.browse_path,
+            ss_list = self.find_sample_sheet(browse_path,
                                              "SampleSheet.csv")
-
-            if len(ss_list) == 0:
-                sub_dirs = [str(f) for f in listdir(self.browse_path)
+            if not ss_list:
+                sub_dirs = [str(f) for f in listdir(browse_path)
                             if path.isdir(
-                            path.join(self.browse_path, f))]
+                            path.join(browse_path, f))]
 
                 err_msg = ("SampleSheet.csv file not found in the " +
                            "selected directory:\n" +
-                           self.browse_path)
+                           browse_path)
                 if len(sub_dirs) > 0:
                     err_msg = (err_msg + " or its " +
                                "subdirectories:\n" + ", ".join(sub_dirs))
                 # Supress any error messages if the application is just starting up
-                if not first_start:
+                if evt:
                     raise SampleSheetError(err_msg)
 
             else:
@@ -1190,8 +1105,6 @@ class MainPanel(wx.Panel):
         v_res = validate_sample_sheet(sample_sheet_file)
 
         if v_res.is_valid():
-            self.dir_box.SetBackgroundColour(self.VALID_SAMPLESHEET_BG_COLOR)
-
             try:
                 self.create_seq_run(sample_sheet_file)
 
