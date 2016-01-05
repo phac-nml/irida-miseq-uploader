@@ -118,8 +118,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertIn("SampleSheet.csv is valid",
                       self.frame.mp.log_panel.GetValue())
-        self.assertEqual(self.frame.mp.VALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertTrue(self.frame.mp.upload_button.IsEnabled())
 
     @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testMultiValidSheets"))
@@ -137,8 +135,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertEqual(self.frame.mp.log_panel.GetValue().count(
                          "SampleSheet.csv is valid"), 2)
-        self.assertEqual(self.frame.mp.VALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertTrue(self.frame.mp.upload_button.IsEnabled())
 
     @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSampleSheets"))
@@ -165,8 +161,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         push_button(self.frame.mp.browse_button)
 
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
     @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "invalidSeqFiles"))
@@ -194,8 +188,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         push_button(self.frame.mp.browse_button)
 
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
     @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "noPair"))
@@ -231,8 +223,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         push_button(self.frame.mp.browse_button)
 
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
     @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "oddLength"))
@@ -263,8 +253,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         push_button(self.frame.mp.browse_button)
 
-        self.assertEqual(self.frame.mp.INVALID_SAMPLESHEET_BG_COLOR,
-                         self.frame.mp.dir_box.GetBackgroundColour())
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
 def load_test_suite():
