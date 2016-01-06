@@ -95,6 +95,9 @@ class MainPanel(wx.Panel):
         self.ov_upload_est_time_container = wx.BoxSizer(wx.VERTICAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.status_icon = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(24, 24))
+        self.warning_icon = wx.Image(path.join(path_to_module, 'images', 'Warning.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.success_icon = wx.Image(path.join(path_to_module, 'images', 'Success.png'), wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 
         self.add_select_sample_sheet_section()
         self.add_log_panel_section()
@@ -219,7 +222,8 @@ class MainPanel(wx.Panel):
 
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.directory_sizer.Add(self.browse_button, proportion=1, flag=wx.EXPAND)
-
+        self.directory_sizer.Add(self.status_icon, flag=wx.ALIGN_CENTER_VERTICAL)
+        
         tip = "Select the directory containing the SampleSheet.csv file " + \
             "to be uploaded"
         self.dir_label.SetToolTipString(tip)
@@ -980,6 +984,7 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        self.status_icon.SetBitmap(self.warning_icon)
         self.display_warning(msg)
         self.upload_button.Disable()
 
@@ -1105,6 +1110,7 @@ class MainPanel(wx.Panel):
         v_res = validate_sample_sheet(sample_sheet_file)
 
         if v_res.is_valid():
+            self.status_icon.SetBitmap(self.success_icon)
             try:
                 self.create_seq_run(sample_sheet_file)
 
