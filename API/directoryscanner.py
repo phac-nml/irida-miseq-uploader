@@ -10,7 +10,7 @@ def scan_directory(directory):
 	
 	# filter directories that have been completely uploaded
 	sheets_to_upload = filter(lambda dir: not find_file_by_name(dir, '.miseqUploaderComplete'), sample_sheets)
-	sequencing_runs = map(process_sample_sheet, sheets_to_upload)
+	sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
 
 	return sequencing_runs
 	
