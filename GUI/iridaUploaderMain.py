@@ -23,7 +23,7 @@ from appdirs import user_config_dir
 
 from Parsers.miseqParser import (
     complete_parse_samples, parse_metadata)
-from Model.SequencingRun import SequencingRun
+
 from Validation.onlineValidation import (
     project_exists, sample_exists)
 from Validation.offlineValidation import (validate_sample_sheet,
@@ -59,7 +59,6 @@ class MainPanel(wx.Panel):
         check_config_dirs(self.conf_parser)
         self.conf_parser.read(self.config_file)
 
-        self.sample_sheet_files = []
         self.seq_run_list = []
 
         self.dir_dlg = None
@@ -1031,57 +1030,15 @@ class MainPanel(wx.Panel):
         # clear the list of sequencing runs and list of samplesheets when user
         # selects a new directory
         self.seq_run_list = []
-        self.sample_sheet_files = []
         
         browse_path = self.browse_button.GetPath()
         
         try:
-            self.sample_sheet_files = scan_directory(browse_path)
-            for ss in self.sample_sheet_files:
-                self.log_color_print("Processing: " + ss)
-                try:
-                    self.process_sample_sheet(ss)
-                except (SampleSheetError, SequenceFileError):
-                    self.log_color_print(
-                        "Stopping the processing of SampleSheet.csv " +
-                        "files due to failed validation of previous " +
-                        "file: " + ss + "\n",
-                        self.LOG_PNL_ERR_TXT_COLOR)
-                    self.sample_sheet_files = []
-                    break  # stop processing sheets if validation fails
-        except (OSError, IOError), e:
-            self.handle_invalid_sheet_or_seq_file(str(e))
-
-        if self.sample_sheet_files:
-            self.log_color_print("List of SampleSheet files to be uploaded:")
-            for ss_file in self.sample_sheet_files:
-                self.log_color_print(ss_file)
-            self.log_color_print("\n")
-        else:
-            self.handle_invalid_sheet_or_seq_file("No completed runs were detected in {directory}".format(directory=browse_path))
-
-    def process_sample_sheet(self, sample_sheet_file):
-
-        """
-        validate samplesheet file and then tries to create a sequence run
-        raises errors if
-            samplesheet is not valid
-            failed to create sequence run (SequenceFileError)
-
-        arguments:
-            sample_sheet_file -- full path of SampleSheet.csv
-        """
-
-        v_res = validate_sample_sheet(sample_sheet_file)
-
-        if v_res.is_valid():
-            self.status_icon.SetBitmap(self.success_icon)
-            try:
-                self.create_seq_run(sample_sheet_file)
-
+            self.seq_run_list = scan_directory(browse_path)
+            
+            if self.seq_run_list:
+                self.status_icon.SetBitmap(self.success_icon)
                 self.upload_button.Enable()
-                self.log_color_print(sample_sheet_file + " is valid\n",
-                                     self.LOG_PNL_OK_TXT_COLOR)
                 self.cf_progress_label.Show()
                 self.cf_progress_bar.Show()
                 self.ov_progress_label.Show()
@@ -1090,61 +1047,16 @@ class MainPanel(wx.Panel):
                 self.ov_est_time_static_label.Show()
                 self.ov_est_time_label.Show()
                 self.ov_progress_bar.Show()
+                self.log_color_print("List of SampleSheet files to be uploaded:")
+                for run in self.seq_run_list:
+                    self.log_color_print("{} is valid.".format(run.sample_sheet_file), self.LOG_PNL_OK_TXT_COLOR)
+                self.log_color_print("\n")
                 self.Layout()
-
-            except (SampleSheetError, SequenceFileError), e:
-                self.handle_invalid_sheet_or_seq_file(str(e))
-                raise
-
-        else:
-            self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
-            raise SampleSheetError
-
-    def create_seq_run(self, sample_sheet_file):
-
-        """
-        Try to create a SequencingRun object and add it to self.seq_run_list
-        Parses out the metadata dictionary and sampleslist from selected
-            sample_sheet_file
-        raises errors:
-                if parsing raises/throws Exceptions
-                if the parsed out samplesList fails validation
-                if a pair file for a sample in samplesList fails validation
-        these errors are expected to be caught by the calling function
-            open_dir_dlg and it will be the one sending them to display_warning
-
-        no return value
-        """
-
-        try:
-            m_dict = parse_metadata(sample_sheet_file)
-            s_list = complete_parse_samples(sample_sheet_file)
-
-        except SequenceFileError, e:
-            raise SequenceFileError(str(e))
-
-        except SampleSheetError, e:
-            raise SampleSheetError(str(e))
-
-        v_res = validate_sample_list(s_list)
-        if v_res.is_valid():
-
-            seq_run = SequencingRun()
-            seq_run.set_metadata(m_dict)
-            seq_run.set_sample_list(s_list)
-            seq_run.sample_sheet_dir = path.dirname(sample_sheet_file)
-            seq_run.sample_sheet_file = sample_sheet_file
-
-        else:
-            raise SequenceFileError(v_res.get_errors())
-
-        for sample in seq_run.get_sample_list():
-            pf_list = seq_run.get_pair_files(sample.get_id())
-            v_res = validate_pair_files(pf_list, sample.get_id())
-            if v_res.is_valid() is False:
-                raise SequenceFileError(v_res.get_errors())
-
-        self.seq_run_list.append(seq_run)
+            elif evt:
+                self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
+        except Exception as e:
+            self.handle_invalid_sheet_or_seq_file(str(e))
+            raise
 
     def set_updated_api(self, api):
 

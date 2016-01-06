@@ -1,13 +1,31 @@
 import os
 from fnmatch import filter as fnfilter
 from Exceptions import SampleSheetError
+from Validation.offlineValidation import validate_sample_sheet
+from Parsers.miseqParser import parse_metadata, complete_parse_samples
+from Model.SequencingRun import SequencingRun
 
 def scan_directory(directory):
 	sample_sheets = find_file_by_name(directory, 'SampleSheet.csv')
 	
 	# filter directories that have been completely uploaded
 	sheets_to_upload = filter(lambda dir: not find_file_by_name(dir, '.miseqUploaderComplete'), sample_sheets)
-	return sheets_to_upload
+	sequencing_runs = map(process_sample_sheet, sheets_to_upload)
+
+	return sequencing_runs
+	
+def process_sample_sheet(sample_sheet):
+	
+	run_metadata = parse_metadata(sample_sheet)
+	samples = complete_parse_samples(sample_sheet)
+	
+	sequencing_run = SequencingRun()
+	sequencing_run.set_metadata(run_metadata)
+	sequencing_run.set_sample_list(samples)
+	sequencing_run.sample_sheet_dir = os.path.dirname(sample_sheet)
+	sequencing_run.sample_sheet_file = sample_sheet
+	
+	return sequencing_run 
 	
 def find_file_by_name(top_dir, ss_pattern):
 
