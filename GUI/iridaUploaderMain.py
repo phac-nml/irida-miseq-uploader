@@ -1034,7 +1034,7 @@ class MainPanel(wx.Panel):
         browse_path = self.browse_button.GetPath()
         
         try:
-            self.seq_run_list = scan_directory(browse_path)
+            self.seq_run_list = find_runs_in_directory(browse_path)
             
             if self.seq_run_list:
                 self.status_icon.SetBitmap(self.success_icon)

@@ -5,7 +5,7 @@ from Validation.offlineValidation import validate_sample_sheet
 from Parsers.miseqParser import parse_metadata, complete_parse_samples
 from Model.SequencingRun import SequencingRun
 
-def scan_directory(directory):
+def find_runs_in_directory(directory):
 	sample_sheets = find_file_by_name(directory, 'SampleSheet.csv')
 	
 	# filter directories that have been completely uploaded
