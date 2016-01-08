@@ -499,7 +499,7 @@ class MainPanel(wx.Panel):
         try:
             for sr in self.seq_run_list[:]:
 
-                for sample in sr.get_sample_list():
+                for sample in sr.sample_list:
 
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = ("The Sample_Project: {pid} doesn't exist in " +
@@ -572,8 +572,7 @@ class MainPanel(wx.Panel):
                         self.curr_upload_id = self.loaded_upload_id
                         api.set_pair_seq_run_uploading(self.curr_upload_id)
                     else:
-                        json_res = api.create_paired_seq_run(
-                            sr.get_all_metadata())
+                        json_res = api.create_paired_seq_run(sr.metadata)
                         self.curr_upload_id = (
                             json_res["resource"]["identifier"])
 
@@ -582,8 +581,7 @@ class MainPanel(wx.Panel):
                     # create_miseq_uploader_info_file()
                     self.curr_seq_run = sr
 
-                    for sample in sr.get_sample_list():
-
+                    for sample in sr.sample_list:
                         if sample_exists(api, sample) is False:
                             api.send_samples([sample])
 
@@ -604,7 +602,7 @@ class MainPanel(wx.Panel):
                             self.uploaded_samples_q.put(file)
 
                     evt = self.send_seq_files_evt(
-                        sample_list=sr.get_sample_list(),
+                        sample_list=sr.sample_list,
                         send_pairs_callback=self.pair_upload_callback,
                         curr_upload_id=self.curr_upload_id,
                         prev_uploaded_samples=self.prev_uploaded_samples,
@@ -1049,7 +1047,7 @@ class MainPanel(wx.Panel):
                 self.ov_progress_bar.Show()
                 self.log_color_print("List of SampleSheet files to be uploaded:")
                 for run in self.seq_run_list:
-                    self.log_color_print("{} is valid.".format(run.sample_sheet_file), self.LOG_PNL_OK_TXT_COLOR)
+                    self.log_color_print("{} is valid.".format(run.sample_sheet), self.LOG_PNL_OK_TXT_COLOR)
                 self.log_color_print("\n")
                 self.Layout()
             elif evt:

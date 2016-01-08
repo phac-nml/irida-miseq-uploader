@@ -19,11 +19,7 @@ def process_sample_sheet(sample_sheet):
 	run_metadata = parse_metadata(sample_sheet)
 	samples = complete_parse_samples(sample_sheet)
 	
-	sequencing_run = SequencingRun()
-	sequencing_run.set_metadata(run_metadata)
-	sequencing_run.set_sample_list(samples)
-	sequencing_run.sample_sheet_dir = os.path.dirname(sample_sheet)
-	sequencing_run.sample_sheet_file = sample_sheet
+	sequencing_run = SequencingRun(run_metadata, samples, sample_sheet)
 	
 	return sequencing_run 
 	

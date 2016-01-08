@@ -1,41 +1,62 @@
+import os
+
 class SequencingRun:
 
-    def __init__(self):
-        self.sample_list = None
-        self.metadata = None
+    def __init__(self, metadata = None, sample_list = None, sample_sheet = None):
+        self._sample_list = sample_list
+        self._metadata = metadata
+        
+        if sample_sheet is None:
+            raise ValueError("Sample sheet cannot be None!")
+        self._sample_sheet = sample_sheet
+        self._sample_sheet_dir = os.path.dirname(sample_sheet)
+        
+    @property
+    def metadata(self):
+        return self._metadata
 
-    def get_all_metadata(self):
-        return self.metadata
-
-    def set_metadata(self, metadata_dict):
-        self.metadata = metadata_dict
+    @metadata.setter
+    def metadata(self, metadata_dict):
+        self._metadata = metadata_dict
 
     def get_workflow(self):
-        return self.metadata["workflow"]
+        return self._metadata["workflow"]
 
-    def get_sample_list(self):
-        return self.sample_list
+    @property
+    def sample_list(self):
+        return self._sample_list
 
-    def set_sample_list(self, sample_list):
-        self.sample_list = sample_list
+    @sample_list.setter
+    def sample_list(self, sample_list):
+        self._sample_list = sample_list
 
     def get_sample(self, sample_id):
         ret_val = None
 
-        for sample in self.sample_list:
+        for sample in self._sample_list:
             if sample.get_id() == sample_id:
-                ret_val = sample
-                break
-
-        return ret_val
+                return sample
+        else:
+            raise ValueError("No sample with id {} found!.".format(sample_id))
 
     def set_pair_files(self, sample_id, pair_file_list):
-
-        for sample in self.sample_list:
+        for sample in self._sample_list:
             if sample.get_id() == sample_id:
                 sample.set_pair_files(pair_file_list)
                 break
 
     def get_pair_files(self, sample_id):
-        sample = self.get_sample(sample_id)
+        sample = self._get_sample(sample_id)
         return sample.get_pair_files()
+
+    @property
+    def sample_sheet(self):
+        return self._sample_sheet
+    
+    @sample_sheet.setter
+    def sample_sheet(self, sample_sheet):
+        self._sample_sheet = sample_sheet
+    
+    @property
+    def sample_sheet_dir(self):
+        return self._sample_sheet_dir
