@@ -6,6 +6,18 @@ from Parsers.miseqParser import parse_metadata, complete_parse_samples
 from Model.SequencingRun import SequencingRun
 
 def find_runs_in_directory(directory):
+    """Find and validate all runs the specified directory.
+    
+    Filters out any runs in the directory that have already
+    been uploaded. The filter is silent, so no warnings are emitted
+    if there is an uploaded run that's found in the directory.
+    
+    Arguments:
+    directory -- the directory to find sequencing runs
+    
+    Returns: a list of populated sequencing run objects found
+    in the directory, ready to be uploaded. 
+    """
 	sample_sheets = find_file_by_name(directory, 'SampleSheet.csv')
 	
 	# filter directories that have been completely uploaded
@@ -15,7 +27,15 @@ def find_runs_in_directory(directory):
 	return sequencing_runs
 	
 def process_sample_sheet(sample_sheet):
-	
+	"""Create a SequencingRun object for the specified sample sheet.
+    
+    Arguments:
+    sample_sheet -- a `SampleSheet.csv` file that refers to an Illumina
+    MiSeq sequencing run.
+    
+    Returns: an individual SequencingRun object for the sample sheet,
+    ready to be uploaded.
+    """
 	run_metadata = parse_metadata(sample_sheet)
 	samples = complete_parse_samples(sample_sheet)
 	
@@ -24,17 +44,17 @@ def process_sample_sheet(sample_sheet):
 	return sequencing_run 
 	
 def find_file_by_name(top_dir, ss_pattern):
-
-	"""
+	"""Find a file by a name pattern in a directory
+    
 	Traverse through a directory and a level below it searching for
 		a file that matches the given SampleSheet pattern.
 
-	arguments:
-		top_dir -- top level directory to start searching from
-		ss_pattern -- SampleSheet pattern to try and match
-						using fnfilter/ fnmatch.filter
+	Arguments:
+	top_dir -- top level directory to start searching from
+	ss_pattern -- SampleSheet pattern to try and match
+	              using fnfilter/ fnmatch.filter
 
-	returns list containing files that match pattern
+	Returns: list containing files that match pattern
 	"""
 
 	result_list = []
@@ -46,9 +66,18 @@ def find_file_by_name(top_dir, ss_pattern):
 
 	return result_list
 
-## This method is gracelessly borrowed from:
-## http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
 def walklevel(some_dir, level=1):
+    """Descend into a directory, but only to the specified depth.
+    
+    This method is gracelessly borrowed from:
+    http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
+    
+    Arguments:
+    some_dir -- the directory in which to start the walk
+    level -- the depth to descend into the directory.
+    
+    Returns: a generator for directories in under the top level directory.
+    """
     some_dir = some_dir.rstrip(os.path.sep)
     assert os.path.isdir(some_dir)
     num_sep = some_dir.count(os.path.sep)
@@ -58,5 +87,3 @@ def walklevel(some_dir, level=1):
         if num_sep + level <= num_sep_this:
             del dirs[:]
 			
-if __name__ == "__main__":
-	scan_directory('.')
