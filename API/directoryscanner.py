@@ -18,13 +18,13 @@ def find_runs_in_directory(directory):
     Returns: a list of populated sequencing run objects found
     in the directory, ready to be uploaded. 
     """
-	sample_sheets = find_file_by_name(directory, 'SampleSheet.csv')
+    sample_sheets = find_file_by_name(directory, 'SampleSheet.csv')
 	
-	# filter directories that have been completely uploaded
-	sheets_to_upload = filter(lambda dir: not find_file_by_name(dir, '.miseqUploaderComplete'), sample_sheets)
-	sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
+    # filter directories that have been completely uploaded
+    sheets_to_upload = filter(lambda dir: not find_file_by_name(dir, '.miseqUploaderComplete'), sample_sheets)
+    sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
 
-	return sequencing_runs
+    return sequencing_runs
 	
 def process_sample_sheet(sample_sheet):
 	"""Create a SequencingRun object for the specified sample sheet.
