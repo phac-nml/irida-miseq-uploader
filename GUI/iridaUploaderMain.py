@@ -23,7 +23,7 @@ from appdirs import user_config_dir
 
 from Parsers.miseqParser import (
     complete_parse_samples, parse_metadata)
-from Model.SequencingRun import SequencingRun
+
 from Validation.onlineValidation import (
     project_exists, sample_exists)
 from Validation.offlineValidation import (validate_sample_sheet,
@@ -34,6 +34,7 @@ from Exceptions.SampleError import SampleError
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from GUI.SettingsFrame import SettingsFrame, ConnectionError
+from API.directoryscanner import *
 
 path_to_module = path.dirname(__file__)
 user_config_dir = user_config_dir("iridaUploader")
@@ -58,7 +59,6 @@ class MainPanel(wx.Panel):
         check_config_dirs(self.conf_parser)
         self.conf_parser.read(self.config_file)
 
-        self.sample_sheet_files = []
         self.seq_run_list = []
 
         self.dir_dlg = None
@@ -499,7 +499,7 @@ class MainPanel(wx.Panel):
         try:
             for sr in self.seq_run_list[:]:
 
-                for sample in sr.get_sample_list():
+                for sample in sr.sample_list:
 
                     if project_exists(api, sample.get_project_id()) is False:
                         msg = ("The Sample_Project: {pid} doesn't exist in " +
@@ -572,8 +572,7 @@ class MainPanel(wx.Panel):
                         self.curr_upload_id = self.loaded_upload_id
                         api.set_pair_seq_run_uploading(self.curr_upload_id)
                     else:
-                        json_res = api.create_paired_seq_run(
-                            sr.get_all_metadata())
+                        json_res = api.create_paired_seq_run(sr.metadata)
                         self.curr_upload_id = (
                             json_res["resource"]["identifier"])
 
@@ -582,8 +581,7 @@ class MainPanel(wx.Panel):
                     # create_miseq_uploader_info_file()
                     self.curr_seq_run = sr
 
-                    for sample in sr.get_sample_list():
-
+                    for sample in sr.sample_list:
                         if sample_exists(api, sample) is False:
                             api.send_samples([sample])
 
@@ -604,7 +602,7 @@ class MainPanel(wx.Panel):
                             self.uploaded_samples_q.put(file)
 
                     evt = self.send_seq_files_evt(
-                        sample_list=sr.get_sample_list(),
+                        sample_list=sr.sample_list,
                         send_pairs_callback=self.pair_upload_callback,
                         curr_upload_id=self.curr_upload_id,
                         prev_uploaded_samples=self.prev_uploaded_samples,
@@ -1030,93 +1028,15 @@ class MainPanel(wx.Panel):
         # clear the list of sequencing runs and list of samplesheets when user
         # selects a new directory
         self.seq_run_list = []
-        self.sample_sheet_files = []
-
+        
+        browse_path = self.browse_button.GetPath()
+        
         try:
-
-            # if it's the first start and the default directory doesn't exist
-            # warn the user.
-            browse_path = self.browse_button.GetPath()
-            if evt and not path.exists(browse_path):
-                err_msg = ("Directory " + browse_path + " does not " +
-                "exist.  You can update the default directory in the " +
-                " settings dialog.")
-                raise SampleSheetError(err_msg)
-
-            ss_list = self.find_sample_sheet(browse_path,
-                                             "SampleSheet.csv")
-            if not ss_list:
-                sub_dirs = [str(f) for f in listdir(browse_path)
-                            if path.isdir(
-                            path.join(browse_path, f))]
-
-                err_msg = ("SampleSheet.csv file not found in the " +
-                           "selected directory:\n" +
-                           browse_path)
-                if len(sub_dirs) > 0:
-                    err_msg = (err_msg + " or its " +
-                               "subdirectories:\n" + ", ".join(sub_dirs))
-                # Supress any error messages if the application is just starting up
-                if evt:
-                    raise SampleSheetError(err_msg)
-
-            else:
-
-                pruned_list = (
-                    self.prune_sample_sheets_check_miseqUploaderInfo(
-                        ss_list))
-                if len(pruned_list) == 0:
-                    err_msg = (
-                        "The following have already been uploaded:\n" +
-                        "{_dir}").format(_dir=",\n".join(ss_list))
-                    raise SampleSheetError(err_msg)
-
-                self.sample_sheet_files = pruned_list
-
-                for ss in self.sample_sheet_files:
-                    self.log_color_print("Processing: " + ss)
-                    try:
-                        self.process_sample_sheet(ss)
-                    except (SampleSheetError, SequenceFileError):
-                        self.log_color_print(
-                            "Stopping the processing of SampleSheet.csv " +
-                            "files due to failed validation of previous " +
-                            "file: " + ss + "\n",
-                            self.LOG_PNL_ERR_TXT_COLOR)
-                        self.sample_sheet_files = []
-                        break  # stop processing sheets if validation fails
-
-        except (SampleSheetError, OSError, IOError), e:
-            self.handle_invalid_sheet_or_seq_file(str(e))
-
-        if len(self.sample_sheet_files) > 0:
-            self.log_color_print("List of SampleSheet files to be uploaded:")
-            for ss_file in self.sample_sheet_files:
-                self.log_color_print(ss_file)
-            self.log_color_print("\n")
-
-    def process_sample_sheet(self, sample_sheet_file):
-
-        """
-        validate samplesheet file and then tries to create a sequence run
-        raises errors if
-            samplesheet is not valid
-            failed to create sequence run (SequenceFileError)
-
-        arguments:
-            sample_sheet_file -- full path of SampleSheet.csv
-        """
-
-        v_res = validate_sample_sheet(sample_sheet_file)
-
-        if v_res.is_valid():
-            self.status_icon.SetBitmap(self.success_icon)
-            try:
-                self.create_seq_run(sample_sheet_file)
-
+            self.seq_run_list = find_runs_in_directory(browse_path)
+            
+            if self.seq_run_list:
+                self.status_icon.SetBitmap(self.success_icon)
                 self.upload_button.Enable()
-                self.log_color_print(sample_sheet_file + " is valid\n",
-                                     self.LOG_PNL_OK_TXT_COLOR)
                 self.cf_progress_label.Show()
                 self.cf_progress_bar.Show()
                 self.ov_progress_label.Show()
@@ -1125,131 +1045,15 @@ class MainPanel(wx.Panel):
                 self.ov_est_time_static_label.Show()
                 self.ov_est_time_label.Show()
                 self.ov_progress_bar.Show()
+                self.log_color_print("List of SampleSheet files to be uploaded:")
+                for run in self.seq_run_list:
+                    self.log_color_print("{} is valid.".format(run.sample_sheet), self.LOG_PNL_OK_TXT_COLOR)
+                self.log_color_print("\n")
                 self.Layout()
-
-            except (SampleSheetError, SequenceFileError), e:
-                self.handle_invalid_sheet_or_seq_file(str(e))
-                raise
-
-        else:
-            self.handle_invalid_sheet_or_seq_file(v_res.get_errors())
-            raise SampleSheetError
-
-    def find_sample_sheet(self, top_dir, ss_pattern):
-
-        """
-        Traverse through a directory and a level below it searching for
-            a file that matches the given SampleSheet pattern.
-
-        arguments:
-            top_dir -- top level directory to start searching from
-            ss_pattern -- SampleSheet pattern to try and match
-                          using fnfilter/ fnmatch.filter
-
-        returns list containing files that match pattern
-        """
-
-        result_list = []
-
-        if path.isdir(top_dir):
-            for root, dirs, files in walklevel(top_dir, level=2):
-                for filename in fnfilter(files, ss_pattern):
-                    result_list.append(path.join(root, filename))
-
-        return result_list
-
-    def prune_sample_sheets_check_miseqUploaderInfo(self, ss_list):
-
-        """
-        check if a .miseqUploaderInfo file exists in a directory
-          if it does then check the Upload Status inside the file
-
-          if it's "Complete" (i.e the folder has already been uploaded) then
-          remove it from the corresponding SampleSheet.csv in ss_list.
-
-          if it's not then that means the previous attempt at uploading
-          the SampleSheet.csv was interrupted and we need to resume the upload.
-
-          In this case Upload Status will contain a list of sample ID's that
-          have been already uploaded. This data will be loaded in to
-          self.prev_uploaded_samples and the previous upload_id will be
-          loaded in to self.loaded_upload_id.
-
-        else if a .miseqUploaderComplete file exists in a directory then
-        remove it from the corresponding SampleSheet.csv file path in ss_list
-
-        argument:
-            ss_list -- list containing path to SampleSheet.csv files
-
-        ss_list
-
-        return ss_list just to be explicit
-        """
-
-        pruned_list = deepcopy(ss_list)
-
-        for _dir in map(path.dirname, pruned_list[:]):
-            if ".miseqUploaderInfo" in listdir(_dir):
-                uploader_info_filename = path.join(_dir, ".miseqUploaderInfo")
-                with open(uploader_info_filename, "rb") as reader:
-                    info = json.load(reader)
-
-                    if info["Upload Status"] == "Complete":
-                        pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
-                    else:
-                        self.prev_uploaded_samples = info["Upload Status"]
-                        self.loaded_upload_id = info["Upload ID"]
-
-            elif ".miseqUploaderComplete" in listdir(_dir):
-                pruned_list.remove(path.join(_dir, "SampleSheet.csv"))
-
-        return pruned_list
-
-    def create_seq_run(self, sample_sheet_file):
-
-        """
-        Try to create a SequencingRun object and add it to self.seq_run_list
-        Parses out the metadata dictionary and sampleslist from selected
-            sample_sheet_file
-        raises errors:
-                if parsing raises/throws Exceptions
-                if the parsed out samplesList fails validation
-                if a pair file for a sample in samplesList fails validation
-        these errors are expected to be caught by the calling function
-            open_dir_dlg and it will be the one sending them to display_warning
-
-        no return value
-        """
-
-        try:
-            m_dict = parse_metadata(sample_sheet_file)
-            s_list = complete_parse_samples(sample_sheet_file)
-
-        except SequenceFileError, e:
-            raise SequenceFileError(str(e))
-
-        except SampleSheetError, e:
-            raise SampleSheetError(str(e))
-
-        v_res = validate_sample_list(s_list)
-        if v_res.is_valid():
-
-            seq_run = SequencingRun()
-            seq_run.set_metadata(m_dict)
-            seq_run.set_sample_list(s_list)
-            seq_run.sample_sheet_dir = path.dirname(sample_sheet_file)
-            seq_run.sample_sheet_file = sample_sheet_file
-
-        else:
-            raise SequenceFileError(v_res.get_errors())
-
-        for sample in seq_run.get_sample_list():
-            pf_list = seq_run.get_pair_files(sample.get_id())
-            v_res = validate_pair_files(pf_list, sample.get_id())
-            if v_res.is_valid() is False:
-                raise SequenceFileError(v_res.get_errors())
-
-        self.seq_run_list.append(seq_run)
+            elif evt:
+                self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
+        except Exception as e:
+            self.handle_invalid_sheet_or_seq_file(str(e))
 
     def set_updated_api(self, api):
 
@@ -1441,16 +1245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-## This method is gracelessly borrowed from:
-## http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
-def walklevel(some_dir, level=1):
-    some_dir = some_dir.rstrip(path.sep)
-    assert path.isdir(some_dir)
-    num_sep = some_dir.count(path.sep)
-    for root, dirs, files in walk(some_dir):
-        yield root, dirs, files
-        num_sep_this = root.count(path.sep)
-        if num_sep + level <= num_sep_this:
-            del dirs[:]
