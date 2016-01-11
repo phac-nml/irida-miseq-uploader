@@ -1054,7 +1054,6 @@ class MainPanel(wx.Panel):
                 self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
         except Exception as e:
             self.handle_invalid_sheet_or_seq_file(str(e))
-            raise
 
     def set_updated_api(self, api):
 
