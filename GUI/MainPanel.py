@@ -1,31 +1,45 @@
-import sys
+import wx
 import json
-import webbrowser
-from os import path, walk, makedirs
+import sys
+from wx.lib.newevent import NewEvent
+from os import path
+from ConfigParser import RawConfigParser
+from appdirs import user_config_dir
+from pubsub import pub
+from GUI.SettingsFrame import SettingsFrame, ConnectionError
+from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
+from API.directoryscanner import *
+from API.runuploader import *
 from threading import Thread
 from time import time
 from math import ceil
-from ConfigParser import RawConfigParser
-
-from shutil import copy2
-
-import wx
-from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
-from wx.lib.newevent import NewEvent
-from pubsub import pub
-from appdirs import user_config_dir
-
-from GUI.SettingsFrame import SettingsFrame, ConnectionError
-from API.directoryscanner import *
-from API.runuploader import *
 
 path_to_module = path.dirname(__file__)
 user_config_dir = user_config_dir("iridaUploader")
 user_config_file = path.join(user_config_dir, "config.conf")
 
-if len(path_to_module) == 0:
-    path_to_module = '.'
+def check_config_dirs(conf_parser):
+    """
+    Checks to see if the config directories are set up for this user. Will
+    create the user config directory and copy a default config file if they
+    do not exist
 
+    no return value
+    """
+
+    if not path.exists(user_config_dir):
+        print "User config dir doesn't exist, making new one."
+        makedirs(user_config_dir)
+
+    if not path.exists(user_config_file):
+        # find the default config dir from (at least) two directory levels
+        # above this directory
+        conf_file = find("config.conf", path.join(path_to_module, "..", ".."))
+
+        print "User config file doesn't exist, using defaults."
+        copy2(conf_file, user_config_dir)
+
+        conf_parser.read(conf_file)
 
 class MainPanel(wx.Panel):
 
@@ -206,7 +220,7 @@ class MainPanel(wx.Panel):
         self.directory_sizer.Add(self.dir_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.directory_sizer.Add(self.browse_button, proportion=1, flag=wx.EXPAND)
         self.directory_sizer.Add(self.status_icon, flag=wx.ALIGN_CENTER_VERTICAL)
-        
+
         tip = "Select the directory containing the SampleSheet.csv file " + \
             "to be uploaded"
         self.dir_label.SetToolTipString(tip)
@@ -908,12 +922,12 @@ class MainPanel(wx.Panel):
         # clear the list of sequencing runs and list of samplesheets when user
         # selects a new directory
         self.seq_run_list = []
-        
+
         browse_path = self.browse_button.GetPath()
-        
+
         try:
             self.seq_run_list = find_runs_in_directory(browse_path)
-            
+
             if self.seq_run_list:
                 self.status_icon.SetBitmap(self.success_icon)
                 self.upload_button.Enable()
@@ -978,171 +992,3 @@ class MainPanel(wx.Panel):
                 logging.warn("self.api is None")
                 self.log_color_print("Cannot connect to IRIDA. Please check Options > Settings to enter a new location.", self.LOG_PNL_ERR_TXT_COLOR)
             raise ConnectionError("Unable to connect to IRIDA.")
-
-class MainFrame(wx.Frame):
-
-    def __init__(self, parent=None):
-
-        self.parent = parent
-        self.display_size = wx.GetDisplaySize()
-        self.num_of_monitors = wx.Display_GetCount()
-
-        WIDTH_PCT = 0.85
-        HEIGHT_PCT = 0.75
-        self.WINDOW_SIZE_WIDTH = (
-            self.display_size.x/self.num_of_monitors) * WIDTH_PCT
-        self.WINDOW_SIZE_HEIGHT = (self.display_size.y) * HEIGHT_PCT
-
-        self.WINDOW_MAX_WIDTH = 900
-        self.WINDOW_MAX_HEIGHT = 800
-        self.MIN_WIDTH_SIZE = 600
-        self.MIN_HEIGHT_SIZE = 400
-        if self.WINDOW_SIZE_WIDTH > self.WINDOW_MAX_WIDTH:
-            self.WINDOW_SIZE_WIDTH = self.WINDOW_MAX_WIDTH
-        if self.WINDOW_SIZE_HEIGHT > self.WINDOW_MAX_HEIGHT:
-            self.WINDOW_SIZE_HEIGHT = self.WINDOW_MAX_HEIGHT
-
-        self.WINDOW_SIZE = (self.WINDOW_SIZE_WIDTH, self.WINDOW_SIZE_HEIGHT)
-
-        wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
-                          title="IRIDA Uploader",
-                          size=self.WINDOW_SIZE,
-                          style=wx.DEFAULT_FRAME_STYLE)
-
-        self.OPEN_SETTINGS_ID = 111  # arbitrary value
-        self.OPEN_DOCS_ID = 222  # arbitrary value
-
-        self.mp = MainPanel(self)
-        self.settings_frame = self.mp.settings_frame
-
-        img_dir_path = path.join(path_to_module, "images")
-        self.icon = wx.Icon(path.join(img_dir_path, "iu.ico"),
-                            wx.BITMAP_TYPE_ICO)
-        self.SetIcon(self.icon)
-
-        self.add_options_menu()
-        self.add_settings_option()
-        self.add_documentation_option()
-
-        self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
-                          self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
-        self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
-        self.Center()
-
-    def add_options_menu(self):
-
-        """
-        Adds Options menu on top of program
-        Shortcut / accelerator: Alt + T
-
-        no return value
-        """
-
-        self.menubar = wx.MenuBar()
-        self.options_menu = wx.Menu()
-        self.menubar.Append(self.options_menu, "Op&tions")
-        self.SetMenuBar(self.menubar)
-
-    def add_settings_option(self):
-
-        """
-        Add Settings on options menu
-        Clicking Settings will call self.open_settings()
-        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
-
-        no return value
-        """
-
-        self.settings_menu_item = wx.MenuItem(self.options_menu,
-                                              self.OPEN_SETTINGS_ID,
-                                              "&Settings\tCTRL+I")
-        self.options_menu.AppendItem(self.settings_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
-
-    def open_settings(self, evt):
-
-        """
-        Open the settings menu(SettingsFrame)
-
-        no return value
-        """
-
-        self.settings_frame.Center()
-        self.settings_frame.Show()
-
-    def add_documentation_option(self):
-
-        """
-        Adds Documentation on options menu
-        Clicking Documentation will call self.open_docs()
-        Accelerator: ALT + T + D
-
-        no return value
-        """
-
-        self.docs_menu_item = wx.MenuItem(self.options_menu,
-                                          self.OPEN_DOCS_ID,
-                                          "&Documentation")
-        self.options_menu.AppendItem(self.docs_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_docs, id=self.OPEN_DOCS_ID)
-
-    def open_docs(self, evt):
-
-        """
-        Open documentation with user's default browser
-
-        no return value
-        """
-        docs_path = path.join(path_to_module, "..", "..", "html",
-                              "index.html")
-        if not path.isfile(docs_path):
-            wx.CallAfter(self.display_warning, "Documentation is not built.")
-        else:
-            wx.CallAfter(webbrowser.open, docs_path)
-
-
-def check_config_dirs(conf_parser):
-    """
-    Checks to see if the config directories are set up for this user. Will
-    create the user config directory and copy a default config file if they
-    do not exist
-
-    no return value
-    """
-
-    if not path.exists(user_config_dir):
-        print "User config dir doesn't exist, making new one."
-        makedirs(user_config_dir)
-
-    if not path.exists(user_config_file):
-        # find the default config dir from (at least) two directory levels
-        # above this directory
-        conf_file = find("config.conf", path.join(path_to_module, "..", ".."))
-
-        print "User config file doesn't exist, using defaults."
-        copy2(conf_file, user_config_dir)
-
-        conf_parser.read(conf_file)
-
-
-def find(name, start_dir):
-    """
-    Find a file by name in the given path
-
-
-    return the file (if found) otherwise undef
-    """
-    for root, dirs, files in walk(start_dir):
-        if name in files:
-            return path.join(root, name)
-
-
-def main():
-    app = wx.App(False)
-    frame = MainFrame()
-    frame.Show()
-    frame.mp.api = frame.settings_frame.attempt_connect_to_api()
-    app.MainLoop()
-
-if __name__ == "__main__":
-    main()
