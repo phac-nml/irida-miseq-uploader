@@ -3,8 +3,22 @@ from pubsub import pub
 import logging
 
 def upload_run_to_server(api, sequencing_run, progress_callback):
+    """Upload a single run to the server.
+
+    Arguments:
+    api -- the API object to use for interacting with the server
+    sequencing_run -- the run to upload to the server
+    progress_callback -- the function to call for indicating upload progress
+
+    Publishes messages:
+    start_online_validation -- when running an online validation (checking project ids) starts
+    online_validation_failure (params: project_id, sample_id) -- when the online validation fails
+    start_checking_samples -- when initially checking to see which samples should be created on the server
+    start_uploading_samples (params: sheet_dir) -- when actually initiating upload of the samples in the run
+    finished_uploading_samples (params: sheet_dir) -- when uploading the samples has completed
+    """
     # do online validation first.
-    online_validation(api, sequencing_run)
+    _online_validation(api, sequencing_run)
     # then do actual uploading
 
     # for now, always create a new run instead of attempting to resume
@@ -27,7 +41,17 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     pub.sendMessage("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
     api.set_pair_seq_run_complete(run_id)
 
-def online_validation(api, sequencing_run):
+def _online_validation(api, sequencing_run):
+    """Do online validation for the specified sequencing run.
+
+    Arguments:
+    api -- the API object to use for interacting with the server
+    sequencing_run -- the run to validate
+
+    Publishes messages:
+    start_online_validation -- when running online validation
+    online_validation_failure (params: project_id, sample_id) -- when the online validation fails
+    """
     pub.sendMessage("start_online_validation")
     for sample in sequencing_run.sample_list:
         if not project_exists(api, sample.get_project_id()):
