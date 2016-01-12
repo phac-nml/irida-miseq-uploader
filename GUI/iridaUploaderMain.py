@@ -1,40 +1,23 @@
 import sys
 import json
 import webbrowser
-import re
-from os import path, getcwd, pardir, listdir, walk
-from os import system, getcwd, chdir, makedirs, sep
-from fnmatch import filter as fnfilter
+from os import path, walk, makedirs
 from threading import Thread
 from time import time
 from math import ceil
-from copy import deepcopy
-from Queue import Queue
 from ConfigParser import RawConfigParser
 
 from shutil import copy2
 
 import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
-from wx.lib.agw.multidirdialog import MultiDirDialog as MDD
 from wx.lib.newevent import NewEvent
 from pubsub import pub
 from appdirs import user_config_dir
 
-from Parsers.miseqParser import (
-    complete_parse_samples, parse_metadata)
-
-from Validation.onlineValidation import (
-    project_exists, sample_exists)
-from Validation.offlineValidation import (validate_sample_sheet,
-                                          validate_pair_files,
-                                          validate_sample_list)
-from Exceptions.ProjectError import ProjectError
-from Exceptions.SampleError import SampleError
-from Exceptions.SampleSheetError import SampleSheetError
-from Exceptions.SequenceFileError import SequenceFileError
 from GUI.SettingsFrame import SettingsFrame, ConnectionError
 from API.directoryscanner import *
+from API.runuploader import *
 
 path_to_module = path.dirname(__file__)
 user_config_dir = user_config_dir("iridaUploader")
@@ -477,46 +460,22 @@ class MainPanel(wx.Panel):
         self.pulse_timer.Start(pulse_interval)
 
     def do_online_validation(self):
-
-        """
-        in each run check that each sample in the sample list has a
-        project_id that already exists in IRIDA
-        if project_id doesn't exist in IRIDA then the SequencingRun is removed
-        from the list of sequencing runs and an error message is dispalyed
-
-        if all samples in all SequencingRuns have a project_id
-        that exists in IRIDA
-            return True
-        else
-            return False
-        """
-
         wx.CallAfter(self.log_color_print,
                      "Performing online validation on all sequencing runs.\n")
-        api = self.api
 
-        valid = True
-        try:
-            for sr in self.seq_run_list[:]:
+    def handle_online_validation_failure(self, project_id, sample_id):
+        wx.CallAfter(self.pulse_timer.Stop)
+        wx.CallAfter(self.cf_progress_bar.SetValue, 0)
+        wx.CallAfter(self.display_warning, e.message)
 
-                for sample in sr.sample_list:
+        self.seq_run_list.remove(sr)
 
-                    if project_exists(api, sample.get_project_id()) is False:
-                        msg = ("The Sample_Project: {pid} doesn't exist in " +
-                               "IRIDA for Sample_Id: {sid}").format(
-                                sid=sample.get_id(),
-                                pid=sample.get_project_id())
-                        raise ProjectError(msg)
-
-        except ProjectError, e:
-            valid = False
-            wx.CallAfter(self.pulse_timer.Stop)
-            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-            wx.CallAfter(self.display_warning, e.message)
-
-            self.seq_run_list.remove(sr)
-
-        return valid
+    def start_checking_samples(self):
+        wx.CallAfter(self.log_color_print, "Checking samples...")
+    def start_uploading_samples(self, sheet_dir):
+        wx.CallAfter(self.log_color_print, "Starting upload: {}.".format(sheet_dir))
+    def finished_uploading_samples(self, sheet_dir):
+        wx.CallAfter(self.log_color_print, "Finished uploading: {}.".format(sheet_dir))
 
     def _upload_to_server(self):
 
@@ -526,105 +485,19 @@ class MainPanel(wx.Panel):
         blocked (i.e the progress bar pulsing doesn't stop/"freeze" when
         making api calls)
 
-        perform online validation before uploading
-
-        uploads each SequencingRun in self.seq_run_list to irida web server
-
-        each SequencingRun will contain a list of samples and each sample
-        from the list of samples will contain a pair of sequence files
-
-        we then check if the sample's id exists for it's given project_id
-        if it doesn't exist then create it
-
-        create and execute event: self.send_seq_files_evt which calls
-        api.send_pair_sequence_files() with the list of samples and
-        callback function: self.pair_upload_callback()
-
         no return value
         """
 
-        api = self.api
-        self.curr_upload_id = None
-
-        try:
-
-            if api is None:
-                raise ConnectionError(
-                    "Unable to connect to IRIDA. " +
-                    "View Options -> Settings for more info.")
-
-            self.upload_complete = False
-            # used in close_handler() to determine if program was closed
-            # while an upload is still happening in which case set
-            # the sequencing run uploadStatus to ERROR
-            # set to true in handle_upload_complete()
-
-            valid = self.do_online_validation()
-
-            if valid:
-
-                for sr in self.seq_run_list[:]:
-
-                    # if resuming from an upload, self.loaded_upload_id
-                    # will contain the previous upload_id created
-                    # else it's a new upload so create a new seq run
-                    if self.loaded_upload_id is not None:
-                        self.curr_upload_id = self.loaded_upload_id
-                        api.set_pair_seq_run_uploading(self.curr_upload_id)
-                    else:
-                        json_res = api.create_paired_seq_run(sr.metadata)
-                        self.curr_upload_id = (
-                            json_res["resource"]["identifier"])
-
-                    # used to identify SampleSheet.csv file path
-                    # when creating a .miseqUploaderInfo in
-                    # create_miseq_uploader_info_file()
-                    self.curr_seq_run = sr
-
-                    for sample in sr.sample_list:
-                        if sample_exists(api, sample) is False:
-                            api.send_samples([sample])
-
-                    wx.CallAfter(self.log_color_print,
-                                 "Uploading sequencing files from: " +
-                                 sr.sample_sheet_dir)
-
-                    # if resuming upload, print to log panel
-                    # and add all prev_uploaded_samples in to
-                    # uploaded_samples_q so that in case the
-                    # upload gets interrupted again the contents
-                    # of uploaded_samples_q will be written in to
-                    # .miseqUploaderInfo to enable resuming again
-                    self.uploaded_samples_q = Queue()
-                    if len(self.prev_uploaded_samples) > 0:
-                        wx.CallAfter(self.log_color_print, "Resuming")
-                        for file in self.prev_uploaded_samples:
-                            self.uploaded_samples_q.put(file)
-
-                    evt = self.send_seq_files_evt(
-                        sample_list=sr.sample_list,
-                        send_pairs_callback=self.pair_upload_callback,
-                        curr_upload_id=self.curr_upload_id,
-                        prev_uploaded_samples=self.prev_uploaded_samples,
-                        uploaded_samples_q=self.uploaded_samples_q)
-                    self.GetEventHandler().ProcessEvent(evt)
-
-                    self.seq_run_list.remove(sr)
-
-        except Exception, e:
-            # this catches all non-api errors
-            # it won't catch api errors because they are on a diffrent thread
-            # handle_api_thread_error takes care of that
-            if self.curr_upload_id is not None:
-                self.api.set_pair_seq_run_error(self.curr_upload_id)
-                self.upload_complete = True
-                self.curr_upload_id = None
-
-            wx.CallAfter(self.pulse_timer.Stop)
-            wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-            wx.CallAfter(
-                self.display_warning, "{error_name}: {error_msg}".format(
-                    error_name=e.__class__.__name__, error_msg=e.strerror))
+        if self.api is None:
+            raise ConnectionError(
+                "Unable to connect to IRIDA. " +
+                "View Options -> Settings for more info.")
+        for run in self.seq_run_list:
+            # used to identify SampleSheet.csv file path
+            # when creating a .miseqUploaderInfo in
+            # create_miseq_uploader_info_file()
+            self.curr_seq_run = run
+            upload_run_to_server(self.api, run, self.pair_upload_callback)
 
     def upload_to_server(self, event):
 
@@ -642,6 +515,13 @@ class MainPanel(wx.Panel):
 
         no return value
         """
+
+        pub.subscribe(self.do_online_validation, "start_online_validation")
+        pub.subscribe(self.handle_online_validation_failure, "online_validation_failure")
+        pub.subscribe(self.start_checking_samples, "start_checking_samples")
+        pub.subscribe(self.start_uploading_samples , "start_uploading_samples")
+        pub.subscribe(self.finished_uploading_samples, "finished_uploading_samples")
+        pub.subscribe(self.handle_api_thread_error, "online_validation_failure")
 
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
@@ -915,11 +795,6 @@ class MainPanel(wx.Panel):
         displays "Upload Complete" to log panel.
         sets value for Estimated remainnig time to "Complete"
         """
-
-        t = Thread(target=self.api.set_pair_seq_run_complete,
-                   args=(self.curr_upload_id,))
-        t.daemon = True
-        t.start()
 
         self.upload_complete = True
         self.create_miseq_uploader_info_file("Complete")

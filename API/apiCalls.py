@@ -566,7 +566,7 @@ class ApiCalls(object):
 
         json_res_list = []
 
-        if len(prev_uploaded_samples) > 0:
+        if prev_uploaded_samples:
             self.prune_samples_list(prev_uploaded_samples, samples_list)
 
         file_size_list = self.get_file_size_list(samples_list)
