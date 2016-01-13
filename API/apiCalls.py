@@ -144,8 +144,7 @@ class ApiCalls(object):
             access_token = self.get_access_token(oauth_service)
             self.session = oauth_service.get_session(access_token)
 
-            if self.validate_URL_existence(self.base_URL, use_session=True) is\
-                    False:
+            if not self.validate_URL_existence(self.base_URL, use_session=True):
                 raise Exception("Cannot create session. " +
                                 "Verify your credentials are correct.")
 
