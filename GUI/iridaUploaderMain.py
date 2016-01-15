@@ -516,12 +516,17 @@ class MainPanel(wx.Panel):
         no return value
         """
 
+        try:
+            logging.warn("Checking connection before attempting upload")
+            self.check_connection(self.api)
+        except:
+            raise
+
         pub.subscribe(self.do_online_validation, "start_online_validation")
         pub.subscribe(self.handle_online_validation_failure, "online_validation_failure")
         pub.subscribe(self.start_checking_samples, "start_checking_samples")
         pub.subscribe(self.start_uploading_samples , "start_uploading_samples")
         pub.subscribe(self.finished_uploading_samples, "finished_uploading_samples")
-        pub.subscribe(self.handle_api_thread_error, "online_validation_failure")
 
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
@@ -927,6 +932,8 @@ class MainPanel(wx.Panel):
                 self.Layout()
             elif evt:
                 self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
+        except ConnectionError:
+            pass
         except Exception as e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
@@ -947,11 +954,30 @@ class MainPanel(wx.Panel):
         """
 
         self.api = api
-        if self.api is not None:
-            self.upload_button.Enable()
-
+        # this updates the UI, possibly from another thread, so we can't
+        # call the function directory
+        wx.CallAfter(self.check_connection, self.api)
         self.conf_parser.read(self.config_file)
 
+    def check_connection(self, api):
+        """Check that the API is connected.
+
+        Arguments:
+        api -- the API to check the connection on.
+        """
+
+
+        if self.api and self.api.session:
+            self.upload_button.Enable()
+        else:
+            self.upload_button.Disable()
+            if self.api:
+                logging.warn("self.api {}, self.api.session {}".format(self.api, self.api.session))
+                self.log_color_print("Your IRIDA credentials are invalid. Please check the settings dialog to enter new credentials.", self.LOG_PNL_ERR_TXT_COLOR)
+            else:
+                logging.warn("self.api is None")
+                self.log_color_print("Cannot connect to IRIDA. Please check Options > Settings to enter a new location.", self.LOG_PNL_ERR_TXT_COLOR)
+            raise ConnectionError("Unable to connect to IRIDA.")
 
 class MainFrame(wx.Frame):
 
