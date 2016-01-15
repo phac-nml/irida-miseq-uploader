@@ -29,7 +29,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     logging.info("Starting to check samples.")
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)
-    logging.info("Sending samples to server: [{}].".format("".join(samples_to_create)))
+    logging.info("Sending samples to server: [{}].".format(", ".join([str(x) for x in samples_to_create])))
     api.send_samples(samples_to_create)
 
     pub.sendMessage("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
