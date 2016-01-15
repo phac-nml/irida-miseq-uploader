@@ -7,5 +7,5 @@ if __name__ == "__main__":
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.settings_frame.attempt_connect_to_api()
+    frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()

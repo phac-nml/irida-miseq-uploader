@@ -262,8 +262,6 @@ class SettingsPanel(wx.Panel):
         except:
             self.handle_unexpected_error()
 
-        pub.sendMessage("set_updated_api", api=api)
-
         return api
 
     def handle_URL_error(self, e, msg_printed=False):
@@ -1053,6 +1051,7 @@ class SettingsPanel(wx.Panel):
 
         else:
             api = self.attempt_connect_to_api()
+            pub.sendMessage("set_updated_api", api=api)
 
             self.parent.Hide()  # running attached to iridaUploaderMain
 

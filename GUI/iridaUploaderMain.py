@@ -1,7 +1,6 @@
 import sys
 import json
 import webbrowser
-import logging
 from os import path, walk, makedirs
 from threading import Thread
 from time import time
@@ -130,7 +129,8 @@ class MainPanel(wx.Panel):
 
         # update self.api when Settings is closed
         # if it's not None (i.e can connect to API) enable the submit button
-        pub.subscribe(self.set_updated_api, "set_updated_api")
+        pub.subscribe(self.set_updated_api,
+                      "set_updated_api")
 
         # Updates upload speed and estimated remaining time labels
         pub.subscribe(self.update_remaining_time, "update_remaining_time")
@@ -145,6 +145,9 @@ class MainPanel(wx.Panel):
         self.settings_frame.Hide()
         self.Center()
         self.Show()
+	# auto-scan the currently selected directory (which should be the directory
+	# that's set in the preferences file).
+        self.start_sample_sheet_processing()
 
     def get_config_default_dir(self):
 
@@ -948,7 +951,6 @@ class MainPanel(wx.Panel):
 
         self.api = api
         self.check_connection(self.api)
-        self.start_sample_sheet_processing()
         self.conf_parser.read(self.config_file)
 
     def check_connection(self, api):
@@ -958,16 +960,12 @@ class MainPanel(wx.Panel):
         api -- the API to check the connection on.
         """
         if self.api and self.api.session:
-            logging.debug("API and session are set, enabling upload button.")
             self.upload_button.Enable()
         else:
-            logging.debug("Either API or session are not set, disabling button.")
             self.upload_button.Disable()
             if self.api:
-                logging.debug("api is set, session is not")
                 self.log_color_print("Your IRIDA credentials are invalid. Please check the settings dialog to enter new credentials.", self.LOG_PNL_ERR_TXT_COLOR)
             else:
-                logging.debug("api is not set, so no session established")
                 self.log_color_print("Cannot connect to IRIDA. Please check the settings dialog to enter a new location.", self.LOG_PNL_ERR_TXT_COLOR)
             raise Exception("Cannot connect to API.")
 
@@ -1133,7 +1131,7 @@ def main():
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
-    frame.settings_frame.attempt_connect_to_api()
+    frame.mp.api = frame.settings_frame.attempt_connect_to_api()
     app.MainLoop()
 
 if __name__ == "__main__":
