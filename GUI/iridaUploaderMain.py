@@ -521,6 +521,7 @@ class MainPanel(wx.Panel):
         pub.subscribe(self.start_checking_samples, "start_checking_samples")
         pub.subscribe(self.start_uploading_samples , "start_uploading_samples")
         pub.subscribe(self.finished_uploading_samples, "finished_uploading_samples")
+        pub.subscribe(self.handle_api_thread_error, "online_validation_failure")
 
         self.upload_button.Disable()
         # disable upload button to prevent accidental double-click
@@ -906,8 +907,6 @@ class MainPanel(wx.Panel):
         browse_path = self.browse_button.GetPath()
         
         try:
-            # before doing anything, check to see if you can connect to the api
-            self.check_connection(self.api)
             self.seq_run_list = find_runs_in_directory(browse_path)
             
             if self.seq_run_list:
@@ -928,8 +927,6 @@ class MainPanel(wx.Panel):
                 self.Layout()
             elif evt:
                 self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
-        except ConnectionError:
-            pass
         except Exception as e:
             self.handle_invalid_sheet_or_seq_file(str(e))
 
@@ -950,24 +947,11 @@ class MainPanel(wx.Panel):
         """
 
         self.api = api
-        self.check_connection(self.api)
+        if self.api is not None:
+            self.upload_button.Enable()
+
         self.conf_parser.read(self.config_file)
 
-    def check_connection(self, api):
-        """Check that the API is connected.
-
-        Arguments:
-        api -- the API to check the connection on.
-        """
-        if self.api and self.api.session:
-            self.upload_button.Enable()
-        else:
-            self.upload_button.Disable()
-            if self.api:
-                self.log_color_print("Your IRIDA credentials are invalid. Please check the settings dialog to enter new credentials.", self.LOG_PNL_ERR_TXT_COLOR)
-            else:
-                self.log_color_print("Cannot connect to IRIDA. Please check the settings dialog to enter a new location.", self.LOG_PNL_ERR_TXT_COLOR)
-            raise Exception("Cannot connect to API.")
 
 class MainFrame(wx.Frame):
 
