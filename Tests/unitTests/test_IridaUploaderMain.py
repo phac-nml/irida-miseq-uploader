@@ -3,7 +3,7 @@ import wx
 import re
 import traceback
 import sys
-from os import path, listdir
+from os import path
 
 from GUI.MainFrame import MainFrame
 from GUI.MainPanel import MainPanel

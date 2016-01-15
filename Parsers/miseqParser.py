@@ -8,7 +8,6 @@ from copy import deepcopy
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
-from Exceptions.SequenceFileError import SequenceFileError
 
 
 def parse_metadata(sample_sheet_file):

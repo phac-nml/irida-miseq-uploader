@@ -1,4 +1,3 @@
-from csv import reader
 from copy import deepcopy
 from urlparse import urlparse
 from os import path

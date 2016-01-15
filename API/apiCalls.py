@@ -1,21 +1,19 @@
 import ast
 import json
 import httplib
-from urllib2 import Request, urlopen, URLError, HTTPError
+from urllib2 import urlopen, URLError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
 from os import path, system
 from ConfigParser import RawConfigParser
 
-from rauth import OAuth2Service, OAuth2Session
-from requests import Request
+from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
 from pubsub import pub
 from appdirs import user_config_dir
 
-from Model.SequenceFile import SequenceFile
 from Model.Project import Project
 from Model.Sample import Sample
 from Exceptions.ProjectError import ProjectError

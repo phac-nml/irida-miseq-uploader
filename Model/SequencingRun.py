@@ -31,8 +31,6 @@ class SequencingRun:
         self._sample_list = sample_list
 
     def get_sample(self, sample_id):
-        ret_val = None
-
         for sample in self._sample_list:
             if sample.get_id() == sample_id:
                 return sample

@@ -1,13 +1,10 @@
 import unittest
 import json
 import httplib
-from urllib2 import URLError, urlopen, HTTPError
+from urllib2 import URLError
 
 from mock import patch, MagicMock
-from rauth import OAuth2Service
-from rauth.session import OAuth2Session
 from requests.exceptions import HTTPError as request_HTTPError
-from requests.models import Response
 from Model.SequenceFile import SequenceFile
 
 import API
@@ -73,10 +70,9 @@ class TestApiCalls(unittest.TestCase):
         validate_URL = api.validate_URL_existence
 
         url = "http://localhost:8080/api/"
-        valid = True
 
         with self.assertRaises(Exception) as err:
-            is_valid = validate_URL(url)
+            validate_URL(url)
 
         self.assertTrue(err_msg in str(err.exception))
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
@@ -172,7 +168,7 @@ class TestApiCalls(unittest.TestCase):
 
         base_URL = "invalidForm.com/"
         with self.assertRaises(URLError) as err:
-            api = API.apiCalls.ApiCalls(
+            API.apiCalls.ApiCalls(
                 client_id="",
                 client_secret="",
                 base_URL=base_URL,
@@ -204,7 +200,7 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.side_effect = [False]
 
         with self.assertRaises(Exception) as err:
-            api = API.apiCalls.ApiCalls(
+            API.apiCalls.ApiCalls(
                 client_id="",
                 client_secret="",
                 base_URL="",
@@ -745,7 +741,7 @@ class TestApiCalls(unittest.TestCase):
         sample = API.apiCalls.Sample({"sampleProject": "999"})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            seqRes = api.get_sequence_files(sample)
+            api.get_sequence_files(sample)
 
         self.assertTrue(sample["sampleProject"] + " doesn't exist"
                         in str(err.exception))
