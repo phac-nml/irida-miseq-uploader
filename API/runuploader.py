@@ -23,7 +23,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     # then do actual uploading
 
     # for now, always create a new run instead of attempting to resume
-    run_on_server = api.create_paired_seq_run(sequencing_run.metadata)
+    run_on_server = api.create_seq_run(sequencing_run.metadata)
     run_id = run_on_server["resource"]["identifier"]
 
     pub.sendMessage("start_checking_samples")

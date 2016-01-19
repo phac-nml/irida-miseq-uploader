@@ -42,6 +42,9 @@ class Sample:
     def set_seq_file(self, seq_file):
         self.seq_file = seq_file
 
+    def is_paired_end(self):
+        return len(self.seq_file.get_pair_files()) == 2
+
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)
 

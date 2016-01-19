@@ -7,6 +7,7 @@ from time import time
 from copy import deepcopy
 from os import path, system
 from ConfigParser import RawConfigParser
+import logging
 
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
@@ -91,7 +92,7 @@ def class_decorator(*method_names):
 @class_decorator(
     "get_projects", "get_samples", "get_sequence_files",
     "send_project", "send_samples", "_send_pair_sequence_files"
-    "get_pair_seq_runs", "create_paired_seq_run",
+    "get_pair_seq_runs", "create_seq_run",
     "_set_pair_seq_run_upload_status"
 )
 class ApiCalls(object):
@@ -633,30 +634,46 @@ class ApiCalls(object):
             raise SampleError("The given sample ID: " +
                               sample_id + " doesn't exist")
 
-        url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
-
         miseqRunId_key = "miseqRunId"
 
-        parameters1 = ("\"{key1}\": \"{value1}\"," +
-                       "\"{key2}\": \"{value2}\"").format(
-                        key1=miseqRunId_key, value1=str(upload_id),
-                        key2="parameter1", value2="p1")
-        parameters1 = "{" + parameters1 + "}"
+        if sample.is_paired_end():
+            logging.warn("sending paired-end file")
+            url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
+            parameters1 = ("\"{key1}\": \"{value1}\"," +
+                           "\"{key2}\": \"{value2}\"").format(
+                            key1=miseqRunId_key, value1=str(upload_id),
+                            key2="parameter1", value2="p1")
+            parameters1 = "{" + parameters1 + "}"
 
-        parameters2 = ("\"{key1}\": \"{value1}\", " +
-                       "\"{key2}\": \"{value2}\"").format(
-                        key1=miseqRunId_key, value1=str(upload_id),
-                        key2="parameter2", value2="p2")
-        parameters2 = "{" + parameters2 + "}"
+            parameters2 = ("\"{key1}\": \"{value1}\", " +
+                           "\"{key2}\": \"{value2}\"").format(
+                            key1=miseqRunId_key, value1=str(upload_id),
+                            key2="parameter2", value2="p2")
+            parameters2 = "{" + parameters2 + "}"
 
-        files = ({
-                "file1": (sample.get_pair_files()[0].replace("\\", "/"),
-                          open(sample.get_pair_files()[0], "rb")),
-                "parameters1": ("", parameters1, "application/json"),
-                "file2": (sample.get_pair_files()[1].replace("\\", "/"),
-                          open(sample.get_pair_files()[1], "rb")),
-                "parameters2": ("", parameters2, "application/json")
-        })
+            files = ({
+                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
+                              open(sample.get_pair_files()[0], "rb")),
+                    "parameters1": ("", parameters1, "application/json"),
+                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
+                              open(sample.get_pair_files()[1], "rb")),
+                    "parameters2": ("", parameters2, "application/json")
+            })
+
+        else:
+            logging.warn("sending single-end file")
+            url = seq_url
+            parameters1 = ("\"{key1}\": \"{value1}\"," +
+                           "\"{key2}\": \"{value2}\"").format(
+                            key1=miseqRunId_key, value1=str(upload_id),
+                            key2="parameter1", value2="p1")
+            parameters1 = "{" + parameters1 + "}"
+
+            files = ({
+                    "file": (sample.get_pair_files()[0].replace("\\", "/"),
+                              open(sample.get_pair_files()[0], "rb")),
+                    "parameters": ("", parameters1, "application/json")
+            })
 
         e = encoder.MultipartEncoder(fields=files)
 
@@ -699,16 +716,14 @@ class ApiCalls(object):
 
         return json_res
 
-    def create_paired_seq_run(self, metadata_dict):
+    def create_seq_run(self, metadata_dict):
 
         """
-        Create a sequencing run for pair end sequence files.
+        Create a sequencing run.
 
-        the contents of metadata_dict are changed inside this method
+        the contents of metadata_dict are changed inside this method (THIS IS TERRIBLE)
 
-        layoutType = "PAIRED_END"
         uploadStatus "UPLOADING"
-        readLengths = the largest number between the readLengths
 
         There are some parsed metadata keys from the SampleSheet.csv that are
         currently not accepted/used by the API so they are discarded.
@@ -740,13 +755,6 @@ class ApiCalls(object):
             "investigatorName", "createdDate", "assay", "description",
             "workflow", "readLengths"]
 
-        # currently sends just the larger readLengths
-        if len(metadata_dict["readLengths"]) > 0:
-            metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
-        else:
-            metadata_dict["readLengths"] = ""
-
-        metadata_dict["layoutType"] = "PAIRED_END"
         metadata_dict["uploadStatus"] = "UPLOADING"
 
         for key in metadata_dict.keys():

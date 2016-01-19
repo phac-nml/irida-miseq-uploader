@@ -130,7 +130,7 @@ class TestApiIntegration(unittest.TestCase):
         for key in sample_dict.keys():
             self.assertEqual(sample[key], added_sample[key])
 
-    def test_create_paired_seq_run(self):
+    def test_create_seq_run(self):
 
         api = ApiCalls(
             client_id=client_id,
@@ -149,7 +149,7 @@ class TestApiIntegration(unittest.TestCase):
         pair_seq_run_list = api.get_pair_seq_runs()
         self.assertEqual(len(pair_seq_run_list), 0)
 
-        json_res = api.create_paired_seq_run(metadata_dict)
+        json_res = api.create_seq_run(metadata_dict)
 
         pair_seq_run_list = api.get_pair_seq_runs()
         self.assertEqual(len(pair_seq_run_list), 1)
@@ -234,7 +234,7 @@ def load_test_suite():
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_samples"))
     api_integration_test_suite.addTest(
-        TestApiIntegration("test_create_paired_seq_run"))
+        TestApiIntegration("test_create_seq_run"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_sequence_files"))
     api_integration_test_suite.addTest(
