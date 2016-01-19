@@ -1,10 +1,5 @@
-# -*- coding: utf-8 -*-
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import NoAlertPresentException
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from contextlib import contextmanager
 from urllib2 import urlopen, URLError
@@ -83,7 +78,7 @@ class SetupIridaData:
             sys.exit(1)
 
     def run_irida(self):
-        irida_server_proc = subprocess.Popen(
+        subprocess.Popen(
             self.IRIDA_CMD, cwd=self.IRIDA_PATH)
         self.wait_until_up()
 
@@ -100,7 +95,7 @@ class SetupIridaData:
                 status_code = urlopen(self.base_URL).getcode()
                 elapsed = time() - start_time
 
-            except URLError, e:
+            except URLError:
                 sleep(10)
 
     def start_driver(self):

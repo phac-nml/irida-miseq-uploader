@@ -26,16 +26,6 @@ class TestApiIntegration(unittest.TestCase):
     def setUp(self):
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
-    def test_connect_and_authenticate(self):
-
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
     def test_get_sequence_files(self):
 
         api = ApiCalls(
@@ -239,8 +229,6 @@ def load_test_suite():
 
     api_integration_test_suite = unittest.TestSuite()
 
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_connect_and_authenticate"))
     api_integration_test_suite.addTest(
         TestApiIntegration("test_get_and_send_project"))
     api_integration_test_suite.addTest(

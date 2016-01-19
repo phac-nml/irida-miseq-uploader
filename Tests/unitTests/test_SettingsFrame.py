@@ -1,13 +1,11 @@
 import unittest
 import wx
-import re
 import traceback
 import sys
-from os import path, listdir
 from requests.exceptions import ConnectionError
 from collections import OrderedDict
 import GUI.SettingsFrame
-from mock import MagicMock, patch
+from mock import patch
 
 
 POLL_INTERVAL = 100  # milliseconds

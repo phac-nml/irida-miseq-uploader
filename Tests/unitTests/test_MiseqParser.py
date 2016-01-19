@@ -11,7 +11,6 @@ from Parsers.miseqParser import (
     parse_out_sequence_file,
     complete_parse_samples)
 from Exceptions.SampleSheetError import SampleSheetError
-from Exceptions.SequenceFileError import SequenceFileError
 
 path_to_module = path.abspath(path.dirname(__file__))
 if len(path_to_module) == 0:
@@ -29,7 +28,7 @@ class TestMiSeqParser(unittest.TestCase):
         data_dir = path.join(path_to_module, "fake_ngs_data", "Data")
 
         with self.assertRaises(SampleSheetError) as context:
-            csv_reader = get_csv_reader(data_dir)
+            get_csv_reader(data_dir)
 
         self.assertTrue(
             "not a valid SampleSheet file" in str(context.exception))
@@ -38,7 +37,7 @@ class TestMiSeqParser(unittest.TestCase):
 
         sheet_file = path.join(path_to_module, "fake_ngs_data",
                                "SampleSheet.csv")
-        csv_reader = get_csv_reader(sheet_file)
+        get_csv_reader(sheet_file)
 
     def test_parse_metadata_extra_commas(self):
 
@@ -253,7 +252,7 @@ class TestMiSeqParser(unittest.TestCase):
         mock_csv_reader.side_effect = [reader(sample_sheet_file)]
 
         with self.assertRaises(SampleSheetError) as context:
-            sample_list = parse_samples(sample_sheet_file)
+            parse_samples(sample_sheet_file)
 
         expected_err_msg = (
             "Number of values doesn't match number of " +
@@ -305,7 +304,7 @@ class TestMiSeqParser(unittest.TestCase):
 
         with self.assertRaises(OSError) as context:
             fastq_files = get_all_fastq_files(invalid_dir)
-            pair_file_list = get_pair_files(fastq_files, invalid_sample_id)
+            get_pair_files(fastq_files, invalid_sample_id)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
@@ -315,7 +314,7 @@ class TestMiSeqParser(unittest.TestCase):
 
         with self.assertRaises(OSError) as context:
             fastq_files = get_all_fastq_files(invalid_dir)
-            pair_file_list = get_pair_files(fastq_files, valid_sample_id)
+            get_pair_files(fastq_files, valid_sample_id)
 
         self.assertTrue("Invalid directory" in str(context.exception))
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import wx
-from GUI.iridaUploaderMain import MainFrame
+from GUI.MainFrame import MainFrame
 
 if __name__ == "__main__":
     app = wx.App(False)

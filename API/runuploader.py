@@ -1,6 +1,7 @@
 from Validation.onlineValidation import project_exists, sample_exists
 from pubsub import pub
 import logging
+from Exceptions.ProjectError import ProjectError
 
 def upload_run_to_server(api, sequencing_run, progress_callback):
     """Upload a single run to the server.
