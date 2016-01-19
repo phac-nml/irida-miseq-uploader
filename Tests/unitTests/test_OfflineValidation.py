@@ -6,7 +6,6 @@ from Parsers.miseqParser import (
     get_all_fastq_files)
 from Validation.offlineValidation import (
     validate_sample_sheet,
-    validate_pair_files,
     validate_sample_list,
     validate_URL_form)
 from Model.Sample import Sample
@@ -69,152 +68,6 @@ class TestOfflineValidation(unittest.TestCase):
 
         self.assertTrue(
             "[Header] section not found in SampleSheet" in v_res.get_errors())
-
-    def test_validate_pair_files_valid(self):
-
-        data_dir = path.join(path_to_module, "fake_ngs_data")
-        fastq_files = get_all_fastq_files(data_dir)
-
-        sample_id = "01-1111"
-        pf_list1 = get_pair_files(fastq_files, sample_id)
-
-        self.assertEqual(len(pf_list1), 2)
-        v_res1 = validate_pair_files(pf_list1, sample_id)
-
-        self.assertTrue(v_res1.is_valid())
-        self.assertEqual(v_res1.error_count(), 0)
-        self.assertTrue("No error messages" in v_res1.get_errors())
-
-        sample_id = "02-2222"
-        pf_list2 = get_pair_files(fastq_files, sample_id)
-
-        self.assertEqual(len(pf_list2), 2)
-        v_res2 = validate_pair_files(pf_list2, sample_id)
-
-        self.assertTrue(v_res2.is_valid())
-        self.assertEqual(v_res2.error_count(), 0)
-        self.assertTrue("No error messages" in v_res2.get_errors())
-
-        pf_list3 = pf_list1 + pf_list2
-        self.assertEqual(len(pf_list3), 4)
-
-        v_res3 = validate_pair_files(pf_list3, sample_id)
-        self.assertTrue(v_res3.is_valid())
-        self.assertEqual(v_res3.error_count(), 0)
-        self.assertTrue("No error messages" in v_res3.get_errors())
-
-    def test_validate_pair_files_invalid_odd_length(self):
-
-        data_dir = path.join(path_to_module, "testSeqPairFiles", "oddLength")
-        fastq_files = get_all_fastq_files(data_dir)
-
-        sample_id = "01-1111"
-        pf_list = get_pair_files(fastq_files, sample_id)
-
-        self.assertEqual(len(pf_list), 1)
-        v_res = validate_pair_files(pf_list, sample_id)
-
-        self.assertFalse(v_res.is_valid())
-        self.assertEqual(v_res.error_count(), 1)
-        self.assertTrue(
-            "The given file list has an odd number of files"
-            in v_res.get_errors())
-
-    def test_validate_pair_files_invalid_no_pair(self):
-
-        data_dir = path.join(path_to_module, "testSeqPairFiles", "noPair")
-        fastq_files = get_all_fastq_files(data_dir)
-
-        sample_id = "01-1111"
-        pf_list1 = get_pair_files(fastq_files, sample_id)
-        # 01-1111_S1_L001_R1_001.fastq.gz, 01-1111_S1_L001_R9_001.fastq.gz
-
-        self.assertEqual(len(pf_list1), 2)
-        v_res1 = validate_pair_files(pf_list1, sample_id)
-
-        self.assertFalse(v_res1.is_valid())
-        self.assertEqual(v_res1.error_count(), 1)
-        self.assertTrue("No pair sequence file found" in v_res1.get_errors())
-
-        sample_id = "02-2222"
-        pf_list2 = get_pair_files(fastq_files, sample_id)
-        # 02-2222_S1_L001_R2_001.fastq.gz, 02-2222_S1_L001_R8_001.fastq.gz
-
-        self.assertEqual(len(pf_list2), 2)
-        v_res2 = validate_pair_files(pf_list2, sample_id)
-
-        self.assertFalse(v_res2.is_valid())
-        self.assertEqual(v_res2.error_count(), 1)
-        self.assertTrue("No pair sequence file found" in v_res2.get_errors())
-
-        pf_list3 = pf_list1 + pf_list2
-        self.assertEqual(len(pf_list3), 4)
-
-        v_res3 = validate_pair_files(pf_list3, sample_id)
-
-        self.assertFalse(v_res3.is_valid())
-        self.assertEqual(v_res3.error_count(), 1)
-        self.assertTrue("No pair sequence file found" in v_res3.get_errors())
-
-    def test_validate_pair_files_invalid_seq_files(self):
-
-        data_dir = path.join(
-            path_to_module, "testSeqPairFiles", "invalidSeqFiles")
-
-        fastq_files = get_all_fastq_files(data_dir)
-
-        sample_id = "01-1111"
-        pf_list1 = get_pair_files(fastq_files, sample_id)
-        # 01-1111_S1_L001_R0_001.fastq.gz, 01-1111_S1_L001_R3_001.fastq.gz
-
-        self.assertEqual(len(pf_list1), 2)
-        v_res1 = validate_pair_files(pf_list1, sample_id)
-
-        self.assertFalse(v_res1.is_valid())
-        self.assertEqual(v_res1.error_count(), 1)
-        self.assertTrue(
-            "doesn't contain either 'R1' or 'R2' in filename"
-            in v_res1.get_errors())
-
-        sample_id = "02-2222"
-        pf_list2 = get_pair_files(fastq_files, sample_id)
-        # 02-2222_S1_L001_R5_001.fastq.gz, 02-2222_S1_L001_R4_001.fastq.gz
-
-        self.assertEqual(len(pf_list2), 2)
-        v_res2 = validate_pair_files(pf_list2, sample_id)
-
-        self.assertFalse(v_res2.is_valid())
-        self.assertEqual(v_res2.error_count(), 1)
-        self.assertTrue(
-            "doesn't contain either 'R1' or 'R2' in filename"
-            in v_res2.get_errors())
-
-        pf_list3 = pf_list1 + pf_list2
-
-        self.assertEqual(len(pf_list3), 4)
-        v_res3 = validate_pair_files(pf_list3, sample_id)
-
-        self.assertFalse(v_res3.is_valid())
-        self.assertEqual(v_res3.error_count(), 1)
-        self.assertTrue(
-            "doesn't contain either 'R1' or 'R2' in filename"
-            in v_res3.get_errors())
-
-    def test_validate_pair_files_invalid_no_seq_files(self):
-
-        data_dir = path.join(path_to_module, "fake_ngs_data")
-        fastq_files = get_all_fastq_files(data_dir)
-
-        sample_id = "404"
-        pf_list1 = get_pair_files(fastq_files, sample_id)
-
-        self.assertEqual(len(pf_list1), 0)
-        v_res1 = validate_pair_files(pf_list1, sample_id)
-
-        self.assertFalse(v_res1.is_valid())
-        self.assertEqual(v_res1.error_count(), 1)
-        self.assertIn("No pair files found for Sample_ID: 404",
-                      v_res1.get_errors())
 
     def test_validate_sample_list_valid(self):
 
@@ -379,17 +232,6 @@ def load_test_suite():
         TestOfflineValidation("test_validate_sample_sheet_empty_sheet"))
     off_validation_test_suite.addTest(TestOfflineValidation(
         "test_validate_sample_sheet_missing_header_sect"))
-
-    off_validation_test_suite.addTest(
-        TestOfflineValidation("test_validate_pair_files_valid"))
-    off_validation_test_suite.addTest(
-        TestOfflineValidation("test_validate_pair_files_invalid_odd_length"))
-    off_validation_test_suite.addTest(
-        TestOfflineValidation("test_validate_pair_files_invalid_no_pair"))
-    off_validation_test_suite.addTest(
-        TestOfflineValidation("test_validate_pair_files_invalid_seq_files"))
-    off_validation_test_suite.addTest(
-        TestOfflineValidation("test_validate_pair_files_invalid_no_seq_files"))
 
     off_validation_test_suite.addTest(
         TestOfflineValidation("test_validate_sample_list_valid"))
