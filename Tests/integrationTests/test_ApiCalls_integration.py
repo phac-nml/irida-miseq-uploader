@@ -142,8 +142,8 @@ class TestApiIntegration(unittest.TestCase):
 
         metadata_dict = {
             "workflow": "test_workflow",
-            "readLengths": [1]
-
+            "readLengths": "1",
+            "layoutType": "PAIRED_END"
         }
 
         pair_seq_run_list = api.get_pair_seq_runs()
