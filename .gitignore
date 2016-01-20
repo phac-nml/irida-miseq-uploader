@@ -11,3 +11,4 @@ build/
 pynsist_pkgs
 wxPython*
 .virtualenv
+.cache

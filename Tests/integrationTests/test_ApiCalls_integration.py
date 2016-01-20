@@ -1,47 +1,25 @@
 import unittest
+import pytest
 import ntpath
+import logging
 from os import path
 
-from API.apiCalls import ApiCalls
 from Model.Project import Project
 from Model.Sample import Sample
 from Parsers.miseqParser import complete_parse_samples
 
-from apiCalls_integration_data_setup import SetupIridaData
-
-base_URL = "http://localhost:8080/api"
-username = "admin"
-password = "password1"
-client_id = ""
-client_secret = ""
-
-
-path_to_module = path.dirname(__file__)
-if len(path_to_module) == 0:
-    path_to_module = '.'
-
-
+@pytest.mark.skipif(not pytest.config.getoption("--integration"), reason = "skipped integration tests")
+@pytest.mark.usefixtures("api")
 class TestApiIntegration(unittest.TestCase):
-
-    def setUp(self):
-        print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
     def test_get_sequence_files(self):
 
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
-        proj_list = api.get_projects()
+        proj_list = self.api.get_projects()
         proj = proj_list[len(proj_list) - 1]
-        sample_list = api.get_samples(proj)
+        sample_list = self.api.get_samples(proj)
         sample = sample_list[len(sample_list) - 1]
 
-        seq_file_list = api.get_sequence_files(proj, sample)
+        seq_file_list = self.api.get_sequence_files(proj, sample)
         self.assertEqual(len(seq_file_list), 2)
 
         seq_file1 = seq_file_list[0]
@@ -55,21 +33,13 @@ class TestApiIntegration(unittest.TestCase):
 
     def test_get_and_send_project(self):
 
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
-        proj_list = api.get_projects()
+        proj_list = self.api.get_projects()
         self.assertTrue(len(proj_list) == 0)
 
         proj_name = "integration testProject"
         proj_description = "integration testProject description"
         proj = Project(proj_name, proj_description)
-        server_response = api.send_project(proj)
+        server_response = self.api.send_project(proj)
 
         self.assertEqual(proj_name,
                          server_response["resource"]["name"])
@@ -78,7 +48,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual("1",
                          server_response["resource"]["identifier"])
 
-        proj_list = api.get_projects()
+        proj_list = self.api.get_projects()
         self.assertTrue(len(proj_list) == 1)
 
         added_proj = proj_list[0]
@@ -89,17 +59,9 @@ class TestApiIntegration(unittest.TestCase):
 
     def test_get_and_send_samples(self):
 
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
-        proj_list = api.get_projects()
+        proj_list = self.api.get_projects()
         proj = proj_list[0]
-        sample_list = api.get_samples(proj)
+        sample_list = self.api.get_samples(proj)
         self.assertTrue(len(sample_list) == 0)
 
         sample_dict = {
@@ -110,7 +72,7 @@ class TestApiIntegration(unittest.TestCase):
         }
 
         sample = Sample(sample_dict)
-        server_response_list = api.send_samples([sample])
+        server_response_list = self.api.send_samples([sample])
         self.assertEqual(len(server_response_list), 1)
 
         server_response = server_response_list[0]
@@ -122,7 +84,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual("1",
                          server_response["resource"]["identifier"])
 
-        sample_list = api.get_samples(proj)
+        sample_list = self.api.get_samples(proj)
         self.assertTrue(len(sample_list) == 1)
 
         added_sample = sample_list[0]
@@ -132,26 +94,18 @@ class TestApiIntegration(unittest.TestCase):
 
     def test_create_seq_run(self):
 
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
         metadata_dict = {
             "workflow": "test_workflow",
             "readLengths": "1",
             "layoutType": "PAIRED_END"
         }
 
-        seq_run_list = api.get_seq_runs()
+        seq_run_list = self.api.get_seq_runs()
         self.assertEqual(len(seq_run_list), 0)
 
-        json_res = api.create_seq_run(metadata_dict)
+        json_res = self.api.create_seq_run(metadata_dict)
 
-        seq_run_list = api.get_seq_runs()
+        seq_run_list = self.api.get_seq_runs()
         self.assertEqual(len(seq_run_list), 1)
 
         upload_id = json_res["resource"]["identifier"]
@@ -160,15 +114,9 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(upload_status, "UPLOADING")
 
     def test_get_and_send_sequence_files(self):
-
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
+        path_to_module = path.dirname(__file__)
+        if len(path_to_module) == 0:
+            path_to_module = '.'
         sample_sheet_file = path.join(path_to_module, "fake_ngs_data",
                                       "SampleSheet.csv")
         samples_list = complete_parse_samples(sample_sheet_file)
@@ -177,18 +125,18 @@ class TestApiIntegration(unittest.TestCase):
         # has no sequence files
         seq_file_list = []
         for sample in samples_list:
-            res = api.get_sequence_files(sample)
+            res = self.api.get_sequence_files(sample)
             if len(res) > 0:
                 seq_file_list.append(res)
         self.assertEqual(len(seq_file_list), 0)
 
-        serv_res_list = api.send_sequence_files(samples_list)[0]
+        serv_res_list = self.api.send_sequence_files(samples_list)[0]
 
         # check that the sample with id 99-9999 (from SampleSheet.csv)
         # has the one that we just uploaded.
         seq_file_list = []
         for sample in samples_list:
-            res = api.get_sequence_files(sample)
+            res = self.api.get_sequence_files(sample)
             if len(res) > 0:
                 seq_file_list.append(res)
 
@@ -210,88 +158,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(len(serv_res_list), len(samples_list))
 
     def test_set_seq_run_complete(self):
-
-        api = ApiCalls(
-            client_id=client_id,
-            client_secret=client_secret,
-            base_URL=base_URL,
-            username=username,
-            password=password
-        )
-
-        api.set_seq_run_complete(identifier="1")
-        seq_run_list = api.get_seq_runs()
+        self.api.set_seq_run_complete(identifier="1")
+        seq_run_list = self.api.get_seq_runs()
         self.assertEqual(len(seq_run_list), 1)
         self.assertEqual(seq_run_list[0]["uploadStatus"], "COMPLETE")
-
-
-def load_test_suite():
-
-    api_integration_test_suite = unittest.TestSuite()
-
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_get_and_send_project"))
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_get_and_send_samples"))
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_create_seq_run"))
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_get_and_send_sequence_files"))
-    api_integration_test_suite.addTest(
-        TestApiIntegration("test_set_seq_run_complete"))
-
-    return api_integration_test_suite
-
-
-def irida_setup(setup):
-
-    setup.install_irida()
-    setup.reset_irida_db()
-    setup.run_irida()
-
-
-def data_setup(setup):
-
-    irida_setup(setup)
-
-    setup.start_driver()
-    setup.login()
-    setup.set_new_admin_pw()
-    setup.create_client()
-
-    irida_secret = setup.get_irida_secret()
-    setup.close_driver()
-
-    return(setup.IRIDA_AUTH_CODE_ID, irida_secret, setup.IRIDA_PASSWORD)
-
-
-def start_setup(branch):
-
-    global base_URL
-    global username
-    global password
-    global client_id
-    global client_secret
-
-    setup = SetupIridaData(
-        base_URL[:base_URL.index("/api")], username, password, branch)
-    client_id, client_secret, password = data_setup(setup)
-
-    return setup
-
-
-def main():
-
-    setup_handler = start_setup()
-
-    test_suite = load_test_suite()
-    full_suite = unittest.TestSuite([test_suite])
-
-    runner = unittest.TextTestRunner()
-    runner.run(full_suite)
-
-    setup_handler.stop_irida()
-
-if __name__ == "__main__":
-
-    main()

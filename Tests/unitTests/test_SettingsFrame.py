@@ -270,35 +270,3 @@ class TestSettingsFrame(unittest.TestCase):
         self.assertEqual(self.frame.sp.password_suc_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_id_suc_icon.Label, "hidden")
         self.assertEqual(self.frame.sp.client_secret_suc_icon.Label, "hidden")
-
-def load_test_suite():
-
-    gui_sf_test_suite = unittest.TestSuite()
-
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_valid_credentials"))
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_invalid_connection"))
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_key_err_invalid_user_or_pass"))
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_key_err_invalid_client_id"))
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_key_err_invalid_client_secret"))
-
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_value_err"))
-
-    gui_sf_test_suite.addTest(
-        TestSettingsFrame("test_unexpected_err"))
-
-    return gui_sf_test_suite
-
-
-if __name__ == "__main__":
-
-    sf_ts = load_test_suite()
-    full_suite = unittest.TestSuite([sf_ts])
-
-    runner = unittest.TextTestRunner()
-    runner.run(full_suite)
