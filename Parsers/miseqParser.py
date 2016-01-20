@@ -113,7 +113,6 @@ def complete_parse_samples(sample_sheet_file):
         file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
         pf_list = find_file_by_name(directory = data_dir,
                                     name_pattern = file_pattern)
-        logging.warn("File names found [{}]".format([str(x) for x in pf_list]))
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))

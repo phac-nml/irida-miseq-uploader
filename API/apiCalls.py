@@ -637,7 +637,7 @@ class ApiCalls(object):
         miseqRunId_key = "miseqRunId"
 
         if sample.is_paired_end():
-            logging.warn("sending paired-end file")
+            logging.info("sending paired-end file")
             url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
             parameters1 = ("\"{key1}\": \"{value1}\"," +
                            "\"{key2}\": \"{value2}\"").format(
@@ -661,7 +661,7 @@ class ApiCalls(object):
             })
 
         else:
-            logging.warn("sending single-end file")
+            logging.info("sending single-end file")
             url = seq_url
             parameters1 = ("\"{key1}\": \"{value1}\"," +
                            "\"{key2}\": \"{value2}\"").format(

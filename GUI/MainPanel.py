@@ -531,7 +531,7 @@ class MainPanel(wx.Panel):
         """
 
         try:
-            logging.warn("Checking connection before attempting upload")
+            logging.info("Checking connection before attempting upload")
             self.check_connection(self.api)
         except:
             raise
@@ -986,9 +986,7 @@ class MainPanel(wx.Panel):
         else:
             self.upload_button.Disable()
             if self.api:
-                logging.warn("self.api {}, self.api.session {}".format(self.api, self.api.session))
                 self.log_color_print("Your IRIDA credentials are invalid. Please check the settings dialog to enter new credentials.", self.LOG_PNL_ERR_TXT_COLOR)
             else:
-                logging.warn("self.api is None")
                 self.log_color_print("Cannot connect to IRIDA. Please check Options > Settings to enter a new location.", self.LOG_PNL_ERR_TXT_COLOR)
             raise ConnectionError("Unable to connect to IRIDA.")

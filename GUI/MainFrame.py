@@ -122,5 +122,5 @@ class MainFrame(wx.Frame):
         """
         docs_path = path.join(path_to_module, "..", "..", "html",
                               "index.html")
-        logging.warn(path_to_module)
+        logging.info(path_to_module)
         wx.CallAfter(webbrowser.open, docs_path)
