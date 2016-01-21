@@ -5,12 +5,12 @@ class SequencingRun:
     def __init__(self, metadata = None, sample_list = None, sample_sheet = None):
         self._sample_list = sample_list
         self._metadata = metadata
-        
+
         if sample_sheet is None:
             raise ValueError("Sample sheet cannot be None!")
         self._sample_sheet = sample_sheet
         self._sample_sheet_dir = os.path.dirname(sample_sheet)
-        
+
     @property
     def metadata(self):
         return self._metadata
@@ -37,24 +37,24 @@ class SequencingRun:
         else:
             raise ValueError("No sample with id {} found!.".format(sample_id))
 
-    def set_pair_files(self, sample_id, pair_file_list):
+    def set_files(self, sample_id, file_list):
         for sample in self._sample_list:
             if sample.get_id() == sample_id:
-                sample.set_pair_files(pair_file_list)
+                sample.set_files(file_list)
                 break
 
-    def get_pair_files(self, sample_id):
+    def get_files(self, sample_id):
         sample = self._get_sample(sample_id)
-        return sample.get_pair_files()
+        return sample.get_files()
 
     @property
     def sample_sheet(self):
         return self._sample_sheet
-    
+
     @sample_sheet.setter
     def sample_sheet(self, sample_sheet):
         self._sample_sheet = sample_sheet
-    
+
     @property
     def sample_sheet_dir(self):
         return self._sample_sheet_dir

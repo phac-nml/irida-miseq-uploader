@@ -7,7 +7,8 @@ from mock import patch
 from Model.Sample import Sample
 from Parsers.miseqParser import (
     parse_metadata, parse_samples, get_csv_reader,
-    get_pair_files, get_all_fastq_files,
+    get_pair_files,
+    get_all_fastq_files,
     parse_out_sequence_file,
     complete_parse_samples)
 from Exceptions.SampleSheetError import SampleSheetError
@@ -125,10 +126,10 @@ class TestMiSeqParser(unittest.TestCase):
                 all([data_header in sample.get_sample_metadata().keys()
                     for data_header in seq_file_headers]))
 
-            self.assertEqual(len(sample.get_pair_files()), 2)
+            self.assertEqual(len(sample.get_files()), 2)
             fastq_files = get_all_fastq_files(data_dir)
             pf_list = get_pair_files(fastq_files, sample.get_id())
-            self.assertEqual(pf_list, sample.get_pair_files())
+            self.assertEqual(pf_list, sample.get_files())
 
     def test_parse_samples(self):
 
@@ -299,7 +300,7 @@ class TestMiSeqParser(unittest.TestCase):
         self.assertEqual(sample.get_dict(), correct_sample)
         self.assertEqual(seq_file, correct_seq_file)
 
-    def test_get_pair_files_invalid_dir_and_id(self):
+    def test_get_files_invalid_dir_and_id(self):
 
         invalid_dir = "+/not a directory/+"
         invalid_sample_id = "-1"
@@ -310,7 +311,7 @@ class TestMiSeqParser(unittest.TestCase):
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
-    def test_get_pair_files_invalid_dir_valid_id(self):
+    def test_get_files_invalid_dir_valid_id(self):
         invalid_dir = "+/not a directory/+"
         valid_sample_id = "01-1111"
 
@@ -320,29 +321,29 @@ class TestMiSeqParser(unittest.TestCase):
 
         self.assertTrue("Invalid directory" in str(context.exception))
 
-    def test_get_pair_files_valid_dir_invalid_id(self):
+    def test_get_files_valid_dir_invalid_id(self):
 
         valid_dir = path.join(path_to_module, "fake_ngs_data")
         invalid_sample_id = "-1~"
 
         fastq_files = get_all_fastq_files(valid_dir)
-        pair_file_list = get_pair_files(fastq_files, invalid_sample_id)
+        file_list = get_pair_files(fastq_files, invalid_sample_id)
 
-        self.assertEqual(len(pair_file_list), 0)
+        self.assertEqual(len(file_list), 0)
 
-    def test_get_pair_files_valid_dir_valid_id(self):
+    def test_get_files_valid_dir_valid_id(self):
 
         valid_dir = path.join(path_to_module, "fake_ngs_data")
         valid_sample_id = "01-1111"
 
         fastq_files = get_all_fastq_files(valid_dir)
-        pair_file_list = get_pair_files(fastq_files, valid_sample_id)
-        correct_pair_list = [
+        file_list = get_pair_files(fastq_files, valid_sample_id)
+        correct_list = [
             path.join(path_to_module, "fake_ngs_data", "Data", "Intensities",
                       "BaseCalls", "01-1111_S1_L001_R1_001.fastq.gz"),
             path.join(path_to_module, "fake_ngs_data", "Data", "Intensities",
                       "BaseCalls", "01-1111_S1_L001_R2_001.fastq.gz")]
-        self.assertEqual(correct_pair_list, pair_file_list)
+        self.assertEqual(correct_list, file_list)
 
     def test_common_prefix_sample_names(self):
         sheet_file = path.join(path_to_module, "testCommonPrefixSampleName",
@@ -353,8 +354,8 @@ class TestMiSeqParser(unittest.TestCase):
 
 	for sample in sample_list:
 		sample_id = sample['sequencerSampleId']
-		pair_file_list = get_pair_files(fastq_files, sample_id)
-		self.assertEquals(len(pair_file_list), 2)
+		file_list = get_pair_files(fastq_files, sample_id)
+		self.assertEquals(len(file_list), 2)
 
     def test_parse_metadata_empty_description(self):
 
@@ -400,13 +401,13 @@ def load_test_suite():
     parser_test_suite.addTest(TestMiSeqParser("test_parse_out_sequence_file"))
 
     parser_test_suite.addTest(
-        TestMiSeqParser("test_get_pair_files_invalid_dir_and_id"))
+        TestMiSeqParser("test_get_files_invalid_dir_and_id"))
     parser_test_suite.addTest(
-        TestMiSeqParser("test_get_pair_files_invalid_dir_valid_id"))
+        TestMiSeqParser("test_get_files_invalid_dir_valid_id"))
     parser_test_suite.addTest(
-        TestMiSeqParser("test_get_pair_files_valid_dir_invalid_id"))
+        TestMiSeqParser("test_get_files_valid_dir_invalid_id"))
     parser_test_suite.addTest(
-        TestMiSeqParser("test_get_pair_files_valid_dir_valid_id"))
+        TestMiSeqParser("test_get_files_valid_dir_valid_id"))
     parser_test_suite.addTest(
         TestMiSeqParser("test_parse_metadata_extra_commas"))
     parser_test_suite.addTest(

@@ -33,17 +33,17 @@ class Sample:
     def get_sample_metadata(self):
         return self.seq_file.get_properties()
 
-    def get_pair_files(self):
-        return self.seq_file.get_pair_files()
+    def get_files(self):
+        return self.seq_file.get_files()
 
-    def get_pair_files_size(self):
-        return self.seq_file.get_pair_files_size()
+    def get_files_size(self):
+        return self.seq_file.get_files_size()
 
     def set_seq_file(self, seq_file):
         self.seq_file = seq_file
 
     def is_paired_end(self):
-        return len(self.seq_file.get_pair_files()) == 2
+        return len(self.seq_file.get_files()) == 2
 
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)

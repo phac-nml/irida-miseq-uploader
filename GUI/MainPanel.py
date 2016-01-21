@@ -133,8 +133,8 @@ class MainPanel(wx.Panel):
 
         # publisher sends a message that uploading sequence files is complete
         # basically places a call to self.update_progress_bars in the event q
-        pub.subscribe(self.pair_seq_files_upload_complete,
-                      "pair_seq_files_upload_complete")
+        pub.subscribe(self.seq_files_upload_complete,
+                      "seq_files_upload_complete")
 
         # Called by an api function
         # display error message and update sequencing run uploadStatus to ERROR
@@ -185,19 +185,19 @@ class MainPanel(wx.Panel):
 
         """
         function bound to custom event self.EVT_SEND_SEQ_FILES
-        creates new thread for sending pair sequence files
+        creates new thread for sending sequence files
 
         no return value
         """
 
         kwargs = {
             "samples_list": evt.sample_list,
-            "callback": evt.send_pairs_callback,
+            "callback": evt.send_callback,
             "upload_id": evt.curr_upload_id,
             "prev_uploaded_samples": evt.prev_uploaded_samples,
             "uploaded_samples_q": evt.uploaded_samples_q
         }
-        self.api.send_pair_sequence_files(**kwargs)
+        self.api.send_sequence_files(**kwargs)
 
     def add_select_sample_sheet_section(self):
 
@@ -230,7 +230,7 @@ class MainPanel(wx.Panel):
 
         """
         Adds current file progress bar. Will be used for displaying progress of
-            the current sequence file pairs being uploaded.
+            the current sequence files being uploaded.
 
         no return value
         """
@@ -440,7 +440,7 @@ class MainPanel(wx.Panel):
             self.log_color_print("Updating sequencing run upload status. " +
                                  "Please wait.", self.LOG_PNL_ERR_TXT_COLOR)
             wx.Yield()
-            t = Thread(target=self.api.set_pair_seq_run_error,
+            t = Thread(target=self.api.set_seq_run_error,
                        args=(self.curr_upload_id,))
             t.start()
 
@@ -511,7 +511,7 @@ class MainPanel(wx.Panel):
             # when creating a .miseqUploaderInfo in
             # create_miseq_uploader_info_file()
             self.curr_seq_run = run
-            upload_run_to_server(self.api, run, self.pair_upload_callback)
+            upload_run_to_server(self.api, run, self.upload_callback)
 
     def upload_to_server(self, event):
 
@@ -572,7 +572,7 @@ class MainPanel(wx.Panel):
             uploaded_samples_q -- Queue that contains strings of uploaded
                                 sample IDs
                                 it's self.uploaded_samples_q being passed back
-                                from api.send_pair_sequence_files()
+                                from api.send_sequence_files()
         no return value
         """
 
@@ -588,7 +588,7 @@ class MainPanel(wx.Panel):
         # upload_id might not yet be set if the api error is from before
         # creating a sequencing run or the error is with the creation itself
         if self.curr_upload_id is not None:
-            self.api.set_pair_seq_run_error(self.curr_upload_id)
+            self.api.set_seq_run_error(self.curr_upload_id)
 
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(
@@ -598,11 +598,11 @@ class MainPanel(wx.Panel):
                 error_msg=error_msg),
             dlg_msg="API " + exception_error.__name__)
 
-    def pair_seq_files_upload_complete(self):
+    def seq_files_upload_complete(self):
 
         """
-        Subscribed to message "pair_seq_files_upload_complete".
-        This message is going to be sent by ApiCalls.send_pair_sequence_files()
+        Subscribed to message "seq_files_upload_complete".
+        This message is going to be sent by ApiCalls.send_sequence_files()
         once all the sequence files have been uploaded.
 
         Adds to wx events queue: publisher send a message that uploading
@@ -612,10 +612,10 @@ class MainPanel(wx.Panel):
         wx.CallAfter(pub.sendMessage,
                      "update_progress_bars", progress_data="Upload Complete")
 
-    def pair_upload_callback(self, monitor):
+    def upload_callback(self, monitor):
 
         """
-        callback function used by api.send_pair_sequence_files()
+        callback function used by api.send_sequence_files()
         makes the publisher (pub) send "update_progress_bars" message that
         contains progress percentage data whenever the percentage of the
         current file being uploaded changes.

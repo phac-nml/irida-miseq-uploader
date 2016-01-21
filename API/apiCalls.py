@@ -40,7 +40,7 @@ def method_decorator(fn):
             res = fn(*args, **kwargs)
         except Exception, e:
 
-            if fn.__name__ == "send_pair_sequence_files":
+            if fn.__name__ == "send_sequence_files":
 
                 if len(e.args) > 1:
                     err_msg, uploaded_samples_q = e.args
@@ -91,9 +91,9 @@ def class_decorator(*method_names):
 
 @class_decorator(
     "get_projects", "get_samples", "get_sequence_files",
-    "send_project", "send_samples", "_send_pair_sequence_files"
+    "send_project", "send_samples", "_send_sequence_files"
     "get_pair_seq_runs", "create_seq_run",
-    "_set_pair_seq_run_upload_status"
+    "_set_seq_run_upload_status"
 )
 class ApiCalls(object):
 
@@ -509,18 +509,18 @@ class ApiCalls(object):
 
     def get_file_size_list(self, samples_list):
         """
-        calculate file size for the pair files in a sample
+        calculate file size for the files in a sample
 
         arguments:
             samples_list -- list containing Sample object(s)
 
-        returns list containing file sizes for each sample's pair files
+        returns list containing file sizes for each sample's files
         """
 
         file_size_list = []
         for sample in samples_list:
 
-            bytes_read_size = sample.get_pair_files_size()
+            bytes_read_size = sample.get_files_size()
             file_size_list.append(bytes_read_size)
             sample.pair_files_byte_size = bytes_read_size
 
@@ -541,16 +541,16 @@ class ApiCalls(object):
                     samples_list.remove(sample)
                     break
 
-    def send_pair_sequence_files(self, samples_list, callback=None,
+    def send_sequence_files(self, samples_list, callback=None,
                                  upload_id=1,
                                  prev_uploaded_samples=[],
                                  uploaded_samples_q=None):
 
         """
-        send pair sequence files found in each sample in samples_list
-        the pair files to be sent is in sample.get_pair_files()
+        send sequence files found in each sample in samples_list
+        the files to be sent is in sample.get_files()
         this function iterates through the samples in samples_list and send
-        them to _send_pair_sequence_files() which actually makes the connection
+        them to _send_sequence_files() which actually makes the connection
         to the api in order to send the data
 
         arguments:
@@ -576,13 +576,13 @@ class ApiCalls(object):
 
         for sample in samples_list:
 
-            json_res = self._send_pair_sequence_files(sample, callback,
+            json_res = self._send_sequence_files(sample, callback,
                                                       upload_id,
                                                       uploaded_samples_q)
             json_res_list.append(json_res)
 
         if callback is not None:
-            pub.sendMessage("pair_seq_files_upload_complete")
+            pub.sendMessage("seq_files_upload_complete")
             completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
             if len(completion_cmd) > 0:
                 pub.sendMessage("display_completion_cmd_msg",
@@ -591,11 +591,11 @@ class ApiCalls(object):
 
         return json_res_list
 
-    def _send_pair_sequence_files(self, sample, callback, upload_id,
+    def _send_sequence_files(self, sample, callback, upload_id,
                                   uploaded_samples_q):
 
         """
-        post request to send pair sequence files found in given sample argument
+        post request to send sequence files found in given sample argument
         raises error if either project ID or sample ID found in Sample object
         doesn't exist in irida
 
@@ -652,11 +652,11 @@ class ApiCalls(object):
             parameters2 = "{" + parameters2 + "}"
 
             files = ({
-                    "file1": (sample.get_pair_files()[0].replace("\\", "/"),
-                              open(sample.get_pair_files()[0], "rb")),
+                    "file1": (sample.get_files()[0].replace("\\", "/"),
+                              open(sample.get_files()[0], "rb")),
                     "parameters1": ("", parameters1, "application/json"),
-                    "file2": (sample.get_pair_files()[1].replace("\\", "/"),
-                              open(sample.get_pair_files()[1], "rb")),
+                    "file2": (sample.get_files()[1].replace("\\", "/"),
+                              open(sample.get_files()[1], "rb")),
                     "parameters2": ("", parameters2, "application/json")
             })
 
@@ -670,8 +670,8 @@ class ApiCalls(object):
             parameters1 = "{" + parameters1 + "}"
 
             files = ({
-                    "file": (sample.get_pair_files()[0].replace("\\", "/"),
-                              open(sample.get_pair_files()[0], "rb")),
+                    "file": (sample.get_files()[0].replace("\\", "/"),
+                              open(sample.get_files()[0], "rb")),
                     "parameters": ("", parameters1, "application/json")
             })
 
@@ -679,7 +679,7 @@ class ApiCalls(object):
 
         monitor = encoder.MultipartEncoderMonitor(e, callback)
 
-        monitor.files = deepcopy(sample.get_pair_files())
+        monitor.files = deepcopy(sample.get_files())
         monitor.total_bytes_read = self.total_bytes_read
         monitor.size_of_all_seq_files = self.size_of_all_seq_files
 
@@ -794,7 +794,7 @@ class ApiCalls(object):
 
         return pair_seq_run_list
 
-    def set_pair_seq_run_complete(self, identifier):
+    def set_seq_run_complete(self, identifier):
 
         """
         Update a sequencing run's upload status to "COMPLETE"
@@ -806,11 +806,11 @@ class ApiCalls(object):
         """
 
         status = "COMPLETE"
-        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+        json_res = self._set_seq_run_upload_status(identifier, status)
 
         return json_res
 
-    def set_pair_seq_run_uploading(self, identifier):
+    def set_seq_run_uploading(self, identifier):
 
         """
         Update a sequencing run's upload status to "UPLOADING"
@@ -822,11 +822,11 @@ class ApiCalls(object):
         """
 
         status = "UPLOADING"
-        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+        json_res = self._set_seq_run_upload_status(identifier, status)
 
         return json_res
 
-    def set_pair_seq_run_error(self, identifier):
+    def set_seq_run_error(self, identifier):
 
         """
         Update a sequencing run's upload status to "ERROR"
@@ -838,11 +838,11 @@ class ApiCalls(object):
         """
 
         status = "ERROR"
-        json_res = self._set_pair_seq_run_upload_status(identifier, status)
+        json_res = self._set_seq_run_upload_status(identifier, status)
 
         return json_res
 
-    def _set_pair_seq_run_upload_status(self, identifier, status):
+    def _set_seq_run_upload_status(self, identifier, status):
 
         """
         Update a sequencing run's upload status to the given status argument

@@ -1,9 +1,6 @@
 import unittest
 from os import path
 
-from Parsers.miseqParser import (
-    get_pair_files,
-    get_all_fastq_files)
 from Validation.offlineValidation import (
     validate_sample_sheet,
     validate_sample_list,
