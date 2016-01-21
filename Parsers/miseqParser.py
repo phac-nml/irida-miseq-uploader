@@ -4,10 +4,12 @@ from fnmatch import translate as fn_translate
 from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
+import logging
 
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
+from API.fileutils import find_file_by_name
 
 
 def parse_metadata(sample_sheet_file):
@@ -67,6 +69,17 @@ def parse_metadata(sample_sheet_file):
         elif "[Data]" in line:
             break
 
+    # currently sends just the larger readLengths
+    if len(metadata_dict["readLengths"]) > 0:
+        if len(metadata_dict["readLengths"]) == 2:
+            metadata_dict["layoutType"] = "PAIRED_END"
+        else:
+            metadata_dict["layoutType"] = "SINGLE_END"
+        metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
+    else:
+        # this is an exceptional case, you can't have no read lengths!
+        raise SampleSheetError("Sample sheet must have read lenghts!")
+
     return metadata_dict
 
 
@@ -89,11 +102,17 @@ def complete_parse_samples(sample_sheet_file):
 
     sample_list = parse_samples(sample_sheet_file)
     data_dir = path.dirname(sample_sheet_file)
-    fastq_files = get_all_fastq_files(data_dir)
+    fastq_files = find_file_by_name(directory = data_dir,
+                                    name_pattern = '.*.fastq.*')
     for sample in sample_list:
-
         properties_dict = parse_out_sequence_file(sample)
-        pf_list = get_pair_files(fastq_files, sample.get_id())
+        # this is the Illumina-defined pattern for naming fastq files, from:
+        # http://support.illumina.com/content/dam/illumina-support/help/BaseSpaceHelp_v2/Content/Vault/Informatics/Sequencing_Analysis/BS/swSEQ_mBS_FASTQFiles.htm
+        # and also referred to in BaseSpace:
+        # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
+        file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+        pf_list = find_file_by_name(directory = data_dir,
+                                    name_pattern = file_pattern)
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))

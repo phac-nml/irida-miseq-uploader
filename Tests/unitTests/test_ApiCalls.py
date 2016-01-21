@@ -984,7 +984,7 @@ class TestApiCalls(unittest.TestCase):
     @patch("API.apiCalls.RawConfigParser")
     @patch("__builtin__.open")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_pair_sequence_files_valid(self, mock_cs, mock_open_,
+    def test_send_sequence_files_valid(self, mock_cs, mock_open_,
                                             mock_config_parser):
 
         mock_cs.side_effect = [None]
@@ -1031,27 +1031,27 @@ class TestApiCalls(unittest.TestCase):
         }
 
         sample = API.apiCalls.Sample(sample_dict)
-        pair_files = ["03-3333_S1_L001_R1_001.fastq.gz",
+        files = ["03-3333_S1_L001_R1_001.fastq.gz",
                       "03-3333_S1_L001_R2_001.fastq.gz"]
-        seq_file = SequenceFile({}, pair_files)
+        seq_file = SequenceFile({}, files)
         sample.set_seq_file(seq_file)
 
         kwargs = {
             "samples_list": [sample]
         }
-        json_res_list = api.send_pair_sequence_files(**kwargs)
+        json_res_list = api.send_sequence_files(**kwargs)
 
         self.assertEqual(len(json_res_list), 1)
 
         json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
 
-        mock_open_.assert_any_call(sample.get_pair_files()[0], "rb")
-        mock_open_.assert_any_call(sample.get_pair_files()[1], "rb")
+        mock_open_.assert_any_call(sample.get_files()[0], "rb")
+        mock_open_.assert_any_call(sample.get_files()[1], "rb")
 
     @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_pair_sequence_files_invalid_proj_id(self, mock_cs,
+    def test_send_sequence_files_invalid_proj_id(self, mock_cs,
                                                       mock_pub):
 
         mock_cs.side_effect = [None]
@@ -1073,14 +1073,14 @@ class TestApiCalls(unittest.TestCase):
         sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
-            api.send_pair_sequence_files([sample])
+            api.send_sequence_files([sample])
 
         self.assertIn("project ID: {proj_id} doesn't exist".format(
             proj_id=proj_id), str(err.exception))
 
     @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_pair_sequence_files_invalid_sample_id(self, mock_cs,
+    def test_send_sequence_files_invalid_sample_id(self, mock_cs,
                                                         mock_pub):
 
         mock_cs.side_effect = [None]
@@ -1106,7 +1106,7 @@ class TestApiCalls(unittest.TestCase):
         sample.set_seq_file(seq_file)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.send_pair_sequence_files([sample])
+            api.send_sequence_files([sample])
 
         self.assertIn("sample ID: {sample_id} doesn't exist".format(
             sample_id=sample_id), str(err.exception))
@@ -1159,13 +1159,11 @@ def load_test_suite():
     api_test_suite.addTest(
         TestApiCalls("test_send_samples_invalid_server_res"))
 
-    api_test_suite.addTest(TestApiCalls("test_send_pair_sequence_files_valid"))
+    api_test_suite.addTest(TestApiCalls("test_send_sequence_files_valid"))
     api_test_suite.addTest(
-        TestApiCalls("test_send_pair_sequence_files_invalid_proj_id"))
+        TestApiCalls("test_send_sequence_files_invalid_proj_id"))
     api_test_suite.addTest(
-        TestApiCalls("test_send_pair_sequence_files_invalid_sample_id"))
-    # api_test_suite.addTest(
-    #    TestApiCalls("test_send_pair_sequence_files_invalid_server_res"))
+        TestApiCalls("test_send_sequence_files_invalid_sample_id"))
 
     return api_test_suite
 

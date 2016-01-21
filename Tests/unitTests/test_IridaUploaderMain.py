@@ -163,98 +163,6 @@ class TestIridaUploaderMain(unittest.TestCase):
 
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
 
-    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "invalidSeqFiles"))
-    def test_sample_sheet_invalid_seqfiles(self):
-
-        def handle_warn_dlg(self):
-
-            expected_txt = "doesn't contain either 'R1' or 'R2' in filename."
-            self.assertIn(expected_txt, self.frame.mp.log_panel.GetValue())
-
-        time_counter = {"value": 0}
-        self.frame = MainFrame()
-        h_func = handle_warn_dlg
-
-        self.frame.mp.browse_path = path.join(
-            PATH_TO_MODULE, "testSeqPairFiles", "invalidSeqFiles", "child")
-
-        # using timer because dir_dlg thread is waiting for user input
-        self.frame.mp.timer = wx.Timer(self.frame.mp)
-        self.frame.mp.Bind(wx.EVT_TIMER,
-                           lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        handle_func=h_func),
-                           self.frame.mp.timer)
-        self.frame.mp.timer.Start(POLL_INTERVAL)
-
-        push_button(self.frame.mp.browse_button)
-
-        self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
-    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "noPair"))
-    def test_sample_sheet_invalid_seqfiles_no_pair(self):
-
-        def handle_warn_dlg(self):
-
-            pattern1 = ("No pair sequence file found for: .+" +
-                        re.escape("01-1111_S1_L001_R1_001.fastq.gz"))
-
-            pattern2 = ("Required matching sequence file: .+" +
-                        re.escape("01-1111_S1_L001_R2_001.fastq.gz"))
-
-            match3 = re.search(pattern1, self.frame.mp.log_panel.GetValue())
-            match4 = re.search(pattern2, self.frame.mp.log_panel.GetValue())
-
-            self.assertIsNotNone(match3.group())
-            self.assertIsNotNone(match4.group())
-
-        time_counter = {"value": 0}
-        self.frame = MainFrame()
-        h_func = handle_warn_dlg
-
-        self.frame.mp.browse_path = path.join(
-            PATH_TO_MODULE, "testSeqPairFiles", "noPair", "child")
-
-        self.frame.mp.timer = wx.Timer(self.frame.mp)
-        self.frame.mp.Bind(wx.EVT_TIMER,
-                           lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        handle_func=h_func),
-                           self.frame.mp.timer)
-        self.frame.mp.timer.Start(POLL_INTERVAL)
-
-        push_button(self.frame.mp.browse_button)
-
-        self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
-    @patch.object(MainPanel, "get_config_default_dir", lambda self: path.join(PATH_TO_MODULE, "testSeqPairFiles", "oddLength"))
-    def test_sample_sheet_invalid_seqfiles_odd_len(self):
-
-        def handle_warn_dlg(self):
-
-            expected_txt1 = "The given file list has an odd number of files."
-            expected_txt2 = ("Requires an even number of files " +
-                             "in order for each sequence file to have a pair.")
-
-            self.assertIn(expected_txt1, self.frame.mp.log_panel.GetValue())
-            self.assertIn(expected_txt2, self.frame.mp.log_panel.GetValue())
-
-
-        time_counter = {"value": 0}
-        self.frame = MainFrame()
-        h_func = handle_warn_dlg
-
-        self.frame.mp.browse_path = path.join(
-            PATH_TO_MODULE, "testSeqPairFiles", "oddLength", "child")
-        self.frame.mp.timer = wx.Timer(self.frame.mp)
-        self.frame.mp.Bind(wx.EVT_TIMER,
-                           lambda evt: poll_for_dir_dlg(self, time_counter,
-                                                        handle_func=h_func),
-                           self.frame.mp.timer)
-        self.frame.mp.timer.Start(POLL_INTERVAL)
-
-        push_button(self.frame.mp.browse_button)
-
-        self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
 def load_test_suite():
 
     gui_test_suite = unittest.TestSuite()
@@ -265,12 +173,6 @@ def load_test_suite():
         TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
     gui_test_suite.addTest(
         TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_no_pair"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_seqfiles_odd_len"))
 
     return gui_test_suite
 
