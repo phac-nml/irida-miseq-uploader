@@ -772,7 +772,7 @@ class ApiCalls(object):
                                    response.reason)
         return json_res
 
-    def get_pair_seq_runs(self):
+    def get_seq_runs(self):
 
         """
         Get list of pair files SequencingRuns
