@@ -12,25 +12,6 @@ from Parsers.miseqParser import complete_parse_samples
 @pytest.mark.usefixtures("api")
 class TestApiIntegration(unittest.TestCase):
 
-    def test_get_sequence_files(self):
-
-        proj_list = self.api.get_projects()
-        proj = proj_list[len(proj_list) - 1]
-        sample_list = self.api.get_samples(proj)
-        sample = sample_list[len(sample_list) - 1]
-
-        seq_file_list = self.api.get_sequence_files(proj, sample)
-        self.assertEqual(len(seq_file_list), 2)
-
-        seq_file1 = seq_file_list[0]
-        seq_file2 = seq_file_list[1]
-        self.assertTrue("file" in seq_file1)
-        self.assertTrue("file" in seq_file2)
-        self.assertEqual(str(seq_file1["fileName"]),
-                         "01-1111_S1_L001_R1_001.fastq")
-        self.assertEqual(str(seq_file2["fileName"]),
-                         "01-1111_S1_L001_R2_001.fastq")
-
     def test_get_and_send_project(self):
 
         proj_list = self.api.get_projects()
