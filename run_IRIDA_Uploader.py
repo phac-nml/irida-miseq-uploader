@@ -53,7 +53,9 @@ class Uploader(wx.App):
 
         dr.startWorker(handle_update, find_update)
 
-
-if __name__ == "__main__":
+def main():
     app = Uploader()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()
