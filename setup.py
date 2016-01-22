@@ -1,15 +1,9 @@
-import distutils
 import distutils.core
-
-def readme():
-    """Return the readme file"""
-    with open("README.md") as f:
-        return f.read()
-
+from run_IRIDA_Uploader.Uploader import __version__
 
 distutils.core.setup(name="iridaUploader",
-    version="1.3.1",
-    url="http://irida.corefacility.ca/gitlab/rcamba/iridauploader.git",
+    version=__version__,
+    url="https://github.com/phac-nml/irida-miseq-uploader",
     author='Kevin Camba, Franklin Bristow, Thomas Matthews',
     author_email='franklin.bristow@phac-aspc.gc.ca,thomas.matthews@phac-aspc.gc.ca',
     packages=["API", "Exceptions",
