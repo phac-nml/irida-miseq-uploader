@@ -4,6 +4,7 @@ IRIDA_VERSION?=master
 all: clean requirements documentation windows
 
 clean:
+	rm -rf .cache
 	rm -rf pynsist_pkgs
 	rm -rf .virtualenv
 	rm -rf build
