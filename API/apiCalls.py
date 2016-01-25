@@ -92,7 +92,7 @@ def class_decorator(*method_names):
 @class_decorator(
     "get_projects", "get_samples", "get_sequence_files",
     "send_project", "send_samples", "_send_sequence_files"
-    "get_pair_seq_runs", "create_seq_run",
+    "get_seq_runs", "create_seq_run",
     "_set_seq_run_upload_status"
 )
 class ApiCalls(object):

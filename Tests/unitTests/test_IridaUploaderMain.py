@@ -162,25 +162,3 @@ class TestIridaUploaderMain(unittest.TestCase):
         push_button(self.frame.mp.browse_button)
 
         self.assertFalse(self.frame.mp.upload_button.IsEnabled())
-
-def load_test_suite():
-
-    gui_test_suite = unittest.TestSuite()
-
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_valid"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_multiple_valid"))
-    gui_test_suite.addTest(
-        TestIridaUploaderMain("test_sample_sheet_invalid_no_sheets"))
-
-    return gui_test_suite
-
-
-if __name__ == "__main__":
-
-    test_suite = load_test_suite()
-    full_suite = unittest.TestSuite([test_suite])
-
-    runner = unittest.TextTestRunner()
-    runner.run(full_suite)
