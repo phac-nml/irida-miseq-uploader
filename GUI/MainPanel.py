@@ -354,6 +354,7 @@ class MainPanel(wx.Panel):
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
 
+        self.status_icon.SetBitmap(self.warning_icon)
         self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
