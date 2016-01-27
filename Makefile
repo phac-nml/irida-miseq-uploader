@@ -4,6 +4,7 @@ IRIDA_VERSION?=master
 all: clean requirements documentation windows
 
 clean:
+	rm -rf .cache
 	rm -rf pynsist_pkgs
 	rm -rf .virtualenv
 	rm -rf build
@@ -16,6 +17,7 @@ requirements:
 	virtualenv .virtualenv
 	source .virtualenv/bin/activate
 	pip install -r requirements.txt --allow-external PyPubSub
+	./scripts/virtualenv_wx.sh
 
 documentation: requirements
 	source .virtualenv/bin/activate
@@ -34,7 +36,6 @@ windows: documentation requirements
 
 test: clean requirements documentation
 	source .virtualenv/bin/activate
-	./scripts/virtualenv_wx.sh
 	xvfb-run py.test --integration --irida-version=$(IRIDA_VERSION)
 
 .ONESHELL:
