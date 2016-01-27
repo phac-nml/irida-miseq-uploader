@@ -2,7 +2,7 @@ import wx
 import json
 import sys
 from wx.lib.newevent import NewEvent
-from os import path
+from os import path, makedirs
 from ConfigParser import RawConfigParser
 from appdirs import user_config_dir
 from pubsub import pub
@@ -13,10 +13,14 @@ from API.runuploader import *
 from threading import Thread
 from time import time
 from math import ceil
+from shutil import copy2
 
 path_to_module = path.dirname(__file__)
 user_config_dir = user_config_dir("iridaUploader")
 user_config_file = path.join(user_config_dir, "config.conf")
+
+if len(path_to_module) == 0:
+    path_to_module = '.'
 
 def check_config_dirs(conf_parser):
     """
@@ -34,7 +38,7 @@ def check_config_dirs(conf_parser):
     if not path.exists(user_config_file):
         # find the default config dir from (at least) two directory levels
         # above this directory
-        conf_file = find("config.conf", path.join(path_to_module, "..", ".."))
+        conf_file = path.join(path_to_module, "..", "..", "config.conf")
 
         print "User config file doesn't exist, using defaults."
         copy2(conf_file, user_config_dir)

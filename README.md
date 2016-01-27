@@ -22,16 +22,10 @@ Install virtualenv
 
 Build a virtualenv and install the dependencies:
 
-    $ mkdir iu; cd iu
-    $ virtualenv .
-    $ source bin/activate
     $ git clone https://irida.corefacility.ca/irida/irida-miseq-uploader.git
     $ cd irida-miseq-uploader
-    $ pip install -r requirements.txt --allow-external pypubsub
-    $ ./scripts/virtualenv_wx.sh
-    $ cd docs
-    $ make html
-    $ cd ..
+    $ make requirements
+    $ source .virtualenv/bin/activate
 
 You can then run the uploader by running:
 
