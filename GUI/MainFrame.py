@@ -36,9 +36,6 @@ class MainFrame(wx.Frame):
                           size=self.WINDOW_SIZE,
                           style=wx.DEFAULT_FRAME_STYLE)
 
-        self.OPEN_SETTINGS_ID = 111  # arbitrary value
-        self.OPEN_DOCS_ID = 222  # arbitrary value
-
         self.mp = MainPanel(self)
         self.settings_frame = self.mp.settings_frame
 
@@ -48,6 +45,7 @@ class MainFrame(wx.Frame):
         self.SetIcon(self.icon)
 
         self.add_options_menu()
+        self.add_file_menu()
         self.add_settings_option()
         self.add_documentation_option()
 
@@ -67,8 +65,14 @@ class MainFrame(wx.Frame):
 
         self.menubar = wx.MenuBar()
         self.options_menu = wx.Menu()
+        self.file_menu = wx.Menu()
+        self.menubar.Append(self.file_menu, "&File")
         self.menubar.Append(self.options_menu, "Op&tions")
         self.SetMenuBar(self.menubar)
+
+    def add_file_menu(self):
+        exit_menu = self.file_menu.Append(wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, lambda evt: self.Destroy(), exit_menu)
 
     def add_settings_option(self):
 
@@ -79,12 +83,8 @@ class MainFrame(wx.Frame):
 
         no return value
         """
-
-        self.settings_menu_item = wx.MenuItem(self.options_menu,
-                                              self.OPEN_SETTINGS_ID,
-                                              "&Settings\tCTRL+I")
-        self.options_menu.AppendItem(self.settings_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_settings, id=self.OPEN_SETTINGS_ID)
+        open_menu = self.options_menu.Append(wx.ID_PROPERTIES, "Settings")
+        self.Bind(wx.EVT_MENU, self.open_settings, open_menu)
 
     def open_settings(self, evt):
 
@@ -107,11 +107,8 @@ class MainFrame(wx.Frame):
         no return value
         """
 
-        self.docs_menu_item = wx.MenuItem(self.options_menu,
-                                          self.OPEN_DOCS_ID,
-                                          "&Documentation")
-        self.options_menu.AppendItem(self.docs_menu_item)
-        self.Bind(wx.EVT_MENU, self.open_docs, id=self.OPEN_DOCS_ID)
+        docs_menu = self.options_menu.Append(wx.ID_HELP, "&Documentation")
+        self.Bind(wx.EVT_MENU, self.open_docs, docs_menu)
 
     def open_docs(self, evt):
 
