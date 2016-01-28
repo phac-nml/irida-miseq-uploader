@@ -872,7 +872,7 @@ class SettingsPanel(wx.Panel):
         """
 
         self.completion_cmd_label = wx.StaticText(
-            self, id=-1, label="Completion command")
+            self, id=-1, label="Task to run on successful upload")
         self.completion_cmd_label.SetFont(self.LABEL_TXT_FONT)
 
         self.completion_cmd_box = wx.TextCtrl(self,
