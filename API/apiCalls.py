@@ -500,7 +500,7 @@ class ApiCalls(object):
     @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
                                  upload_id=1,
-                                 prev_uploaded_samples=[],
+                                 prev_uploaded_samples=None,
                                  uploaded_samples_q=None):
 
         """

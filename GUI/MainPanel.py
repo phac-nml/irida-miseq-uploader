@@ -615,9 +615,7 @@ class MainPanel(wx.Panel):
         # update estimated remaining time if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
                 monitor.prev_ov_pct != monitor.ov_upload_pct):
-            pub.sendMessage(
-                         "update_progress_bars",
-                         progress_data=progress_data)
+            self.update_progress_bars(progress_data)
 
             elapsed_time = round(time() - monitor.start_time)
             if elapsed_time > 0:
@@ -627,11 +625,7 @@ class MainPanel(wx.Panel):
 
                 ert = ceil(abs((monitor.size_of_all_seq_files -
                                monitor.total_bytes_read) / upload_speed))
-
-                pub.sendMessage(
-                             "update_remaining_time",
-                             upload_speed=upload_speed,
-                             estimated_remaining_time=ert)
+                self.update_remaining_time(upload_speed, ert)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
