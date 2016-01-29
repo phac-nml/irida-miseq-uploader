@@ -24,77 +24,25 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 
 
-# https://andrefsp.wordpress.com/2012/08/23/writing-a-class-decorator-in-python/
-def method_decorator(fn):
-
+def exception_handler(fn):
     def decorator(*args, **kwargs):
-
         """
         Run the function (fn) and if any errors are raised then
         the publisher sends a messaage which calls
         handle_api_thread_error() in iridaUploaderMain.MainPanel
         """
-
-        res = None
         try:
-            res = fn(*args, **kwargs)
+            return fn(*args, **kwargs)
         except Exception, e:
-
-            if fn.__name__ == "send_sequence_files":
-
-                if len(e.args) > 1:
-                    err_msg, uploaded_samples_q = e.args
-                    pub.sendMessage(
-                        "handle_api_thread_error",
-                        function_name=fn.__name__,
-                        exception_error=e.__class__,
-                        error_msg="".join(err_msg),
-                        uploaded_samples_q=uploaded_samples_q)
-
-                else:
-
-                    pub.sendMessage(
-                        "handle_api_thread_error",
-                        function_name=fn.__name__,
-                        exception_error=e.__class__,
-                        error_msg=e.message)
-
-            else:
-
-                pub.sendMessage(
-                    "handle_api_thread_error",
-                    function_name=fn.__name__,
-                    exception_error=e.__class__,
-                    error_msg=e.message)
-
-                raise
-
-        return res
+            logging.error("An error occurred while uploading in function {function_name}, publishing message to inform API: [{exception}]".format(function_name=fn.__name__, exception=str(e)))
+            pub.sendMessage(
+                "handle_api_thread_error",
+                function_name=fn.__name__,
+                exception=e)
+            raise
 
     return decorator
 
-
-def class_decorator(*method_names):
-    def class_rebuilder(cls):
-
-        class NewClass(cls):
-
-            def __getattribute__(self, attr_name):
-                obj = super(NewClass, self).__getattribute__(attr_name)
-                if hasattr(obj, '__call__') and attr_name in method_names:
-                    return method_decorator(obj)
-                return obj
-
-        return NewClass
-    return class_rebuilder
-
-
-@class_decorator(
-    "get_projects", "get_samples", "get_sequence_files",
-    "send_project", "send_samples", "_send_sequence_files"
-    "get_seq_runs", "create_seq_run",
-    "_set_seq_run_upload_status"
-)
 class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
@@ -169,6 +117,7 @@ class ApiCalls(object):
 
         return oauth_serv
 
+    @exception_handler
     def get_access_token(self, oauth_service):
         """
         get access token to be used to get session from oauth_service
@@ -299,6 +248,7 @@ class ApiCalls(object):
 
         return retVal
 
+    @exception_handler
     def get_projects(self):
         """
         API call to api/projects to get list of projects
@@ -331,6 +281,7 @@ class ApiCalls(object):
 
         return self.cached_projects
 
+    @exception_handler
     def get_samples(self, project=None, sample=None):
         """
         API call to api/projects/project_id/samples
@@ -368,6 +319,7 @@ class ApiCalls(object):
 
         return self.cached_samples[project_id]
 
+    @exception_handler
     def get_sequence_files(self, sample):
         """
         API call to api/projects/project_id/sample_id/sequenceFiles
@@ -412,6 +364,7 @@ class ApiCalls(object):
 
         return result
 
+    @exception_handler
     def send_project(self, project):
         """
         post request to send a project to IRIDA via API
@@ -457,6 +410,7 @@ class ApiCalls(object):
 
         return json_res
 
+    @exception_handler
     def send_samples(self, samples_list):
         """
         post request to send sample(s) to the given project
@@ -507,6 +461,7 @@ class ApiCalls(object):
                                   sample_data=str(sample)))
         return json_res_list
 
+    @exception_handler
     def get_file_size_list(self, samples_list):
         """
         calculate file size for the files in a sample
@@ -526,6 +481,7 @@ class ApiCalls(object):
 
         return file_size_list
 
+    @exception_handler
     def prune_samples_list(self, prev_uploaded_samples, samples_list):
 
         """
@@ -541,6 +497,7 @@ class ApiCalls(object):
                     samples_list.remove(sample)
                     break
 
+    @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
                                  upload_id=1,
                                  prev_uploaded_samples=[],
@@ -696,8 +653,6 @@ class ApiCalls(object):
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
-        # response.status_code = 500
-
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
 
@@ -716,6 +671,7 @@ class ApiCalls(object):
 
         return json_res
 
+    @exception_handler
     def create_seq_run(self, metadata_dict):
 
         """
@@ -772,6 +728,7 @@ class ApiCalls(object):
                                    response.reason)
         return json_res
 
+    @exception_handler
     def get_seq_runs(self):
 
         """
@@ -794,6 +751,7 @@ class ApiCalls(object):
 
         return pair_seq_run_list
 
+    @exception_handler
     def set_seq_run_complete(self, identifier):
 
         """
@@ -810,6 +768,7 @@ class ApiCalls(object):
 
         return json_res
 
+    @exception_handler
     def set_seq_run_uploading(self, identifier):
 
         """
@@ -829,7 +788,7 @@ class ApiCalls(object):
     def set_seq_run_error(self, identifier):
 
         """
-        Update a sequencing run's upload status to "ERROR"
+        Update a sequencing run's upload status to "ERROR".
 
         arguments:
             identifier -- the id of the sequencing run to be updated
@@ -842,6 +801,7 @@ class ApiCalls(object):
 
         return json_res
 
+    @exception_handler
     def _set_seq_run_upload_status(self, identifier, status):
 
         """
