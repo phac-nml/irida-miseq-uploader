@@ -9,6 +9,7 @@ import logging
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
+from Exceptions.SequenceFileError import SequenceFileError
 from API.fileutils import find_file_by_name
 
 
@@ -113,6 +114,13 @@ def complete_parse_samples(sample_sheet_file):
         file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
         pf_list = find_file_by_name(directory = data_dir,
                                     name_pattern = file_pattern)
+        if not pf_list:
+            raise SequenceFileError(
+                ("The uploader was unable to find an files with a file name that ends with "
+                 ".fastq.gz for the sample in your sample sheet with name {}. "
+                 "This usually happens when the Illumina MiSeq Reporter tool "
+                 "does not generate any FastQ data.")
+                 .format(sample.get_id()))
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
