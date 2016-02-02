@@ -44,17 +44,13 @@ class MainFrame(wx.Frame):
                             wx.BITMAP_TYPE_ICO)
         self.SetIcon(self.icon)
 
-        self.add_options_menu()
-        self.add_file_menu()
-        self.add_settings_option()
-        self.add_documentation_option()
-
+        self.add_menu()
         self.SetSizeHints(self.MIN_WIDTH_SIZE, self.MIN_HEIGHT_SIZE,
                           self.WINDOW_MAX_WIDTH, self.WINDOW_MAX_HEIGHT)
         self.Bind(wx.EVT_CLOSE, self.mp.close_handler)
         self.Center()
 
-    def add_options_menu(self):
+    def add_menu(self):
 
         """
         Adds Options menu on top of program
@@ -64,27 +60,21 @@ class MainFrame(wx.Frame):
         """
 
         self.menubar = wx.MenuBar()
-        self.options_menu = wx.Menu()
         self.file_menu = wx.Menu()
         self.menubar.Append(self.file_menu, "&File")
-        self.menubar.Append(self.options_menu, "Op&tions")
-        self.SetMenuBar(self.menubar)
 
-    def add_file_menu(self):
+        open_menu = self.file_menu.Append(wx.ID_PROPERTIES, "Settings")
+        self.Bind(wx.EVT_MENU, self.open_settings, open_menu)
+
+        docs_menu = self.file_menu.Append(wx.ID_HELP, "&Documentation")
+        self.Bind(wx.EVT_MENU, self.open_docs, docs_menu)
+
+        self.file_menu.AppendSeparator()
+
         exit_menu = self.file_menu.Append(wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, lambda evt: self.Destroy(), exit_menu)
 
-    def add_settings_option(self):
-
-        """
-        Add Settings on options menu
-        Clicking Settings will call self.open_settings()
-        Shortcut / accelerator: (Alt + T) + S or (CTRL + I)
-
-        no return value
-        """
-        open_menu = self.options_menu.Append(wx.ID_PROPERTIES, "Settings")
-        self.Bind(wx.EVT_MENU, self.open_settings, open_menu)
+        self.SetMenuBar(self.menubar)
 
     def open_settings(self, evt):
 
@@ -96,19 +86,6 @@ class MainFrame(wx.Frame):
 
         self.settings_frame.Center()
         self.settings_frame.Show()
-
-    def add_documentation_option(self):
-
-        """
-        Adds Documentation on options menu
-        Clicking Documentation will call self.open_docs()
-        Accelerator: ALT + T + D
-
-        no return value
-        """
-
-        docs_menu = self.options_menu.Append(wx.ID_HELP, "&Documentation")
-        self.Bind(wx.EVT_MENU, self.open_docs, docs_menu)
 
     def open_docs(self, evt):
 
