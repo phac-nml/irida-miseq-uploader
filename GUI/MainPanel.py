@@ -467,9 +467,12 @@ class MainPanel(wx.Panel):
     def handle_online_validation_failure(self, project_id, sample_id):
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-        wx.CallAfter(self.display_warning, e.message)
-
-        self.seq_run_list.remove(sr)
+        wx.CallAfter(self.display_warning, ("Project with ID {project_id} does "
+            "not exist (from sample sheet with sample name {sample_id}). Open "
+            "SampleSheet.csv and enter the correct project ID for sample "
+            "{sample_id}. Once you've corrected the error, you can click 'Upload' "
+            "to attempt uploading again.".format(project_id=project_id, sample_id=sample_id)))
+        wx.CallAfter(self.start_sample_sheet_processing)
 
     def start_checking_samples(self):
         wx.CallAfter(self.log_color_print, "Checking samples...")

@@ -57,6 +57,6 @@ def _online_validation(api, sequencing_run):
     for sample in sequencing_run.sample_list:
         if not project_exists(api, sample.get_project_id()):
             pub.sendMessage("online_validation_failure", project_id=sample.get_project_id(), sample_id=sample.get_id())
-            raise ProjectError("The Sample_Project: {pid} doesn't exist in IRIDA for Sample_Id: {sid}").format(
+            raise ProjectError("The Sample_Project: {pid} doesn't exist in IRIDA for Sample_Id: {sid}".format(
                     sid=sample.get_id(),
-                    pid=sample.get_project_id())
+                    pid=sample.get_project_id()))
