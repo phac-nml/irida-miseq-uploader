@@ -124,9 +124,7 @@ class SettingsPanel(wx.Panel):
 
         self.SetSizer(self.padding)
 
-        self.top_sizer.Add(self.url_container, proportion=1,
-                           flag=wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER |
-                           wx.EXPAND, border=self.SIZER_BORDER*2)
+        self.top_sizer.Add(self.url_container, flag=wx.EXPAND | wx.ALIGN_CENTER)
 
         self.user_pass_container.Add(
             self.username_container, proportion=0,
@@ -874,7 +872,7 @@ class SettingsPanel(wx.Panel):
         """
 
         self.completion_cmd_label = wx.StaticText(
-            self, id=-1, label="Completion command")
+            self, id=-1, label="Task to run on successful upload")
         self.completion_cmd_label.SetFont(self.LABEL_TXT_FONT)
 
         self.completion_cmd_box = wx.TextCtrl(self,

@@ -67,9 +67,7 @@ class MainPanel(wx.Panel):
         self.upload_complete = None
         self.curr_upload_id = None
         self.loaded_upload_id = None
-        self.uploaded_samples_q = None
         self.prev_uploaded_samples = []
-        self.mui_created_in_handle_api_thread_error = False
 
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
@@ -199,7 +197,6 @@ class MainPanel(wx.Panel):
             "callback": evt.send_callback,
             "upload_id": evt.curr_upload_id,
             "prev_uploaded_samples": evt.prev_uploaded_samples,
-            "uploaded_samples_q": evt.uploaded_samples_q
         }
         self.api.send_sequence_files(**kwargs)
 
@@ -354,6 +351,7 @@ class MainPanel(wx.Panel):
         value = ("Waiting for user to select directory containing " +
                  "SampleSheet file.\n\n")
 
+        self.status_icon.SetBitmap(self.warning_icon)
         self.log_panel.SetFont(self.TEXTBOX_FONT)
         self.log_panel.SetForegroundColour(self.LOG_PNL_REG_TXT_COLOR)
         self.log_panel.AppendText(value)
@@ -424,14 +422,6 @@ class MainPanel(wx.Panel):
         while an upload was still running.
         Set that SequencingRun's uploadStatus to ERROR.
 
-        in the event that the program is closed during mid-upload -
-        if .miseqUploaderInfo was not already created in
-        handle_api_thread_error() then try create it here
-        write all uploaded sample id in to .miseqUploaderInfo
-        if uploaded_samples_q is empty that should mean that the
-        upload is complete and handle_upload_complete() already created
-        the .miseqUploaderInfo or there were no uploads in this session
-
         Destroy SettingsFrame and then destroy self
 
         no return value
@@ -447,13 +437,6 @@ class MainPanel(wx.Panel):
             t = Thread(target=self.api.set_seq_run_error,
                        args=(self.curr_upload_id,))
             t.start()
-
-            if not self.mui_created_in_handle_api_thread_error:
-                uploaded_samples = []
-                while not self.uploaded_samples_q.empty():
-                    uploaded_samples.append(self.uploaded_samples_q.get())
-
-                self.create_miseq_uploader_info_file(uploaded_samples)
 
         self.settings_frame.Destroy()
         self.Destroy()
@@ -484,9 +467,12 @@ class MainPanel(wx.Panel):
     def handle_online_validation_failure(self, project_id, sample_id):
         wx.CallAfter(self.pulse_timer.Stop)
         wx.CallAfter(self.cf_progress_bar.SetValue, 0)
-        wx.CallAfter(self.display_warning, e.message)
-
-        self.seq_run_list.remove(sr)
+        wx.CallAfter(self.display_warning, ("Project with ID {project_id} does "
+            "not exist (from sample sheet with sample name {sample_id}). Open "
+            "SampleSheet.csv and enter the correct project ID for sample "
+            "{sample_id}. Once you've corrected the error, you can click 'Upload' "
+            "to attempt uploading again.".format(project_id=project_id, sample_id=sample_id)))
+        wx.CallAfter(self.start_sample_sheet_processing)
 
     def start_checking_samples(self):
         wx.CallAfter(self.log_color_print, "Checking samples...")
@@ -556,9 +542,7 @@ class MainPanel(wx.Panel):
         t.daemon = True
         t.start()
 
-    def handle_api_thread_error(self, function_name,
-                                exception_error, error_msg,
-                                uploaded_samples_q=None):
+    def handle_api_thread_error(self, function_name, exception):
 
         """
         Subscribed to "handle_api_thread_error"
@@ -567,40 +551,16 @@ class MainPanel(wx.Panel):
         in a different thread so the regular try-except block wasn't catching
         errors from this function
 
-        writes all contents of uploaded_samples_q in to .miseqUploaderInfo
-        file to enable resuming from upload at a later time
-
         arguments:
-            exception_error -- Exception object
-            error_msg -- message string to be displayed in log panel
-            uploaded_samples_q -- Queue that contains strings of uploaded
-                                sample IDs
-                                it's self.uploaded_samples_q being passed back
-                                from api.send_sequence_files()
+            function_name -- the name of the function that yielded the error
+            exception -- the exception that was raised
         no return value
         """
-
-        if uploaded_samples_q is not None:
-            uploaded_samples = []
-            while not uploaded_samples_q.empty():
-                uploaded_samples.append(uploaded_samples_q.get())
-
-            self.mui_created_in_handle_api_thread_error = True
-
-            self.create_miseq_uploader_info_file(uploaded_samples)
-
-        # upload_id might not yet be set if the api error is from before
-        # creating a sequencing run or the error is with the creation itself
-        if self.curr_upload_id is not None:
-            self.api.set_seq_run_error(self.curr_upload_id)
-
-        wx.CallAfter(self.pulse_timer.Stop)
-        wx.CallAfter(
-            self.display_warning, "From {fname}".format(fname=function_name) +
-            " {error_name}: {error_msg}".format(
-                error_name=exception_error.__name__,
-                error_msg=error_msg),
-            dlg_msg="API " + exception_error.__name__)
+        wx.CallAfter(self.handle_invalid_sheet_or_seq_file,
+            ("The IRIDA server is currently experiencing some difficulty."
+            " You can try uploading the run again by clicking 'Upload'."
+            " If the error persists, please contact a system administrator."))
+        wx.CallAfter(self.start_sample_sheet_processing)
 
     def seq_files_upload_complete(self):
 
@@ -644,7 +604,7 @@ class MainPanel(wx.Panel):
                                  (monitor.size_of_all_seq_files * 1.0))
         monitor.ov_upload_pct = round(monitor.ov_upload_pct, ndigits) * 100
 
-        for i in range(0, len(monitor.files)):
+        for i in xrange(0, len(monitor.files)):
             file = monitor.files[i]
             monitor.files[i] = path.split(file)[1]
 
@@ -658,9 +618,7 @@ class MainPanel(wx.Panel):
         # update estimated remaining time if one of the % values have changed
         if (monitor.prev_cf_pct != monitor.cf_upload_pct or
                 monitor.prev_ov_pct != monitor.ov_upload_pct):
-            wx.CallAfter(pub.sendMessage,
-                         "update_progress_bars",
-                         progress_data=progress_data)
+            self.update_progress_bars(progress_data)
 
             elapsed_time = round(time() - monitor.start_time)
             if elapsed_time > 0:
@@ -670,11 +628,7 @@ class MainPanel(wx.Panel):
 
                 ert = ceil(abs((monitor.size_of_all_seq_files -
                                monitor.total_bytes_read) / upload_speed))
-
-                wx.CallAfter(pub.sendMessage,
-                             "update_remaining_time",
-                             upload_speed=upload_speed,
-                             estimated_remaining_time=ert)
+                self.update_remaining_time(upload_speed, ert)
 
         monitor.prev_bytes = monitor.bytes_read
         monitor.prev_cf_pct = monitor.cf_upload_pct
@@ -796,18 +750,20 @@ class MainPanel(wx.Panel):
             self.handle_upload_complete()
 
         else:
-            self.cf_progress_bar.SetValue(
-                progress_data["curr_file_upload_pct"])
-            self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
-                files=str(progress_data["curr_files_uploading"]),
-                pct=str(progress_data["curr_file_upload_pct"])))
+            def _update_progress():
+                self.cf_progress_bar.SetValue(
+                    progress_data["curr_file_upload_pct"])
+                self.cf_progress_label.SetLabel("{files}\n{pct}%".format(
+                    files=str(progress_data["curr_files_uploading"]),
+                    pct=str(progress_data["curr_file_upload_pct"])))
 
-            if progress_data["overall_upload_pct"] > 100:
-                progress_data["overall_upload_pct"] = 100
-            self.ov_progress_bar.SetValue(progress_data
-                                          ["overall_upload_pct"])
-            self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
-                pct=str(progress_data["overall_upload_pct"])))
+                if progress_data["overall_upload_pct"] > 100:
+                    progress_data["overall_upload_pct"] = 100
+                self.ov_progress_bar.SetValue(progress_data
+                                              ["overall_upload_pct"])
+                self.ov_progress_label.SetLabel("\nOverall: {pct}%".format(
+                    pct=str(progress_data["overall_upload_pct"])))
+            wx.CallAfter(_update_progress)
 
     def handle_upload_complete(self):
 
