@@ -39,7 +39,7 @@ def parse_metadata(sample_sheet_file):
         'Application': 'application',
         'Investigator Name': 'investigatorName',
         'Adapter': 'adapter',
-	'AdapterRead2': 'adapterread2',
+	    'AdapterRead2': 'adapterread2',
         'Workflow': 'workflow',
         'ReverseComplement': 'reversecomplement',
         'IEMFileVersion': 'iemfileversion',
@@ -50,25 +50,22 @@ def parse_metadata(sample_sheet_file):
     }
 
     for line in csv_reader:
-
-        if any(["[Header]" in line, "[Reads]" in line, "[Settings]" in line]):
-            add_next_line_to_dict = True
-
-        elif add_next_line_to_dict:
-
-            if len(line) == 2:
-                key_name = metadata_key_translation_dict[line[0]]
-                metadata_dict[key_name] = line[1]
-
-            elif len(line) == 1:  # case for "[Reads]"
-
-                metadata_dict["readLengths"].append(line[0])
-
-            elif len(line) == 0:  # current line is blank; end of section
-                add_next_line_to_dict = False
-
+        if "[Header]" in line or "[Settings]" in line:
+            section = "header"
+            continue
+        elif "[Reads]" in line:
+            section = "reads"
+            continue
         elif "[Data]" in line:
             break
+
+        if not line or not line[0]:
+            continue
+        if section is "header":
+            key_name = metadata_key_translation_dict[line[0]]
+            metadata_dict[key_name] = line[1]
+        elif section is "reads":
+            metadata_dict["readLengths"].append(line[0])
 
     # currently sends just the larger readLengths
     if len(metadata_dict["readLengths"]) > 0:
@@ -266,8 +263,6 @@ def get_csv_reader(sample_sheet_file):
         # including Windows newline characters (\r\n)
         csv_lines = [x.rstrip('\n') for x in csv_file]
         csv_lines = [x.rstrip('\r') for x in csv_lines]
-        # strip any trailing commas added by excel from the end of the line.
-        csv_lines = [re.sub(',{2,}$', '', x) for x in csv_lines]
 
         # open and read file in binary then send it to be parsed by csv's
         # reader
