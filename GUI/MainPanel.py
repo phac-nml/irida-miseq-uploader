@@ -905,7 +905,7 @@ class MainPanel(wx.Panel):
                 self.log_color_print("\n")
                 self.Layout()
             elif evt:
-                self.handle_invalid_sheet_or_seq_file("No sample sheet found in {}".format(browse_path))
+                self.handle_invalid_sheet_or_seq_file("No runs in {} are ready for upload. Choose a directory that contains runs that are ready for upload.".format(browse_path))
         except ConnectionError:
             pass
         except Exception as e:
