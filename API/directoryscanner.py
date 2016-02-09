@@ -83,9 +83,6 @@ def validate_run(sequencing_run):
 
     sample_sheet = sequencing_run.sample_sheet
 
-    # required fields on sequencing_run are:
-
-
     validation = validate_sample_sheet(sequencing_run.sample_sheet)
     if not validation.is_valid():
         raise SampleSheetError('Sample sheet {} is invalid. Reason: {}'.format(sample_sheet, validation.get_errors()))
