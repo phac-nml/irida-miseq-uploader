@@ -15,3 +15,7 @@ class TestDirectoryScanner(unittest.TestCase):
 
         for sample in samples:
             self.assertFalse(sample.is_paired_end())
+
+    def test_completed_upload(self):
+        runs = find_runs_in_directory(path.join(path_to_module, "completed"))
+        self.assertEqual(0, len(runs))
