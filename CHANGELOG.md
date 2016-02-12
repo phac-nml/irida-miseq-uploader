@@ -1,3 +1,12 @@
+1.3.0 to 1.4.0
+==============
+* Use [pytest](https://www.pytest.org) for testing instead of the custom testing framework build arount `unittest`.
+* Add a feature to check the github repository for new releases.
+* Add a menu File > Exit menu for familiarity.
+* Use a wx widget for directory selection instead of building our own.
+* Sample sheet parsing happens with a state machine instead of guessing sections based on number of columns.
+* Extensive refactoring to move application functionality out of the GUI layer.
+
 1.2.1 to 1.3.0
 ==============
 * Added caching for some responses from the server so that we don't have to do a round-trip for every sample.
