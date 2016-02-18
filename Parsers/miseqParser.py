@@ -99,9 +99,9 @@ def complete_parse_samples(sample_sheet_file):
     """
 
     sample_list = parse_samples(sample_sheet_file)
-    data_dir = path.dirname(sample_sheet_file)
-    fastq_files = find_file_by_name(directory = data_dir,
-                                    name_pattern = '.*.fastq.*')
+    sample_sheet_dir = path.dirname(sample_sheet_file)
+    data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
+
     for sample in sample_list:
         properties_dict = parse_out_sequence_file(sample)
         # this is the Illumina-defined pattern for naming fastq files, from:
