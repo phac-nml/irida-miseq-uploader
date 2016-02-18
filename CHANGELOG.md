@@ -1,3 +1,7 @@
+1.4.0 to 1.4.1
+==============
+* Fix a performance regression when scanning directories for fastq files (thanks to @eric.enns)
+
 1.3.0 to 1.4.0
 ==============
 * Use [pytest](https://www.pytest.org) for testing instead of the custom testing framework build arount `unittest`.
