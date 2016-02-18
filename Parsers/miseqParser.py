@@ -110,7 +110,8 @@ def complete_parse_samples(sample_sheet_file):
         # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
         file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
         pf_list = find_file_by_name(directory = data_dir,
-                                    name_pattern = file_pattern)
+                                    name_pattern = file_pattern,
+                                    depth = 1)
         if not pf_list:
             raise SequenceFileError(
                 ("The uploader was unable to find an files with a file name that ends with "
