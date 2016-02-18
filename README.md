@@ -5,7 +5,7 @@ IRIDA Uploader
 Windows Installation
 --------------------
 
-Download the installer from https://irida.corefacility.ca/downloads/tools/
+Download the installer from https://github.com/phac-nml/irida-miseq-uploader/releases
 
 Running in Linux
 ----------------
