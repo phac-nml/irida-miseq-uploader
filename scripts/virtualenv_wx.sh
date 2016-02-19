@@ -1,6 +1,6 @@
 #!/bin/bash
 
+VIRTUAL_ENV=".virtualenv"
 
-#virtualenv must be activated  
 pyVersion=$(ls $VIRTUAL_ENV/lib/ | grep python2.*)
-echo /usr/lib/$pyVersion/dist-packages/wx-3.0-gtk2/ > $VIRTUAL_ENV/lib/$pyVersion/site-packages/wx.pth
+python2 -c "import sys;import os;import wx;sys.stdout.write(os.path.dirname(wx.__file__)[:-3])" > $VIRTUAL_ENV/lib/$pyVersion/site-packages/wx.pth
