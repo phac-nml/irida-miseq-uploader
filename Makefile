@@ -14,9 +14,10 @@ clean:
 	rm -rf Tests/integrationTests/repos/
 
 requirements:
-	virtualenv .virtualenv
+	virtualenv -p python2 .virtualenv
 	source .virtualenv/bin/activate
 	pip install -r requirements.txt --allow-external PyPubSub
+	deactivate
 	./scripts/virtualenv_wx.sh
 
 documentation: requirements
