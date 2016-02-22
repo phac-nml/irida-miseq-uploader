@@ -71,7 +71,7 @@ class MainPanel(wx.Panel):
 
         self.LABEL_TEXT_WIDTH = 80
         self.LABEL_TEXT_HEIGHT = 32
-        self.CF_LABEL_TEXT_HEIGHT = 52
+        self.CF_LABEL_TEXT_HEIGHT = 64
         self.VALID_SAMPLESHEET_BG_COLOR = wx.GREEN
         self.INVALID_SAMPLESHEET_BG_COLOR = wx.RED
         self.LOG_PNL_REG_TXT_COLOR = wx.BLACK
@@ -87,10 +87,9 @@ class MainPanel(wx.Panel):
         self.padding = wx.BoxSizer(wx.VERTICAL)
         self.top_sizer = wx.BoxSizer(wx.VERTICAL)
         self.directory_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.cf_label_container = wx.BoxSizer(wx.HORIZONTAL)
         self.log_panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.ov_label_container = wx.BoxSizer(wx.HORIZONTAL)
-        self.upload_speed_container = wx.BoxSizer(wx.HORIZONTAL)
-        self.estimated_time_container = wx.BoxSizer(wx.HORIZONTAL)
         self.ov_upload_est_time_container = wx.BoxSizer(wx.VERTICAL)
         self.progress_bar_sizer = wx.BoxSizer(wx.VERTICAL)
         self.upload_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -239,14 +238,15 @@ class MainPanel(wx.Panel):
         self.cf_init_label = "\n\nFile: 0%"
         self.cf_progress_label = wx.StaticText(
             self, id=-1,
-            size=(-1, self.CF_LABEL_TEXT_HEIGHT),
             label=self.cf_init_label)
         self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
+        self.cf_label_container.SetMinSize(wx.Size(-1,self.CF_LABEL_TEXT_HEIGHT))
+        self.cf_label_container.Add(self.cf_progress_label, flag=wx.ALIGN_BOTTOM)
         self.cf_progress_bar = wx.Gauge(self, range=100,
                                         size=(-1, self.LABEL_TEXT_HEIGHT))
-        self.progress_bar_sizer.Add(self.cf_progress_label)
-        self.progress_bar_sizer.Add(self.cf_progress_bar, proportion=1,
-                                    flag=wx.EXPAND)
+        self.progress_bar_sizer.Add(self.cf_label_container, flag=wx.ALIGN_BOTTOM|wx.ALL)
+        self.progress_bar_sizer.Add(self.cf_progress_bar, proportion=0,
+                                    flag=wx.ALL|wx.EXPAND)
         self.cf_progress_label.Hide()
         self.cf_progress_bar.Hide()
 
@@ -260,60 +260,44 @@ class MainPanel(wx.Panel):
         """
 
         self.ov_init_label = "\nOverall: 0%"
-        self.ov_upload_init_static_label = "Upload speed: "
-        self.ov_est_time_init_static_label = "Estimated time remaining: "
-        self.ov_upload_init_label = "..."
-        self.ov_est_time_init_label = "..."
+        self.ov_upload_label_text = "Upload speed: {speed}"
+        self.ov_est_time_label_text = "Estimated time remaining: {time}"
 
         self.ov_progress_label = wx.StaticText(
             self, id=-1,
             label=self.ov_init_label)
 
-        self.ov_upload_static_label = wx.StaticText(
-            self, id=-1,
-            label=self.ov_upload_init_static_label)
         self.ov_upload_label = wx.StaticText(
             self, id=-1,
-            label=self.ov_upload_init_label)
+            label=self.ov_upload_label_text.format(speed="..."),
+            style=wx.ALIGN_RIGHT)
 
-        self.ov_est_time_static_label = wx.StaticText(
-            self, id=-1,
-            label=self.ov_est_time_init_static_label)
         self.ov_est_time_label = wx.StaticText(
             self, id=-1,
-            label=self.ov_est_time_init_label)
+            label=self.ov_est_time_label_text.format(time="..."),
+            style=wx.ALIGN_RIGHT)
 
         self.ov_progress_label.SetFont(self.LABEL_TXT_FONT)
-        self.ov_upload_static_label.SetFont(self.LABEL_TXT_FONT)
         self.ov_upload_label.SetFont(self.LABEL_TXT_FONT)
-        self.ov_est_time_static_label.SetFont(self.LABEL_TXT_FONT)
         self.ov_est_time_label.SetFont(self.LABEL_TXT_FONT)
 
         self.ov_progress_bar = wx.Gauge(self, range=100,
                                         size=(-1, self.LABEL_TEXT_HEIGHT))
 
-        self.ov_label_container.Add(self.ov_progress_label)
+        self.ov_label_container.Add(self.ov_progress_label, flag=wx.ALL|wx.ALIGN_BOTTOM)
         self.ov_label_container.AddStretchSpacer()
 
-        self.upload_speed_container.Add(self.ov_upload_static_label)
-        self.upload_speed_container.Add(self.ov_upload_label)
-
-        self.estimated_time_container.Add(self.ov_est_time_static_label)
-        self.estimated_time_container.Add(self.ov_est_time_label)
-
-        self.ov_upload_est_time_container.Add(self.upload_speed_container)
-        self.ov_upload_est_time_container.Add(self.estimated_time_container)
-        self.ov_label_container.Add(self.ov_upload_est_time_container,
-                                    flag=wx.ALIGN_RIGHT)
+        self.ov_upload_est_time_container.Add(self.ov_upload_label, flag=wx.ALL|wx.ALIGN_RIGHT)
+        self.ov_upload_est_time_container.Add(self.ov_est_time_label, flag=wx.ALL|wx.ALIGN_RIGHT)
+        self.ov_label_container.Add(self.ov_upload_est_time_container, proportion=1,
+                                    flag=wx.ALIGN_RIGHT|wx.EXPAND|wx.RIGHT)
         self.progress_bar_sizer.AddSpacer(self.SECTION_SPACE)
         self.progress_bar_sizer.Add(self.ov_label_container, flag=wx.EXPAND)
-        self.progress_bar_sizer.Add(self.ov_progress_bar, proportion=1,
-                                    flag=wx.EXPAND)
+        self.progress_bar_sizer.Add(self.ov_progress_bar, proportion=0,
+                                    flag=wx.ALL|wx.EXPAND)
 
         self.ov_progress_label.Hide()
-        self.ov_upload_static_label.Hide()
         self.ov_upload_label.Hide()
-        self.ov_est_time_static_label.Hide()
         self.ov_est_time_label.Hide()
         self.ov_progress_bar.Hide()
 
@@ -716,9 +700,10 @@ class MainPanel(wx.Panel):
         estimated_remaining_time_str = self.get_ert_str(
             estimated_remaining_time)
 
-        wx.CallAfter(self.ov_upload_label.SetLabel, upload_speed_str)
+        wx.CallAfter(self.ov_upload_label.SetLabel,
+                     self.ov_upload_label_text.format(speed=upload_speed_str))
         wx.CallAfter(self.ov_est_time_label.SetLabel,
-                     estimated_remaining_time_str)
+                     self.ov_est_time_label_text.format(time=estimated_remaining_time_str))
 
         wx.CallAfter(self.Layout)
 
@@ -846,17 +831,12 @@ class MainPanel(wx.Panel):
         self.cf_progress_bar.SetValue(0)
 
         self.ov_progress_label.Hide()
-        self.ov_upload_static_label.Hide()
         self.ov_upload_label.Hide()
-        self.ov_est_time_static_label.Hide()
         self.ov_est_time_label.Hide()
         self.ov_progress_bar.Hide()
         self.ov_progress_label.SetLabel(self.ov_init_label)
-        self.ov_upload_static_label.SetLabel(self.ov_upload_init_static_label)
-        self.ov_upload_label.SetLabel(self.ov_upload_init_label)
-        self.ov_est_time_static_label.SetLabel(
-            self.ov_est_time_init_static_label)
-        self.ov_est_time_label.SetLabel(self.ov_est_time_init_label)
+        self.ov_upload_label.SetLabel(self.ov_upload_label_text.format(speed="..."))
+        self.ov_est_time_label.SetLabel(self.ov_est_time_label_text.format(time="..."))
         self.ov_progress_bar.SetValue(0)
 
         self.seq_run = None
@@ -871,11 +851,8 @@ class MainPanel(wx.Panel):
         self.cf_progress_bar.SetValue(0)
         self.ov_progress_label.SetLabel(self.ov_init_label)
 
-        self.ov_upload_static_label.SetLabel(self.ov_upload_init_static_label)
-        self.ov_upload_label.SetLabel(self.ov_upload_init_label)
-        self.ov_est_time_static_label.SetLabel(
-            self.ov_est_time_init_static_label)
-        self.ov_est_time_label.SetLabel(self.ov_est_time_init_label)
+        self.ov_upload_label.SetLabel(self.ov_upload_label_text.format(speed="..."))
+        self.ov_est_time_label.SetLabel(self.ov_est_time_label_text.format(time="..."))
 
         self.ov_progress_bar.SetValue(0)
 
@@ -894,9 +871,7 @@ class MainPanel(wx.Panel):
                 self.cf_progress_label.Show()
                 self.cf_progress_bar.Show()
                 self.ov_progress_label.Show()
-                self.ov_upload_static_label.Show()
                 self.ov_upload_label.Show()
-                self.ov_est_time_static_label.Show()
                 self.ov_est_time_label.Show()
                 self.ov_progress_bar.Show()
                 self.log_color_print("List of SampleSheet files to be uploaded:")
