@@ -241,7 +241,7 @@ class MainPanel(wx.Panel):
             label=self.cf_init_label)
         self.cf_progress_label.SetFont(self.LABEL_TXT_FONT)
         self.cf_label_container.SetMinSize(wx.Size(-1,self.CF_LABEL_TEXT_HEIGHT))
-        self.cf_label_container.Add(self.cf_progress_label, flag=wx.ALIGN_BOTTOM|wx.ALL)
+        self.cf_label_container.Add(self.cf_progress_label, flag=wx.ALIGN_BOTTOM)
         self.cf_progress_bar = wx.Gauge(self, range=100,
                                         size=(-1, self.LABEL_TEXT_HEIGHT))
         self.progress_bar_sizer.Add(self.cf_label_container, flag=wx.ALIGN_BOTTOM|wx.ALL)
