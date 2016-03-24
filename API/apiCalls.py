@@ -482,25 +482,8 @@ class ApiCalls(object):
         return file_size_list
 
     @exception_handler
-    def prune_samples_list(self, prev_uploaded_samples, samples_list):
-
-        """
-        Remove each sequence file from samples_list that is in
-        prev_uploaded_samples
-
-        no return value
-        """
-
-        for sample_id in prev_uploaded_samples:
-            for sample in samples_list:
-                if sample_id == sample.get_id():
-                    samples_list.remove(sample)
-                    break
-
-    @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1,
-                                 prev_uploaded_samples=None):
+                                 upload_id=1):
 
         """
         send sequence files found in each sample in samples_list
@@ -520,9 +503,6 @@ class ApiCalls(object):
         """
 
         json_res_list = []
-
-        if prev_uploaded_samples:
-            self.prune_samples_list(prev_uploaded_samples, samples_list)
 
         file_size_list = self.get_file_size_list(samples_list)
         self.size_of_all_seq_files = sum(file_size_list)

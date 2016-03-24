@@ -37,8 +37,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
 
     logging.info("About to start uploading samples.")
     api.send_sequence_files(samples_list = sequencing_run.sample_list,
-                                 callback = progress_callback, upload_id = run_id,
-                                 prev_uploaded_samples = None)
+                                 callback = progress_callback, upload_id = run_id)
     pub.sendMessage("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
     api.set_seq_run_complete(run_id)
 
