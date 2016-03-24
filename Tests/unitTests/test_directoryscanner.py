@@ -19,3 +19,7 @@ class TestDirectoryScanner(unittest.TestCase):
     def test_completed_upload(self):
         runs = find_runs_in_directory(path.join(path_to_module, "completed"))
         self.assertEqual(0, len(runs))
+
+    def test_find_sample_sheet_name_variations(self):
+        runs = find_runs_in_directory(path.join(path_to_module, "sample-sheet-name-variations"))
+        self.assertEqual(1, len(runs))

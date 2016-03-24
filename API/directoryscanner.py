@@ -26,10 +26,10 @@ def find_runs_in_directory(directory):
     """
     logging.info("looking for sample sheet in {}".format(directory))
     sample_sheets = find_file_by_name(directory = directory,
-                                      name_pattern = 'SampleSheet.csv',
+                                      name_pattern = '^SampleSheet.csv$',
                                       depth = 2)
     logging.info("found sample sheets: {}".format(", ".join(sample_sheets)))
-									  
+
     # filter directories that have been completely uploaded
     sheets_to_upload = filter(lambda dir: not run_is_uploaded(path.dirname(dir)), sample_sheets)
     logging.info("filtered sample sheets: {}".format(", ".join(sheets_to_upload)))
