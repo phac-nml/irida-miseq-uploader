@@ -2,6 +2,8 @@ from Validation.onlineValidation import project_exists, sample_exists
 from pubsub import pub
 import logging
 from Exceptions.ProjectError import ProjectError
+from os import path
+import json
 
 def upload_run_to_server(api, sequencing_run, progress_callback):
     """Upload a single run to the server.
@@ -40,6 +42,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
                                  callback = progress_callback, upload_id = run_id)
     pub.sendMessage("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
     api.set_seq_run_complete(run_id)
+    _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.
@@ -59,3 +62,34 @@ def _online_validation(api, sequencing_run):
             raise ProjectError("The Sample_Project: {pid} doesn't exist in IRIDA for Sample_Id: {sid}".format(
                     sid=sample.get_id(),
                     pid=sample.get_project_id()))
+
+def _create_miseq_uploader_info_file(sample_sheet_dir, upload_id, upload_status):
+
+    """
+    creates a .miseqUploaderInfo file
+    Contains Upload ID and Upload Status
+    Upload ID is is the SequencingRun's identifier in IRIDA
+    Upload Status will either be "Complete" or the last sequencing file
+    that was uploaded.
+    If there was an error with the upload then the last sequencing file
+    uploaded will be written so that the program knows from which point to
+    resume when the upload is restarted
+
+    arguments:
+        upload_status -- string that's either "Complete" or
+                         string list of completed sequencing file path
+                         uploads if upload was interrupted
+                         used to know which files still need to be uploaded
+                         when resuming upload
+
+    no return value
+    """
+
+    filename = path.join(sample_sheet_dir,
+                         ".miseqUploaderInfo")
+    info = {
+        "Upload ID": upload_id,
+        "Upload Status": upload_status
+    }
+    with open(filename, "wb") as writer:
+        json.dump(info, writer)
