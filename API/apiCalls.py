@@ -500,8 +500,7 @@ class ApiCalls(object):
     @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
                                  upload_id=1,
-                                 prev_uploaded_samples=None,
-                                 uploaded_samples_q=None):
+                                 prev_uploaded_samples=None):
 
         """
         send sequence files found in each sample in samples_list
@@ -534,8 +533,7 @@ class ApiCalls(object):
         for sample in samples_list:
 
             json_res = self._send_sequence_files(sample, callback,
-                                                      upload_id,
-                                                      uploaded_samples_q)
+                                                      upload_id)
             json_res_list.append(json_res)
 
         if callback is not None:
@@ -548,8 +546,7 @@ class ApiCalls(object):
 
         return json_res_list
 
-    def _send_sequence_files(self, sample, callback, upload_id,
-                                  uploaded_samples_q):
+    def _send_sequence_files(self, sample, callback, upload_id):
 
         """
         post request to send sequence files found in given sample argument
@@ -655,19 +652,13 @@ class ApiCalls(object):
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
-
-            if uploaded_samples_q is not None:
-                uploaded_samples_q.put(sample.get_id())
-
         else:
-
             err_msg = ("Error {status_code}: {err_msg}\n" +
                        "Upload data: {ud}").format(
                        status_code=str(response.status_code),
                        err_msg=response.reason,
                        ud=str(files))
-
-            raise SequenceFileError(err_msg, uploaded_samples_q)
+            raise SequenceFileError(err_msg)
 
         return json_res
 
