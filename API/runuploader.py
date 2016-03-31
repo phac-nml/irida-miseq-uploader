@@ -58,12 +58,15 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     _online_validation(api, sequencing_run)
     # then do actual uploading
 
-    # for now, always create a new run instead of attempting to resume
-    run_on_server = api.create_seq_run(sequencing_run.metadata)
-    run_id = run_on_server["resource"]["identifier"]
-
     if not path.exists(filename):
+        # for now, always create a new run instead of attempting to resume
+        run_on_server = api.create_seq_run(sequencing_run.metadata)
+        run_id = run_on_server["resource"]["identifier"]
         _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Uploading")
+    else:
+        with open(filename, "rb") as reader:
+            uploader_info = json.load(reader)
+            run_id = uploader_info['Upload ID']
 
     pub.sendMessage("start_checking_samples")
     logging.info("Starting to check samples.")
@@ -78,7 +81,8 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     skipped_samples = filter(lambda sample: _sample_already_uploaded(sample), sequencing_run.sample_list)
 
     pub.sendMessage("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir,
-                                               skipped_sample_ids = [sample.get_id() for sample in skipped_samples])
+                                               skipped_sample_ids = [sample.get_id() for sample in skipped_samples],
+                                               run_id = run_id)
 
     logging.info("About to start uploading samples.")
     api.send_sequence_files(samples_list = samples_to_upload,
