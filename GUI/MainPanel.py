@@ -460,8 +460,10 @@ class MainPanel(wx.Panel):
 
     def start_checking_samples(self):
         wx.CallAfter(self.log_color_print, "Checking samples...")
-    def start_uploading_samples(self, sheet_dir):
+    def start_uploading_samples(self, sheet_dir, skipped_sample_ids):
         wx.CallAfter(self.log_color_print, "Starting upload: {}.".format(sheet_dir))
+        if skipped_sample_ids:
+            wx.CallAfter(self.log_color_print, "Skipping already uploaded samples: {}.".format(", ".join(skipped_sample_ids)))
     def finished_uploading_samples(self, sheet_dir):
         wx.CallAfter(self.log_color_print, "Finished uploading: {}.".format(sheet_dir))
 
