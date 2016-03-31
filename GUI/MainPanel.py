@@ -260,7 +260,7 @@ class MainPanel(wx.Panel):
         """
 
         self.ov_init_label = "\nOverall: 0%"
-        self.ov_upload_label_text = "Upload speed: {speed}"
+        self.ov_upload_label_text = "Average upload speed: {speed}"
         self.ov_est_time_label_text = "Estimated time remaining: {time}"
 
         self.ov_progress_label = wx.StaticText(
