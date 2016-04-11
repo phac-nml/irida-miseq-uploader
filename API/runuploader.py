@@ -59,17 +59,18 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     # then do actual uploading
 
     if not path.exists(filename):
-        # for now, always create a new run instead of attempting to resume
+        logging.info("Going to create a new sequencing run on the server.")
         run_on_server = api.create_seq_run(sequencing_run.metadata)
         run_id = run_on_server["resource"]["identifier"]
         _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Uploading")
     else:
+        logging.info("Resuming upload.")
         with open(filename, "rb") as reader:
             uploader_info = json.load(reader)
             run_id = uploader_info['Upload ID']
 
     pub.sendMessage("start_checking_samples")
-    logging.info("Starting to check samples.")
+    logging.info("Starting to check samples. [{}]".format(len(sequencing_run.sample_list)))
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)
     logging.info("Sending samples to server: [{}].".format(", ".join([str(x) for x in samples_to_create])))

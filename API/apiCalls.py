@@ -294,7 +294,7 @@ class ApiCalls(object):
         """
 
         if sample is not None:
-            project_id = sample["sampleProject"]
+            project_id = sample.get_project_id()
         elif project is not None:
             project_id = project.get_id()
         else:
@@ -627,6 +627,7 @@ class ApiCalls(object):
 
         headers = {"Content-Type": monitor.content_type}
 
+        logging.info("Sending files to [{}]".format(url))
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
