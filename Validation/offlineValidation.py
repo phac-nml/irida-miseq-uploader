@@ -106,7 +106,7 @@ def validate_sample_list(sample_list):
             if len(missing) > 0:
                 valid = False
                 v_res.add_error_msg(
-                    ("{sid} missing {required_val}").format(
+                    ("\t{sid} missing {required_val}").format(
                         sid=sample.get_id(),
                         required_val=",".join(missing)))
 
@@ -149,11 +149,11 @@ def sample_has_req_keys(sample):
     sample_id = sample.get_id()
 
     if sample_proj is None or len(sample_proj) == 0:
-        missing.append("Sample_Project")
+        missing.append("Project ID, add the project ID for {} in the Sample_Project column of SampleSheet.csv".format(sample_id))
     if sample_name is None or len(sample_name) == 0:
-        missing.append("Sample_Name")
+        missing.append("Sample Name, add the sample name for {} in the Sample_Name column of SampleSheet.csv".format(sample_id))
     if sample_id is None or len(sample_id) == 0:
-        missing.append("Sample_Id")
+        missing.append("Sample ID, add the sample ID for {} in the Sample_ID column of SampleSheet.csv".format(sample_id))
     return missing
 
 

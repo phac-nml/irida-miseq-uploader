@@ -92,8 +92,8 @@ def validate_run(sequencing_run):
 
     validation = validate_sample_sheet(sequencing_run.sample_sheet)
     if not validation.is_valid():
-        raise SampleSheetError('Sample sheet {} is invalid. Reason: {}'.format(sample_sheet, validation.get_errors()))
+        raise SampleSheetError('Sample sheet {} is invalid. Reason:\n {}'.format(sample_sheet, validation.get_errors()))
 
     validation = validate_sample_list(sequencing_run.sample_list)
     if not validation.is_valid():
-        raise SampleError('Sample sheet {} is invalid. Reason: {}'.format(sample_sheet, validation.get_errors()))
+        raise SampleError('Sample sheet {} is invalid. Reason:\n {}'.format(sample_sheet, validation.get_errors()))
