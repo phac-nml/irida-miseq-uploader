@@ -1,4 +1,3 @@
-import unittest
 import pytest
 import ntpath
 import logging
@@ -9,41 +8,35 @@ from Model.Sample import Sample
 from Parsers.miseqParser import complete_parse_samples
 
 @pytest.mark.skipif(not pytest.config.getoption("--integration"), reason = "skipped integration tests")
-@pytest.mark.usefixtures("api")
-class TestApiIntegration(unittest.TestCase):
+class TestApiIntegration:
 
-    def test_get_and_send_project(self):
+    def test_get_and_send_project(self, api):
 
-        proj_list = self.api.get_projects()
-        self.assertTrue(len(proj_list) == 0)
+        proj_list = api.get_projects()
+        assert len(proj_list) == 0
 
         proj_name = "integration testProject"
         proj_description = "integration testProject description"
         proj = Project(proj_name, proj_description)
-        server_response = self.api.send_project(proj)
+        server_response = api.send_project(proj)
 
-        self.assertEqual(proj_name,
-                         server_response["resource"]["name"])
-        self.assertEqual(proj_description,
-                         server_response["resource"]["projectDescription"])
-        self.assertEqual("1",
-                         server_response["resource"]["identifier"])
+        assert proj_name == server_response["resource"]["name"]
+        assert proj_description == server_response["resource"]["projectDescription"]
+        assert "1" == server_response["resource"]["identifier"]
 
-        proj_list = self.api.get_projects()
-        self.assertTrue(len(proj_list) == 1)
+        proj_list = api.get_projects()
+        assert len(proj_list) == 1
 
         added_proj = proj_list[0]
-        self.assertEqual(added_proj.get_name(), "integration testProject")
-        self.assertEqual(
-            added_proj.get_description(),
-            "integration testProject description")
+        assert added_proj.get_name() == "integration testProject"
+        assert added_proj.get_description() == "integration testProject description"
 
-    def test_get_and_send_samples(self):
+    def test_get_and_send_samples(self, api):
 
-        proj_list = self.api.get_projects()
+        proj_list = api.get_projects()
         proj = proj_list[0]
-        sample_list = self.api.get_samples(proj)
-        self.assertTrue(len(sample_list) == 0)
+        sample_list = api.get_samples(proj)
+        assert len(sample_list) == 0
 
         sample_dict = {
             "sampleName": "99-9999",
@@ -53,27 +46,24 @@ class TestApiIntegration(unittest.TestCase):
         }
 
         sample = Sample(sample_dict)
-        server_response_list = self.api.send_samples([sample])
-        self.assertEqual(len(server_response_list), 1)
+        server_response_list = api.send_samples([sample])
+        assert len(server_response_list) == 1
 
         server_response = server_response_list[0]
 
-        self.assertEqual(sample_dict["sampleName"],
-                         server_response["resource"]["sampleName"])
-        self.assertEqual(sample_dict["description"],
-                         server_response["resource"]["description"])
-        self.assertEqual("1",
-                         server_response["resource"]["identifier"])
+        assert sample_dict["sampleName"] == server_response["resource"]["sampleName"]
+        assert sample_dict["description"] == server_response["resource"]["description"]
+        assert "1" == server_response["resource"]["identifier"]
 
-        sample_list = self.api.get_samples(proj)
-        self.assertTrue(len(sample_list) == 1)
+        sample_list = api.get_samples(proj)
+        assert len(sample_list) == 1
 
         added_sample = sample_list[0]
         del sample_dict["sampleProject"]
         for key in sample_dict.keys():
-            self.assertEqual(sample[key], added_sample[key])
+            assert sample[key] == added_sample[key]
 
-    def test_create_seq_run(self):
+    def test_create_seq_run(self, api):
 
         metadata_dict = {
             "workflow": "test_workflow",
@@ -81,20 +71,20 @@ class TestApiIntegration(unittest.TestCase):
             "layoutType": "PAIRED_END"
         }
 
-        seq_run_list = self.api.get_seq_runs()
-        self.assertEqual(len(seq_run_list), 0)
+        seq_run_list = api.get_seq_runs()
+        assert len(seq_run_list) == 0
 
-        json_res = self.api.create_seq_run(metadata_dict)
+        json_res = api.create_seq_run(metadata_dict)
 
-        seq_run_list = self.api.get_seq_runs()
-        self.assertEqual(len(seq_run_list), 1)
+        seq_run_list = api.get_seq_runs()
+        assert len(seq_run_list) == 1
 
         upload_id = json_res["resource"]["identifier"]
         upload_status = json_res["resource"]["uploadStatus"]
-        self.assertEqual(upload_id, "1")
-        self.assertEqual(upload_status, "UPLOADING")
+        assert upload_id == "1"
+        assert upload_status == "UPLOADING"
 
-    def test_get_and_send_sequence_files(self):
+    def test_get_and_send_sequence_files(self, api):
         path_to_module = path.dirname(__file__)
         if len(path_to_module) == 0:
             path_to_module = '.'
@@ -106,40 +96,38 @@ class TestApiIntegration(unittest.TestCase):
         # has no sequence files
         seq_file_list = []
         for sample in samples_list:
-            res = self.api.get_sequence_files(sample)
+            res = api.get_sequence_files(sample)
             if len(res) > 0:
                 seq_file_list.append(res)
-        self.assertEqual(len(seq_file_list), 0)
+        assert len(seq_file_list) == 0
 
-        serv_res_list = self.api.send_sequence_files(samples_list)[0]
+        serv_res_list = api.send_sequence_files(samples_list)[0]
 
         # check that the sample with id 99-9999 (from SampleSheet.csv)
         # has the one that we just uploaded.
         seq_file_list = []
         for sample in samples_list:
-            res = self.api.get_sequence_files(sample)
+            res = api.get_sequence_files(sample)
             if len(res) > 0:
                 seq_file_list.append(res)
 
-        self.assertEqual(len(seq_file_list), 1)
+        assert len(seq_file_list) == 1
 
         filename_list = [serv_resp["resource"]["object"]["fileName"]
                          for serv_resp in
                          serv_res_list["resource"]["resources"]]
-        self.assertEqual(len(filename_list), 2)
+        assert len(filename_list) == 2
 
         # check that the files in each sample are found
         # in the server response
         for sample in samples_list:
-            self.assertIn(ntpath.basename(sample.get_files()[0]),
-                          filename_list)
-            self.assertIn(ntpath.basename(sample.get_files()[1]),
-                          filename_list)
+            assert ntpath.basename(sample.get_files()[0]) in filename_list
+            assert ntpath.basename(sample.get_files()[1]) in filename_list
 
-        self.assertEqual(len(serv_res_list), len(samples_list))
+        assert len(serv_res_list) == len(samples_list)
 
-    def test_set_seq_run_complete(self):
-        self.api.set_seq_run_complete(identifier="1")
-        seq_run_list = self.api.get_seq_runs()
-        self.assertEqual(len(seq_run_list), 1)
-        self.assertEqual(seq_run_list[0]["uploadStatus"], "COMPLETE")
+    def test_set_seq_run_complete(self, api):
+        api.set_seq_run_complete(identifier="1")
+        seq_run_list = api.get_seq_runs()
+        assert len(seq_run_list) == 1
+        assert seq_run_list[0]["uploadStatus"] == "COMPLETE"

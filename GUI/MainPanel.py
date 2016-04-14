@@ -460,8 +460,10 @@ class MainPanel(wx.Panel):
 
     def start_checking_samples(self):
         wx.CallAfter(self.log_color_print, "Checking samples...")
-    def start_uploading_samples(self, sheet_dir):
+    def start_uploading_samples(self, sheet_dir, run_id, skipped_sample_ids):
         wx.CallAfter(self.log_color_print, "Starting upload: {}.".format(sheet_dir))
+        if run_id and skipped_sample_ids:
+            wx.CallAfter(self.log_color_print, "Resuming upload to run with ID: {}\nSkipping already uploaded samples: {}.".format(run_id, ", ".join(skipped_sample_ids)))
     def finished_uploading_samples(self, sheet_dir):
         wx.CallAfter(self.log_color_print, "Finished uploading: {}.".format(sheet_dir))
 
@@ -761,7 +763,6 @@ class MainPanel(wx.Panel):
         """
 
         self.upload_complete = True
-        self.create_miseq_uploader_info_file("Complete")
         wx.CallAfter(self.log_color_print, "Upload complete\n",
                      self.LOG_PNL_OK_TXT_COLOR)
         wx.CallAfter(self.ov_est_time_label.SetLabel, "Complete")
@@ -769,40 +770,8 @@ class MainPanel(wx.Panel):
         wx.CallAfter(self.Layout)
 
     def display_completion_cmd_msg(self, completion_cmd):
-
         wx.CallAfter(self.log_color_print,
                      "Executing completion command: " + completion_cmd)
-
-    def create_miseq_uploader_info_file(self, upload_status):
-
-        """
-        creates a .miseqUploaderInfo file
-        Contains Upload ID and Upload Status
-        Upload ID is is the SequencingRun's identifier in IRIDA
-        Upload Status will either be "Complete" or the last sequencing file
-        that was uploaded.
-        If there was an error with the upload then the last sequencing file
-        uploaded will be written so that the program knows from which point to
-        resume when the upload is restarted
-
-        arguments:
-            upload_status -- string that's either "Complete" or
-                             string list of completed sequencing file path
-                             uploads if upload was interrupted
-                             used to know which files still need to be uploaded
-                             when resuming upload
-
-        no return value
-        """
-
-        filename = path.join(self.curr_seq_run.sample_sheet_dir,
-                             ".miseqUploaderInfo")
-        info = {
-            "Upload ID": self.curr_upload_id,
-            "Upload Status": upload_status
-        }
-        with open(filename, "wb") as writer:
-            json.dump(info, writer)
 
     def handle_invalid_sheet_or_seq_file(self, msg):
 

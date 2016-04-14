@@ -69,10 +69,13 @@ def process_sample_sheet(sample_sheet):
     """
     logging.info("going to parse metadata")
     run_metadata = parse_metadata(sample_sheet)
+
     logging.info("going to parse samples")
     samples = complete_parse_samples(sample_sheet)
+
     logging.info("going to build sequencing run")
     sequencing_run = SequencingRun(run_metadata, samples, sample_sheet)
+
     logging.info("going to validate sequencing run")
     validate_run(sequencing_run)
 

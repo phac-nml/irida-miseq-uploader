@@ -294,7 +294,7 @@ class ApiCalls(object):
         """
 
         if sample is not None:
-            project_id = sample["sampleProject"]
+            project_id = sample.get_project_id()
         elif project is not None:
             project_id = project.get_id()
         else:
@@ -482,26 +482,8 @@ class ApiCalls(object):
         return file_size_list
 
     @exception_handler
-    def prune_samples_list(self, prev_uploaded_samples, samples_list):
-
-        """
-        Remove each sequence file from samples_list that is in
-        prev_uploaded_samples
-
-        no return value
-        """
-
-        for sample_id in prev_uploaded_samples:
-            for sample in samples_list:
-                if sample_id == sample.get_id():
-                    samples_list.remove(sample)
-                    break
-
-    @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1,
-                                 prev_uploaded_samples=None,
-                                 uploaded_samples_q=None):
+                                 upload_id=1):
 
         """
         send sequence files found in each sample in samples_list
@@ -522,9 +504,6 @@ class ApiCalls(object):
 
         json_res_list = []
 
-        if prev_uploaded_samples:
-            self.prune_samples_list(prev_uploaded_samples, samples_list)
-
         file_size_list = self.get_file_size_list(samples_list)
         self.size_of_all_seq_files = sum(file_size_list)
 
@@ -534,8 +513,7 @@ class ApiCalls(object):
         for sample in samples_list:
 
             json_res = self._send_sequence_files(sample, callback,
-                                                      upload_id,
-                                                      uploaded_samples_q)
+                                                      upload_id)
             json_res_list.append(json_res)
 
         if callback is not None:
@@ -548,8 +526,7 @@ class ApiCalls(object):
 
         return json_res_list
 
-    def _send_sequence_files(self, sample, callback, upload_id,
-                                  uploaded_samples_q):
+    def _send_sequence_files(self, sample, callback, upload_id):
 
         """
         post request to send sequence files found in given sample argument
@@ -650,24 +627,21 @@ class ApiCalls(object):
 
         headers = {"Content-Type": monitor.content_type}
 
+        logging.info("Sending files to [{}]".format(url))
         response = self.session.post(url, data=monitor, headers=headers)
         self.total_bytes_read = monitor.total_bytes_read
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
-
-            if uploaded_samples_q is not None:
-                uploaded_samples_q.put(sample.get_id())
-
+            logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
+            pub.sendMessage('completed_uploading_sample', sample = sample)
         else:
-
             err_msg = ("Error {status_code}: {err_msg}\n" +
                        "Upload data: {ud}").format(
                        status_code=str(response.status_code),
                        err_msg=response.reason,
                        ud=str(files))
-
-            raise SequenceFileError(err_msg, uploaded_samples_q)
+            raise SequenceFileError(err_msg)
 
         return json_res
 
