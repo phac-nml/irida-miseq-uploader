@@ -115,10 +115,10 @@ def complete_parse_samples(sample_sheet_file):
         if not pf_list:
             raise SequenceFileError(
                 ("The uploader was unable to find an files with a file name that ends with "
-                 ".fastq.gz for the sample in your sample sheet with name {}. "
+                 ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
                  "This usually happens when the Illumina MiSeq Reporter tool "
                  "does not generate any FastQ data.")
-                 .format(sample.get_id()))
+                 .format(sample.get_id(), data_dir))
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
