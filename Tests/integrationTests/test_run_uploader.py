@@ -1,4 +1,3 @@
-import unittest
 import pytest
 import logging
 
@@ -9,18 +8,17 @@ from API.runuploader import upload_run_to_server
 from API.directoryscanner import find_runs_in_directory
 
 @pytest.mark.skipif(not pytest.config.getoption("--integration"), reason = "skipped integration tests")
-@pytest.mark.usefixtures("api")
-class TestRunUploader(unittest.TestCase):
+class TestRunUploader:
     sample_count = 0
 
     def update_samples_counter(self, sample):
         self.sample_count += 1
 
-    def test_upload_run(self):
+    def test_upload_run(self, api):
         self.sample_count = 0
         # create a project first
         project = Project("project", "description")
-        created_project = self.api.send_project(project)
+        created_project = api.send_project(project)
         project_id = created_project["resource"]["identifier"]
 
         path_to_module = path.dirname(__file__)
@@ -30,7 +28,7 @@ class TestRunUploader(unittest.TestCase):
         except:
             pass
         runs = find_runs_in_directory(run_dir)
-        self.assertEqual(1, len(runs))
+        assert 1 == len(runs)
 
         run_to_upload = runs[0]
         for sample in run_to_upload.sample_list:
@@ -38,14 +36,14 @@ class TestRunUploader(unittest.TestCase):
 
         pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
 
-        upload_run_to_server(self.api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload, None)
 
-        self.assertEqual(1, self.sample_count)
+        assert 1 == self.sample_count
 
-    def test_resume_upload(self):
+    def test_resume_upload(self, api):
         self.sample_count = 0
         project = Project("project", "description")
-        created_project = self.api.send_project(project)
+        created_project = api.send_project(project)
         project_id = created_project["resource"]["identifier"]
 
         path_to_module = path.dirname(__file__)
@@ -55,11 +53,11 @@ class TestRunUploader(unittest.TestCase):
         except:
             pass
         runs = find_runs_in_directory(run_dir)
-        self.assertEqual(1, len(runs))
+        assert 1 == len(runs)
 
         run_to_upload = runs[0]
 
-        self.assertEqual(2, len(run_to_upload.sample_list))
+        assert 2 == len(run_to_upload.sample_list)
 
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
@@ -68,12 +66,12 @@ class TestRunUploader(unittest.TestCase):
         run_to_upload.sample_list[1].get_files = lambda: (_ for _ in ()).throw(Exception('foobar'))
 
         try:
-            upload_run_to_server(self.api, run_to_upload, None)
+            upload_run_to_server(api, run_to_upload, None)
         except:
             logging.info("Succeeded in failing to upload files.")
             run_to_upload.sample_list[1].get_files = original_files_method
 
         pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
-        upload_run_to_server(self.api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload, None)
 
-        self.assertEqual(1, self.sample_count)
+        assert 1 == self.sample_count

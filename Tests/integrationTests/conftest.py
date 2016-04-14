@@ -16,7 +16,7 @@ def api(request):
     branch = request.config.getoption("--irida-version")
     setup = start_setup(branch)
     request.addfinalizer(setup.stop_irida)
-    request.cls.api = ApiCalls(
+    return ApiCalls(
         client_id=client_id,
         client_secret=client_secret,
         base_URL=base_URL,
