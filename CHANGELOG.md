@@ -1,3 +1,12 @@
+1.4.0 to 1.5.0
+==============
+* Changed the `Makefile` so that the uploader can be hacked on in other Linux distros, specifically Arch (thanks to @eric.enns)
+* Fixed a UI issue where upload labels were overlapping in some cases (thanks to @eric.enns)
+* Fixed an issue where the uploader found files that had `SampleSheet.csv` *anywhere* in the filename (i.e., `old_SampleSheet.csv`), now it matches **exactly** `SampleSheet.csv`.
+* Changed the label `Upload speed` to `Average upload speed` to more accurately reflect the value we're reporting.
+* Added support for resuming uploads on failure. If the uploader fails when uploading a run, it will now skip any files that were already uploaded.
+* Added better error reporting when the uploader can't find the files for the sample by including the directory to help find issues.
+
 1.4.0 to 1.4.1
 ==============
 * Fix a performance regression when scanning directories for fastq files (thanks to @eric.enns)
