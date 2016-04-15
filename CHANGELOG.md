@@ -1,6 +1,3 @@
-1.5.0 to 1.6.0
-==============
-
 1.4.0 to 1.5.0
 ==============
 * Changed the `Makefile` so that the uploader can be hacked on in other Linux distros, specifically Arch (thanks to @eric.enns)
