@@ -108,14 +108,15 @@ class TestApiIntegration:
         seq_file_list = []
         for sample in samples_list:
             res = api.get_sequence_files(sample)
+            logging.info(str(res))
             if len(res) > 0:
                 seq_file_list.append(res)
 
         assert len(seq_file_list) == 1
 
-        filename_list = [serv_resp["resource"]["object"]["fileName"]
+        filename_list = [serv_resp["fileName"]
                          for serv_resp in
-                         serv_res_list["resource"]["resources"]]
+                         seq_file_list[0]]
         assert len(filename_list) == 2
 
         # check that the files in each sample are found
