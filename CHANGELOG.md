@@ -1,5 +1,6 @@
 1.5.0 to 1.6.0
 ==============
+* Changed the way that update notifications are shown: don't have an open in browser button, just create a link.
 
 1.4.0 to 1.5.0
 ==============
