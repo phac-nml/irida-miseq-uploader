@@ -4,8 +4,8 @@ import wx
 import logging
 import webbrowser
 from github3 import GitHub
-from wx.lib.dialogs import MultiMessageBox
 import wx.lib.delayedresult as dr
+import wx.lib.agw.hyperlink as hl
 from distutils.version import LooseVersion
 import ConfigParser
 from os import path
@@ -50,21 +50,47 @@ class Uploader(wx.App):
             logging.debug("Found latest version: [{}]".format(latest_tag))
             release_url = "https://github.com/phac-nml/irida-miseq-uploader/releases/latest"
             if LooseVersion(self.__version__) < LooseVersion(latest_tag.name):
-                logging.debug("Newer version found.")
-                response = MultiMessageBox(
-                    ("A new version of the IRIDA MiSeq "
+                logging.info("Newer version found.")
+                dialog = NewVersionMessageDialog(
+                    parent=None,
+                    id=wx.ID_ANY,
+                    message=("A new version of the IRIDA MiSeq "
                      "Uploader tool is available. You can"
-                     " download the latest version from ") + release_url,
-                    "IRIDA MiSeq Uploader update available",
-                    style=wx.YES_NO,
-                    btnLabels={wx.ID_YES: "Open download page in web browser",
-                               wx.ID_NO: "Close"})
-                if response == wx.YES:
-                    wx.CallAfter(webbrowser.open, github_url)
+                     " download the latest version from "),
+                    title="IRIDA MiSeq Uploader update available",
+                    download_url=release_url,
+                    style=wx.CAPTION|wx.CLOSE_BOX|wx.STAY_ON_TOP)
+                dialog.ShowModal()
+                dialog.Destroy()
             else:
                 logging.debug("No new versions found.")
 
         dr.startWorker(handle_update, find_update)
+
+class NewVersionMessageDialog(wx.Dialog):
+    def __init__(self, parent, id, title, message, download_url, size=wx.DefaultSize, pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE, name='dialog'):
+        wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
+
+        label = wx.StaticText(self, label=message)
+        button = wx.Button(self, id=wx.ID_OK, label="Close")
+        button.SetDefault()
+
+        line = wx.StaticLine(self, wx.ID_ANY, size=(20, -1), style=wx.LI_HORIZONTAL)
+        download_ctrl = hl.HyperLinkCtrl(self, wx.ID_ANY, download_url, URL=download_url)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        button_sizer = wx.StdDialogButtonSizer()
+        button_sizer.AddButton(button)
+        button_sizer.Realize()
+
+        sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+        sizer.Add(download_ctrl, 0, wx.ALL, 10)
+        sizer.Add(line, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP, 5)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
 
 def main():
     app = Uploader()
