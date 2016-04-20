@@ -49,7 +49,7 @@ class Uploader(wx.App):
             latest_tag = result.get()
             logging.debug("Found latest version: [{}]".format(latest_tag))
             release_url = "https://github.com/phac-nml/irida-miseq-uploader/releases/latest"
-            if LooseVersion(self.__version__) > LooseVersion(latest_tag.name):
+            if LooseVersion(self.__version__) < LooseVersion(latest_tag.name):
                 logging.info("Newer version found.")
                 dialog = NewVersionMessageDialog(
                     parent=None,
@@ -77,8 +77,6 @@ class NewVersionMessageDialog(wx.Dialog):
 
         line = wx.StaticLine(self, wx.ID_ANY, size=(20, -1), style=wx.LI_HORIZONTAL)
         download_ctrl = hl.HyperLinkCtrl(self, wx.ID_ANY, download_url, URL=download_url)
-
-        download_ctrl.Bind(hl.EVT_HYPERLINK_LEFT, self.Close)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         button_sizer = wx.StdDialogButtonSizer()
