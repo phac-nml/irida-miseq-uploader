@@ -24,14 +24,19 @@ class Uploader(wx.App):
         self.get_app_info()
         self.check_for_update()
 
-        self.frame = MainFrame()
+        self.frame = MainFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
         self.frame.Show()
         self.frame.mp.api = self.frame.settings_frame.attempt_connect_to_api()
 
     def get_app_info(self):
         config_parser = ConfigParser.ConfigParser()
         config_parser.read(app_config)
-        self.__version__ = config_parser.get('Application', 'version', None)
+        self.__app_version__ = config_parser.get('Application', 'version', None)
+        self.__app_name__ = config_parser.get('Application', 'name', None)
+
+    @property
+    def url(self):
+        return "https://github.com/phac-nml/irida-miseq-uploader"
 
     def check_for_update(self):
         def find_update():
@@ -48,8 +53,8 @@ class Uploader(wx.App):
         def handle_update(result):
             latest_tag = result.get()
             logging.debug("Found latest version: [{}]".format(latest_tag))
-            release_url = "https://github.com/phac-nml/irida-miseq-uploader/releases/latest"
-            if LooseVersion(self.__version__) < LooseVersion(latest_tag.name):
+            release_url = self.url + "/releases/latest"
+            if LooseVersion(self.__app_version__) < LooseVersion(latest_tag.name):
                 logging.debug("Newer version found.")
                 response = MultiMessageBox(
                     ("A new version of the IRIDA MiSeq "
