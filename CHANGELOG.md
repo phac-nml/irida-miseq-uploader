@@ -1,5 +1,6 @@
 1.5.0 to 1.6.0
 ==============
+* Add an about dialog to show the version number in the UI.
 
 1.4.0 to 1.5.0
 ==============
