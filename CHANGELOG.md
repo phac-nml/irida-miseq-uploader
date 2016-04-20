@@ -1,5 +1,6 @@
 1.5.0 to 1.6.0
 ==============
+* Changed the installer to uninstall the previous version before installing the new version (user settings are preserved).
 
 1.4.0 to 1.5.0
 ==============
