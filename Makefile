@@ -37,6 +37,7 @@ windows: documentation requirements
 
 test: clean requirements documentation
 	source .virtualenv/bin/activate
+	killall -9 xvfb-run # kill any running tests.
 	xvfb-run py.test --integration --irida-version=$(IRIDA_VERSION)
 
 .ONESHELL:
