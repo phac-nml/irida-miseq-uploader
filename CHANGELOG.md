@@ -1,5 +1,6 @@
 1.5.0 to 1.6.0
 ==============
+* Add an about dialog to show the version number in the UI.
 * Changed the way that update notifications are shown: don't have an open in browser button, just create a link.
 * Changed the installer to uninstall the previous version before installing the new version (user settings are preserved).
 

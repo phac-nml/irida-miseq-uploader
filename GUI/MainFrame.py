@@ -1,4 +1,5 @@
 import wx
+from wx.lib.wordwrap import wordwrap
 import webbrowser
 import logging
 from GUI.MainPanel import MainPanel
@@ -8,9 +9,12 @@ path_to_module = path.dirname(__file__)
 
 class MainFrame(wx.Frame):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, app_name=None, app_version=None, app_url=None):
 
         self.parent = parent
+        self._app_name = app_name
+        self._app_version = app_version
+        self._app_url = app_url
         self.display_size = wx.GetDisplaySize()
         self.num_of_monitors = wx.Display_GetCount()
 
@@ -66,15 +70,30 @@ class MainFrame(wx.Frame):
         open_menu = self.file_menu.Append(wx.ID_PROPERTIES, "Settings")
         self.Bind(wx.EVT_MENU, self.open_settings, open_menu)
 
-        docs_menu = self.file_menu.Append(wx.ID_HELP, "&Documentation")
-        self.Bind(wx.EVT_MENU, self.open_docs, docs_menu)
-
         self.file_menu.AppendSeparator()
 
         exit_menu = self.file_menu.Append(wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, lambda evt: self.Destroy(), exit_menu)
 
+        self.help_menu = wx.Menu()
+        self.menubar.Append(self.help_menu, "Help")
+
+        docs_menu = self.help_menu.Append(wx.ID_HELP, "&Documentation")
+        self.Bind(wx.EVT_MENU, self.open_docs, docs_menu)
+
+        about_menu = self.help_menu.Append(wx.ID_ABOUT, "About")
+        self.Bind(wx.EVT_MENU, self.open_about, about_menu)
+
         self.SetMenuBar(self.menubar)
+
+    def open_about(self, evt):
+        app_info = wx.AboutDialogInfo()
+        app_info.Name = self._app_name
+        app_info.Version = self._app_version
+        app_info.WebSite = (self._app_url, "IRIDA Uploader on GitHub")
+        app_info.Description = wordwrap("IRIDA Uploader is a tool to send Illumina MiSeq data to an instance of IRIDA for management.", 350, wx.ClientDC(self))
+
+        wx.AboutBox(app_info)
 
     def open_settings(self, evt):
 
