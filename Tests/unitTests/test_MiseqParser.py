@@ -379,3 +379,10 @@ class TestMiSeqParser(unittest.TestCase):
                             "layoutType": "PAIRED_END"}
 
         self.assertEqual(correct_metadata, meta_data)
+
+    def test_parse_extra_metadata(self):
+        sample_sheet = path.join(path_to_module, 'extra-metadata', 'SampleSheet.csv')
+
+        # test that these parsers don't throw on unexpected sections or keys
+        metadata = parse_metadata(sample_sheet)
+        samples = complete_parse_samples(sample_sheet)        

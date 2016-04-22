@@ -1,0 +1,24 @@
+[Header]
+IEMFileVersion,4
+Date,4/19/2016
+Workflow,Enrichment
+Application,Enrichment
+Assay,Nextera Enrichment
+Description,
+Chemistry,Default
+
+[Manifests]
+A,nexterarapidcapture_exome_targetedregions.txt
+
+[Reads]
+151
+151
+
+[Settings]
+FilterPCRDuplicates,0
+VariantFilterQualityCutoff,30
+Adapter,CTGTCTCTTATACACATCT
+
+[Data]
+Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,Manifest,GenomeFolder
+C16,,1,1,N701,TAAGGCGA,331,c16controlblasto,A,Homo_sapiens\UCSC\hg19\Sequence\WholeGenomeFASTA
