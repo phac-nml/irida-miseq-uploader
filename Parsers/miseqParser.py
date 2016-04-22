@@ -58,12 +58,18 @@ def parse_metadata(sample_sheet_file):
             continue
         elif "[Data]" in line:
             break
+        elif line and line[0].startswith("["):
+            section = "unknown"
+            continue
 
         if not line or not line[0]:
             continue
         if section is "header":
-            key_name = metadata_key_translation_dict[line[0]]
-            metadata_dict[key_name] = line[1]
+            try:
+                key_name = metadata_key_translation_dict[line[0]]
+                metadata_dict[key_name] = line[1]
+            except KeyError:
+                logging.info("Unexpected key in header: [{}]".format(line[0]))
         elif section is "reads":
             metadata_dict["readLengths"].append(line[0])
 
