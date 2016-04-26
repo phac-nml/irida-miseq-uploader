@@ -16,7 +16,7 @@ clean:
 requirements:
 	virtualenv -p python2 .virtualenv
 	source .virtualenv/bin/activate
-	pip install -r requirements.txt --allow-external PyPubSub
+	pip install -r requirements.txt
 	deactivate
 	./scripts/virtualenv_wx.sh
 

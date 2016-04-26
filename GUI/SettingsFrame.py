@@ -7,7 +7,7 @@ from collections import OrderedDict
 import wx
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from requests.exceptions import ConnectionError
-from pubsub import pub
+from wx.lib.pubsub import pub
 from appdirs import user_config_dir, user_log_dir
 
 from API.apiCalls import ApiCalls
@@ -1049,7 +1049,7 @@ class SettingsPanel(wx.Panel):
 
         else:
             api = self.attempt_connect_to_api()
-            pub.sendMessage("set_updated_api", api=api)
+            wx.CallAfter(pub.sendMessage, "set_updated_api", api=api)
 
             self.parent.Hide()  # running attached to iridaUploaderMain
 

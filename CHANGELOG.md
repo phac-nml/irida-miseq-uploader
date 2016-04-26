@@ -3,6 +3,7 @@
 * Add an about dialog to show the version number in the UI.
 * Changed the way that update notifications are shown: don't have an open in browser button, just create a link.
 * Changed the installer to uninstall the previous version before installing the new version (user settings are preserved).
+* Use the `pubsub` built into wxPython rather than pulling in an external version.
 
 1.4.0 to 1.5.0
 ==============

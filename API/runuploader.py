@@ -1,7 +1,8 @@
 from Validation.onlineValidation import project_exists, sample_exists
-from pubsub import pub
+from wx.lib.pubsub import pub
 import logging
 from Exceptions.ProjectError import ProjectError
+from API.pubsub import send_message
 from os import path
 import json
 
@@ -69,7 +70,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
             uploader_info = json.load(reader)
             run_id = uploader_info['Upload ID']
 
-    pub.sendMessage("start_checking_samples")
+    send_message("start_checking_samples")
     logging.info("Starting to check samples. [{}]".format(len(sequencing_run.sample_list)))
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)
@@ -81,14 +82,14 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     samples_to_upload = filter(lambda sample: not _sample_already_uploaded(sample), sequencing_run.sample_list)
     skipped_samples = filter(lambda sample: _sample_already_uploaded(sample), sequencing_run.sample_list)
 
-    pub.sendMessage("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir,
+    send_message("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir,
                                                skipped_sample_ids = [sample.get_id() for sample in skipped_samples],
                                                run_id = run_id)
 
     logging.info("About to start uploading samples.")
     api.send_sequence_files(samples_list = samples_to_upload,
                                  callback = progress_callback, upload_id = run_id)
-    pub.sendMessage("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
+    send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
     api.set_seq_run_complete(run_id)
     _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
 
@@ -104,10 +105,10 @@ def _online_validation(api, sequencing_run):
     start_online_validation -- when running online validation
     online_validation_failure (params: project_id, sample_id) -- when the online validation fails
     """
-    pub.sendMessage("start_online_validation")
+    send_message("start_online_validation")
     for sample in sequencing_run.sample_list:
         if not project_exists(api, sample.get_project_id()):
-            pub.sendMessage("online_validation_failure", project_id=sample.get_project_id(), sample_id=sample.get_id())
+            send_message("online_validation_failure", project_id=sample.get_project_id(), sample_id=sample.get_id())
             raise ProjectError("The Sample_Project: {pid} doesn't exist in IRIDA for Sample_Id: {sid}".format(
                     sid=sample.get_id(),
                     pid=sample.get_project_id()))

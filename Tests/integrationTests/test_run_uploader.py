@@ -2,7 +2,7 @@ import pytest
 import logging
 
 from os import path, remove
-from pubsub import pub
+from wx.lib.pubsub import pub
 from Model.Project import Project
 from API.runuploader import upload_run_to_server
 from API.directoryscanner import find_runs_in_directory

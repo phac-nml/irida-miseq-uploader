@@ -12,7 +12,6 @@ import logging
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
 from requests_toolbelt.multipart import encoder
-from pubsub import pub
 from appdirs import user_config_dir
 
 from Model.Project import Project
@@ -22,7 +21,7 @@ from Exceptions.SampleError import SampleError
 from Exceptions.SequenceFileError import SequenceFileError
 from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
-
+from API.pubsub import send_message
 
 def exception_handler(fn):
     def decorator(*args, **kwargs):
@@ -35,7 +34,7 @@ def exception_handler(fn):
             return fn(*args, **kwargs)
         except Exception, e:
             logging.error("An error occurred while uploading in function {function_name}, publishing message to inform API: [{exception}]".format(function_name=fn.__name__, exception=str(e)))
-            pub.sendMessage(
+            send_message(
                 "handle_api_thread_error",
                 function_name=fn.__name__,
                 exception=e)
@@ -517,10 +516,10 @@ class ApiCalls(object):
             json_res_list.append(json_res)
 
         if callback is not None:
-            pub.sendMessage("seq_files_upload_complete")
+            send_message("seq_files_upload_complete")
             completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
             if len(completion_cmd) > 0:
-                pub.sendMessage("display_completion_cmd_msg",
+                send_message("display_completion_cmd_msg",
                                 completion_cmd=completion_cmd)
                 system(completion_cmd)
 
@@ -634,7 +633,7 @@ class ApiCalls(object):
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
-            pub.sendMessage('completed_uploading_sample', sample = sample)
+            send_message('completed_uploading_sample', sample = sample)
         else:
             err_msg = ("Error {status_code}: {err_msg}\n" +
                        "Upload data: {ud}").format(
