@@ -3,13 +3,14 @@
 import wx
 import logging
 import webbrowser
-from github3 import GitHub
+import ConfigParser
+import argparse
 import wx.lib.delayedresult as dr
 import wx.lib.agw.hyperlink as hl
-from distutils.version import LooseVersion
-import ConfigParser
-from os import path
 
+from os import path
+from distutils.version import LooseVersion
+from github3 import GitHub
 from GUI.MainFrame import MainFrame
 
 path_to_module = path.dirname(__file__)
@@ -101,5 +102,16 @@ def main():
     app = Uploader()
     app.MainLoop()
 
+def run_new_interface():
+    logging.info("Running new interface.")
+    app = wx.App()
+    app.MainLoop()
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run the IRIDA Uploader.")
+    parser.add_argument('--new-interface', help='Use the new IRIDA uploader interface.', action='store_true')
+    args = parser.parse_args()
+    if args.new_interface:
+        run_new_interface()
+    else:
+        main()
