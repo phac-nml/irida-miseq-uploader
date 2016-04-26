@@ -159,10 +159,8 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.validate_URL_form")
-    def test_create_session_invalid_form(self, mock_validate_url_form,
-                                         mock_pub):
+    def test_create_session_invalid_form(self, mock_validate_url_form):
 
         mock_validate_url_form.side_effect = [False]
 
@@ -179,7 +177,6 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("not a valid URL" in str(err.exception))
         mock_validate_url_form.assert_called_with(base_URL)
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -187,8 +184,7 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_invalid_session(self, mock_validate_url_form,
                                             mock_get_oauth_service,
                                             mock_get_access_token,
-                                            mock_validate_url_existence,
-                                            mock_pub):
+                                            mock_validate_url_existence):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -545,9 +541,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(proj_list[1].get_description(),
                          p2_dict["projectDescription"])
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_get_projects_invalid_missing_key(self, mock_cs, mock_pub):
+    def test_get_projects_invalid_missing_key(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -642,9 +637,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(sample_dict.items(),
                          sample_list[0].get_dict().items())
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_get_samples_invalid_proj_id(self, mock_cs, mock_pub):
+    def test_get_samples_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -666,9 +660,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(proj.get_id() + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_get_sequence_files_valid(self, mock_cs, mock_pub):
+    def test_get_sequence_files_valid(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -722,9 +715,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(len(seqRes), 1)
         self.assertEqual(seq_dict.items(), seqRes[0].items())
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_get_sequence_files_invalid_proj(self, mock_cs, mock_pub):
+    def test_get_sequence_files_invalid_proj(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -746,9 +738,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(sample["sampleProject"] + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_get_sequence_files_invalid_sample(self, mock_cs, mock_pub):
+    def test_get_sequence_files_invalid_sample(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -815,9 +806,8 @@ class TestApiCalls(unittest.TestCase):
         json_res = api.send_project(proj)
         self.assertEqual(json_dict, json_res)
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_project_invalid_name(self, mock_cs, mock_pub):
+    def test_send_project_invalid_name(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -839,9 +829,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("A project requires a name that must be" +
                         " 5 or more characters" in str(err.exception))
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_project_invalid_server_res(self, mock_cs, mock_pub):
+    def test_send_project_invalid_server_res(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -922,9 +911,8 @@ class TestApiCalls(unittest.TestCase):
         json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_samples_invalid_proj_id(self, mock_cs, mock_pub):
+    def test_send_samples_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -947,9 +935,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(proj_id + " doesn't exist"
                         in str(err.exception))
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_samples_invalid_server_res(self, mock_cs, mock_pub):
+    def test_send_samples_invalid_server_res(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -1049,10 +1036,8 @@ class TestApiCalls(unittest.TestCase):
         mock_open_.assert_any_call(sample.get_files()[0], "rb")
         mock_open_.assert_any_call(sample.get_files()[1], "rb")
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_sequence_files_invalid_proj_id(self, mock_cs,
-                                                      mock_pub):
+    def test_send_sequence_files_invalid_proj_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
 
@@ -1078,10 +1063,8 @@ class TestApiCalls(unittest.TestCase):
         self.assertIn("project ID: {proj_id} doesn't exist".format(
             proj_id=proj_id), str(err.exception))
 
-    @patch("API.apiCalls.pub")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_sequence_files_invalid_sample_id(self, mock_cs,
-                                                        mock_pub):
+    def test_send_sequence_files_invalid_sample_id(self, mock_cs):
 
         mock_cs.side_effect = [None]
 

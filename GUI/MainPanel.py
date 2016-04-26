@@ -5,11 +5,12 @@ from wx.lib.newevent import NewEvent
 from os import path, makedirs
 from ConfigParser import RawConfigParser
 from appdirs import user_config_dir
-from pubsub import pub
+from wx.lib.pubsub import pub
 from GUI.SettingsFrame import SettingsFrame, ConnectionError
 from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from API.directoryscanner import *
 from API.runuploader import *
+from API.pubsub import send_message
 from threading import Thread
 from time import time
 from math import ceil
@@ -559,8 +560,7 @@ class MainPanel(wx.Panel):
         sequence files is complete
         """
 
-        wx.CallAfter(pub.sendMessage,
-                     "update_progress_bars", progress_data="Upload Complete")
+        send_message("update_progress_bars", progress_data="Upload Complete")
 
     def upload_callback(self, monitor):
 
