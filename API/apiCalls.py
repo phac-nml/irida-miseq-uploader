@@ -609,6 +609,10 @@ class ApiCalls(object):
             })
 
         e = encoder.MultipartEncoder(fields=files)
+        send_message("upload_started_" + sample.get_id())
+
+        if callback is None:
+            callback = lambda monitor: send_message("upload_progress_" + sample.get_id(), progress=monitor.bytes_read)
 
         monitor = encoder.MultipartEncoderMonitor(e, callback)
 
