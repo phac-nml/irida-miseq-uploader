@@ -11,7 +11,7 @@ import wx.lib.agw.hyperlink as hl
 from os import path
 from distutils.version import LooseVersion
 from github3 import GitHub
-from GUI.MainFrame import MainFrame
+from GUI import MainFrame, UploaderAppFrame
 
 path_to_module = path.dirname(__file__)
 app_config = path.join(path_to_module, 'irida-uploader.cfg')
@@ -20,14 +20,18 @@ if not path.isfile(app_config):
 
 class Uploader(wx.App):
 
-    def __init__(self, redirect=False, filename=None):
+    def __init__(self, show_new_ui=False, redirect=False, filename=None):
         wx.App.__init__(self, redirect, filename)
         self.get_app_info()
         self.check_for_update()
 
-        self.frame = MainFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
-        self.frame.Show()
-        self.frame.mp.api = self.frame.settings_frame.attempt_connect_to_api()
+        if not show_new_ui:
+            self.frame = MainFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
+            self.frame.Show()
+            self.frame.mp.api = self.frame.settings_frame.attempt_connect_to_api()
+        else:
+            frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
+            frame.Show()
 
     def get_app_info(self):
         config_parser = ConfigParser.ConfigParser()
@@ -99,12 +103,12 @@ class NewVersionMessageDialog(wx.Dialog):
 
 
 def main():
-    app = Uploader()
+    app = Uploader(show_new_ui=False)
     app.MainLoop()
 
 def run_new_interface():
     logging.info("Running new interface.")
-    app = wx.App()
+    app = Uploader(show_new_ui=True)
     app.MainLoop()
 
 if __name__ == "__main__":
