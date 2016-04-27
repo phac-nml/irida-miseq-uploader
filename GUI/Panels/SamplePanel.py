@@ -1,20 +1,34 @@
 import wx
 import logging
+import threading
+
+from wx.lib.pubsub import pub
+from Validation import project_exists
 
 class SamplePanel(wx.Panel):
 
-    def __init__(self, parent, sample):
+    def __init__(self, parent, sample, api):
         wx.Panel.__init__(self, parent)
         self._sample = sample
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._checkbox = wx.CheckBox(self, label=self._sample.get_id(), style=wx.CHK_3STATE|wx.CHK_ALLOW_3RD_STATE_FOR_USER)
+        self._label = wx.StaticText(self, label=self._sample.get_id())
+        self.sizer.Add(self._label, proportion=2)
+        self._status_label = wx.StaticText(self, label="Validating...")
+        self.sizer.Add(self._status_label)
 
-        self.sizer.Add(self._checkbox, proportion=2)
-
-        self.sizer.Add(wx.StaticText(self, label="298 / 399MB"))
-        self._gauge = wx.Gauge(self, range=100)
-        self._gauge.SetValue(75)
-        self.sizer.Add(self._gauge)
         self.SetSizer(self.sizer)
         self.Layout()
+
+        message_id = "validation_result_" + sample.get_id()
+        pub.subscribe(self._validation_results, message_id)
+        threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": message_id}).start()
+
+    def _validation_results(self, project=None):
+        self.Freeze()
+        if project:
+            self._status_label.SetLabel(project.get_name())
+        else:
+            self._status_label.SetLabel("Project with ID {} does not exist.".format(self._sample.get_project_id()))
+        self.Layout()
+        self.Thaw()

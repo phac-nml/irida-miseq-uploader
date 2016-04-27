@@ -33,7 +33,12 @@ class UploaderAppFrame(wx.Frame):
 
     def _add_run(self, run):
         logging.info("Adding run [{}]".format(run.sample_sheet_dir))
-        run_panel = RunPanel(self._run_panel, run)
+
+        ## THIS IS extraordinarily yucky, but I just want access to the API
+        settings = SettingsFrame(self)
+        api = settings.attempt_connect_to_api()
+
+        run_panel = RunPanel(self._run_panel, run, api)
         self._run_panel.Freeze()
         self._run_sizer.Add(run_panel, flag=wx.EXPAND)
         self._run_panel.Layout()
