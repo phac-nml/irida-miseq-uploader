@@ -1,6 +1,13 @@
 import wx
+import threading
+import logging
+
 from wx.lib.wordwrap import wordwrap
+from wx.lib.pubsub import pub
+
 from GUI import SettingsFrame
+from GUI.Panels import RunPanel
+from API.directoryscanner import find_runs_in_directory
 
 class UploaderAppFrame(wx.Frame):
     def __init__(self, parent=None, app_name=None, app_version=None, app_url=None, *args, **kwargs):
@@ -10,8 +17,27 @@ class UploaderAppFrame(wx.Frame):
         self._app_url = app_url
 
         self._build_menu()
+        self._add_panel()
+
         self.SetTitle(self._app_name)
         self.Show(True)
+
+    def _add_panel(self):
+        self._run_panel = wx.Panel(self, wx.ID_ANY)
+        self._run_sizer = wx.BoxSizer(wx.VERTICAL)
+        self._run_panel.SetSizer(self._run_sizer)
+
+        # start scanning the runs directory immediately
+        pub.subscribe(self._add_run, "run_discovered")
+        threading.Thread(target=find_runs_in_directory, kwargs={"directory":"/home/fbristow/Downloads/irida-sample-data"}).start()
+
+    def _add_run(self, run):
+        logging.info("Adding run [{}]".format(run.sample_sheet_dir))
+        run_panel = RunPanel(self._run_panel, run)
+        self._run_panel.Freeze()
+        self._run_sizer.Add(run_panel, flag=wx.EXPAND)
+        self._run_panel.Layout()
+        self._run_panel.Thaw()
 
     def _build_menu(self):
         menubar = wx.MenuBar()

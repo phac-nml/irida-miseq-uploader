@@ -8,6 +8,7 @@ from Validation.offlineValidation import validate_sample_sheet, validate_sample_
 from Parsers.miseqParser import parse_metadata, complete_parse_samples
 from Model.SequencingRun import SequencingRun
 from API.fileutils import find_file_by_name
+from API.pubsub import send_message
 
 logging.basicConfig(level = logging.INFO)
 
@@ -78,6 +79,8 @@ def process_sample_sheet(sample_sheet):
 
     logging.info("going to validate sequencing run")
     validate_run(sequencing_run)
+
+    send_message("run_discovered", run=sequencing_run)
 
     return sequencing_run
 
