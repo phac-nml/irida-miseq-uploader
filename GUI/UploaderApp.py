@@ -5,12 +5,17 @@ import logging
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub
 
+from ConfigParser import RawConfigParser
+from appdirs import user_config_dir
+
+from os import path
+
 from API.pubsub import send_message
+from API.directoryscanner import find_runs_in_directory
+from API.runuploader import upload_run_to_server
 
 from GUI.SettingsFrame import SettingsFrame
 from GUI.Panels import RunPanel
-from API.directoryscanner import find_runs_in_directory
-from API.runuploader import upload_run_to_server
 
 class UploaderAppPanel(wx.ScrolledWindow):
     def __init__(self, parent):
@@ -18,6 +23,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         self.SetScrollRate(xstep=20, ystep=20)
 
         self._discovered_runs = []
+
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
@@ -30,7 +36,15 @@ class UploaderAppPanel(wx.ScrolledWindow):
         # start scanning the runs directory immediately
         pub.subscribe(self._add_run, "run_discovered")
         pub.subscribe(self._finished_loading, "finished_run_scan")
-        threading.Thread(target=find_runs_in_directory, kwargs={"directory":"/home/fbristow/Downloads/irida-sample-data"}).start()
+        logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
+        threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
+
+    def _get_default_directory(self):
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+        conf_parser = RawConfigParser()
+        conf_parser.read(user_config_file)
+        return conf_parser.get("Settings", "default_dir")
 
     def _finished_loading(self):
         self.Freeze()
