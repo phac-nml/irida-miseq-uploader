@@ -8,4 +8,4 @@ build:
     script: make windows
     artifacts:
         paths:
-            build/nsis/IRIDA_Uploader_*.exe
+            - build/nsis/IRIDA_Uploader_*.exe
