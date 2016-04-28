@@ -7,7 +7,7 @@ from wx.lib.pubsub import pub
 
 from API.pubsub import send_message
 
-from GUI import SettingsFrame
+from GUI.SettingsFrame import SettingsFrame
 from GUI.Panels import RunPanel
 from API.directoryscanner import find_runs_in_directory
 from API.runuploader import upload_run_to_server

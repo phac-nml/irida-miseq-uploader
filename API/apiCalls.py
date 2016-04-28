@@ -617,7 +617,7 @@ class ApiCalls(object):
 
         # instead of passing around a function to call, we're going to let the
         # monitor tell us when it's time to update the progress bar
-        if callback is None:
+        if callback is None and hasattr(sample, 'progress_message_id'):
             def monitor_callback(monitor):
                 send_message(sample.progress_message_id, progress=monitor.bytes_read)
             callback = monitor_callback
