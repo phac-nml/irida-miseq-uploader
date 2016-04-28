@@ -14,11 +14,11 @@ class RunPanel(wx.Panel):
         self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
 
         self._sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        self._progress = wx.Gauge(self, range=self._progress_max)
-        self._sizer.Add(self._progress, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
 
         message_id = run.sample_sheet_name + ".upload_progress"
         logging.info("Subscribing to [{}]".format(message_id))
+
+        pub.subscribe(self._upload_started, run.sample_sheet_name + ".upload_started")
         pub.subscribe(self._handle_progress, message_id)
         pub.subscribe(self._upload_complete, run.sample_sheet_name + ".upload_complete")
 
@@ -27,6 +27,15 @@ class RunPanel(wx.Panel):
 
         self.SetSizer(self._sizer)
         self.Layout()
+
+    def _upload_started(self):
+        self.Freeze()
+        self._progress = wx.Gauge(self, range=self._progress_max)
+        self._sizer.Insert(0, self._progress, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
+        # Update our parent sizer so that samples don't get hidden
+        self.GetParent().Layout()
+        self.Layout()
+        self.Thaw()
 
     def _upload_complete(self):
         self._progress.SetValue(self._progress.GetRange())
@@ -39,10 +48,7 @@ class RunPanel(wx.Panel):
         self._last_progress = progress
         self._progress_value += current_progress
 
-        self.Freeze()
         if self._progress_value < self._progress.GetRange():
             self._progress.SetValue(self._progress_value)
         else:
             self._progress.SetValue(self._progress.GetRange())
-        self.Thaw()
-        #logging.info("Got message for run [{}]".format(progress))

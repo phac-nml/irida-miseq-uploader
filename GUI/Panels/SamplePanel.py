@@ -48,10 +48,7 @@ class SamplePanel(wx.Panel):
         self.Thaw()
 
     def _upload_progress(self, progress):
-        self.Freeze()
         if progress < self._progress.GetRange():
             self._progress.SetValue(progress)
         else:
             self._progress.SetValue(self._progress.GetRange())
-        self.Layout()
-        self.Thaw()
