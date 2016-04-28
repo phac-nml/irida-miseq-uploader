@@ -10,6 +10,7 @@ class SequencingRun:
             raise ValueError("Sample sheet cannot be None!")
         self._sample_sheet = sample_sheet
         self._sample_sheet_dir = os.path.dirname(sample_sheet)
+        self._sample_sheet_name = os.path.basename(self._sample_sheet_dir)
 
     @property
     def metadata(self):
@@ -58,3 +59,7 @@ class SequencingRun:
     @property
     def sample_sheet_dir(self):
         return self._sample_sheet_dir
+
+    @property
+    def sample_sheet_name(self):
+        return self._sample_sheet_name

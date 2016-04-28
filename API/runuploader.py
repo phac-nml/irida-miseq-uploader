@@ -90,6 +90,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     api.send_sequence_files(samples_list = samples_to_upload,
                                  callback = progress_callback, upload_id = run_id)
     send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
+    send_message(sequencing_run.sample_sheet_name + ".upload_complete")
     api.set_seq_run_complete(run_id)
     _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
 

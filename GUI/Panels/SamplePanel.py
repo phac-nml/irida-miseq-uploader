@@ -7,7 +7,7 @@ from Validation import project_exists
 
 class SamplePanel(wx.Panel):
 
-    def __init__(self, parent, sample, api):
+    def __init__(self, parent, sample, run, api):
         wx.Panel.__init__(self, parent)
         self._sample = sample
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -21,9 +21,12 @@ class SamplePanel(wx.Panel):
         self.Layout()
 
         message_id = "validation_result_" + sample.get_id()
+        progress_message_id = run.sample_sheet_name + ".upload_progress." + sample.get_id()
+        sample.progress_message_id = progress_message_id
+        logging.info("Progress for sample subscription [{}]".format(progress_message_id))
         pub.subscribe(self._validation_results, message_id)
         pub.subscribe(self._upload_started, "upload_started_" + sample.get_id())
-        pub.subscribe(self._upload_progress, "upload_progress_" + sample.get_id())
+        pub.subscribe(self._upload_progress, progress_message_id)
         threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": message_id}).start()
 
     def _validation_results(self, project=None):
@@ -45,7 +48,6 @@ class SamplePanel(wx.Panel):
         self.Thaw()
 
     def _upload_progress(self, progress):
-        #logging.info("Current progress is {}".format(progress))
         self.Freeze()
         if progress < self._progress.GetRange():
             self._progress.SetValue(progress)
