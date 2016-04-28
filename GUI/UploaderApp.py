@@ -27,13 +27,18 @@ class UploaderAppPanel(wx.ScrolledWindow):
         self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
         self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
 
+        # start scanning the runs directory immediately
+        pub.subscribe(self._add_run, "run_discovered")
+        pub.subscribe(self._finished_loading, "finished_run_scan")
+        threading.Thread(target=find_runs_in_directory, kwargs={"directory":"/home/fbristow/Downloads/irida-sample-data"}).start()
+
+    def _finished_loading(self):
+        self.Freeze()
         upload_button = wx.Button(self, label="Upload")
         self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
         self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
-
-        # start scanning the runs directory immediately
-        pub.subscribe(self._add_run, "run_discovered")
-        threading.Thread(target=find_runs_in_directory, kwargs={"directory":"/home/fbristow/Downloads/irida-sample-data"}).start()
+        self.Layout()
+        self.Thaw()
 
     def _add_run(self, run):
         logging.info("Adding run [{}]".format(run.sample_sheet_dir))

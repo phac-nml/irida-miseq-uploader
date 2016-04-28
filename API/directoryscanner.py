@@ -36,6 +36,8 @@ def find_runs_in_directory(directory):
     logging.info("filtered sample sheets: {}".format(", ".join(sheets_to_upload)))
     sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
 
+    send_message("finished_run_scan")
+
     return sequencing_runs
 
 def run_is_uploaded(run_directory):
