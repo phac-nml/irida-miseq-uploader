@@ -116,4 +116,7 @@ class UploaderAppFrame(wx.Frame):
 
     def _open_settings(self, event):
         settings = SettingsFrame(self)
+        # attempt to connect to the API *before* showing so that the icons are
+        # all initialized correctly.
+        settings.attempt_connect_to_api()
         settings.Show()
