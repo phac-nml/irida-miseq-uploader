@@ -6,6 +6,13 @@ from API.pubsub import send_message
 from os import path
 import json
 
+class RunUploaderTopics(object):
+    start_online_validation = "start_online_validation"
+    online_validation_failure = "online_validation_failure"
+    start_checking_samples = "start_checking_samples"
+    start_uploading_samples = "start_uploading_samples"
+    finished_uploading_samples = "finished_uploading_samples"
+
 def upload_run_to_server(api, sequencing_run, progress_callback):
     """Upload a single run to the server.
 
@@ -70,7 +77,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
             uploader_info = json.load(reader)
             run_id = uploader_info['Upload ID']
 
-    send_message("start_checking_samples")
+    send_message(RunUploaderTopics.start_checking_samples)
     logging.info("Starting to check samples. [{}]".format(len(sequencing_run.sample_list)))
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)

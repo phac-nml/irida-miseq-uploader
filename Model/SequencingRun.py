@@ -1,4 +1,5 @@
 import os
+import logging
 
 class SequencingRun:
 
@@ -11,6 +12,10 @@ class SequencingRun:
         self._sample_sheet = sample_sheet
         self._sample_sheet_dir = os.path.dirname(sample_sheet)
         self._sample_sheet_name = os.path.basename(self._sample_sheet_dir)
+
+        for sample in self._sample_list:
+            logging.info("Setting run.")
+            sample.run = self
 
     @property
     def metadata(self):
@@ -63,3 +68,19 @@ class SequencingRun:
     @property
     def sample_sheet_name(self):
         return self._sample_sheet_name
+
+    @property
+    def upload_started_topic(self):
+        return self._sample_sheet_name + ".upload_started"
+
+    @property
+    def upload_progress_topic(self):
+        return self._sample_sheet_name + ".upload_progress"
+
+    @property
+    def upload_completed_topic(self):
+        return self._sample_sheet_name + ".upload_completed"
+
+    @property
+    def online_validation_topic(self):
+        return self._sample_sheet_name + ".online_validation"

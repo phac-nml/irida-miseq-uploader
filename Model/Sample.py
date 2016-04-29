@@ -1,4 +1,5 @@
 import json
+import logging
 """
 A Sample will store (key: value) pairs using a dictionary.
 e.g  {"sequencerSampleId": "01-1111"}
@@ -6,11 +7,12 @@ Keys: 'sampleName','description','sequencerSampleId','sampleProject'
 """
 
 
-class Sample:
+class Sample(object):
 
-    def __init__(self, new_samp_dict):
+    def __init__(self, new_samp_dict, run=None):
         self.sample_dict = dict(new_samp_dict)
         self.seq_file = None
+        self._run = run
 
     def get_id(self):
         return self.get("sampleName")
@@ -47,6 +49,27 @@ class Sample:
 
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)
+
+    @property
+    def upload_progress_topic(self):
+        return self._run.upload_progress_topic + "." + self.get_id()
+
+    @property
+    def upload_started_topic(self):
+        return self._run.upload_started_topic + "." + self.get_id()
+
+    @property
+    def online_validation_topic(self):
+        return self._run.online_validation_topic + "." + self.get_id()
+
+    @property
+    def run(self):
+        return self._run
+
+    @run.setter
+    def run(self, run):
+        logging.info("Setting run.")
+        self._run = run
 
     class JsonEncoder(json.JSONEncoder):
 
