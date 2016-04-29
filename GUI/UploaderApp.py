@@ -24,7 +24,6 @@ class UploaderAppPanel(wx.ScrolledWindow):
 
         self._discovered_runs = []
 
-
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -88,6 +87,8 @@ class UploaderAppFrame(wx.Frame):
         UploaderAppPanel(self)
 
         self.SetTitle(self._app_name)
+        self.SetSizeHints(400, 600,  # min window size
+                          800, 1200) # max window size
         self.Show(True)
 
     def _build_menu(self):

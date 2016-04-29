@@ -8,7 +8,7 @@ from SamplePanel import SamplePanel
 class RunPanel(wx.Panel):
     def __init__(self, parent, run, api):
         wx.Panel.__init__(self, parent, style=wx.SUNKEN_BORDER)
-        box = wx.StaticBox(self, label=run.sample_sheet_dir)
+        box = wx.StaticBox(self, label=run.sample_sheet_name)
         self._progress_value = 0
         self._last_progress = 0
         self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
@@ -31,14 +31,24 @@ class RunPanel(wx.Panel):
     def _upload_started(self):
         self.Freeze()
         self._progress = wx.Gauge(self, range=self._progress_max)
-        self._sizer.Insert(0, self._progress, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
+        self._progress_text = wx.StaticText(self, label="  0%")
+        progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        progress_sizer.Add(self._progress, proportion=1)
+        progress_sizer.Add(self._progress_text, proportion=0)
+
+        self._sizer.Insert(0, progress_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
         # Update our parent sizer so that samples don't get hidden
         self.GetParent().Layout()
         self.Layout()
         self.Thaw()
 
     def _upload_complete(self):
+        self.Freeze()
         self._progress.SetValue(self._progress.GetRange())
+        self._progress_text.SetLabel("100%")
+        self.Layout()
+        self.Thaw()
 
     def _handle_progress(self, progress):
         if progress > self._last_progress:
@@ -49,6 +59,9 @@ class RunPanel(wx.Panel):
         self._progress_value += current_progress
 
         if self._progress_value < self._progress.GetRange():
+            self.Freeze()
             self._progress.SetValue(self._progress_value)
-        else:
-            self._progress.SetValue(self._progress.GetRange())
+            progress_percent = (self._progress_value / float(self._progress.GetRange())) * 100
+            self._progress_text.SetLabel("{:3.0f}%".format(progress_percent))
+            self.Layout()
+            self.Thaw()
