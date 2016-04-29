@@ -12,6 +12,12 @@ from API.pubsub import send_message
 
 logging.basicConfig(level = logging.INFO)
 
+class DirectoryScannerTopics(object):
+    """Topics issued by `find_runs_in_directory`"""
+    finished_run_scan = "finished_run_scan"
+    run_discovered = "run_discovered"
+
+
 def find_runs_in_directory(directory):
     """Find and validate all runs the specified directory.
 
@@ -36,7 +42,7 @@ def find_runs_in_directory(directory):
     logging.info("filtered sample sheets: {}".format(", ".join(sheets_to_upload)))
     sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
 
-    send_message("finished_run_scan")
+    send_message(DirectoryScannerTopics.finished_run_scan)
 
     return sequencing_runs
 
@@ -82,7 +88,7 @@ def process_sample_sheet(sample_sheet):
     logging.info("going to validate sequencing run")
     validate_run(sequencing_run)
 
-    send_message("run_discovered", run=sequencing_run)
+    send_message(DirectoryScannerTopics.run_discovered, run=sequencing_run)
 
     return sequencing_run
 

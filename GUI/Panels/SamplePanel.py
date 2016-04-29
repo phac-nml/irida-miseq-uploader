@@ -6,8 +6,30 @@ from wx.lib.pubsub import pub
 from Validation import project_exists
 
 class SamplePanel(wx.Panel):
+    """A wx.Panel to show an individual Sample.
+
+    This panel is used to show sample-related information and to show upload
+    status for an individual sample.
+
+    Subscriptions:
+        sample.online_validation_topic: The sample has been validated. Takes one
+            argument, the project that the sample sheet indicated, or None.
+        sample.upload_started_topic: The upload for this specific sample has
+            initiated. The display is updated to show a progress bar for the sample.
+        sample.upload_progress_topic: Called for progress updates. Takes one
+            argument `progress` with the number of bytes that have been sent to
+            the server.
+    """
 
     def __init__(self, parent, sample, run, api):
+        """Initialize the SamplePanel.
+
+        Args:
+            parent: the parent Window for this panel.
+            sample: the sample that should be displayed.
+            run: the run that this sample belongs to.
+            api: an initialized instance of an API for interacting with IRIDA.
+        """
         wx.Panel.__init__(self, parent)
         self._sample = sample
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -20,16 +42,17 @@ class SamplePanel(wx.Panel):
         self.SetSizer(self._sizer)
         self.Layout()
 
-        message_id = "validation_result_" + sample.get_id()
-        progress_message_id = run.sample_sheet_name + ".upload_progress." + sample.get_id()
-        sample.progress_message_id = progress_message_id
-        logging.info("Progress for sample subscription [{}]".format(progress_message_id))
-        pub.subscribe(self._validation_results, message_id)
-        pub.subscribe(self._upload_started, "upload_started_" + sample.get_id())
-        pub.subscribe(self._upload_progress, progress_message_id)
-        threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": message_id}).start()
+        pub.subscribe(self._validation_results, sample.online_validation_topic)
+        pub.subscribe(self._upload_started, sample.upload_started_topic)
+        pub.subscribe(self._upload_progress, sample.upload_progress_topic)
+        threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
 
     def _validation_results(self, project=None):
+        """Show the results of the online validation (checking if the project exists).
+
+        Args:
+            project: the project (if it exists) or None.
+        """
         self.Freeze()
         if project:
             self._status_label.SetLabel(project.get_name())
@@ -39,6 +62,11 @@ class SamplePanel(wx.Panel):
         self.Thaw()
 
     def _upload_started(self):
+        """Update the display when the upload is started.
+
+        This method will add the progress bar to the display when the upload
+        started topic is recieved.
+        """
         logging.info("Upload started for sample {}".format(self._sample.get_id()))
         self.Freeze()
         self._status_label.Destroy()
@@ -48,6 +76,11 @@ class SamplePanel(wx.Panel):
         self.Thaw()
 
     def _upload_progress(self, progress):
+        """Update the display when progress is provided by the API.
+
+        Args:
+            progress: the total number of bytes sent by the API for this sample.
+        """
         if progress < self._progress.GetRange():
             self._progress.SetValue(progress)
         else:
