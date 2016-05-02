@@ -31,9 +31,13 @@ class RunPanel(wx.Panel):
         """
         wx.Panel.__init__(self, parent, style=wx.SUNKEN_BORDER)
         box = wx.StaticBox(self, label=run.sample_sheet_name)
+        self._timer = wx.Timer(self)
+
+        self._run = run
 
         self._progress_value = 0
         self._last_progress = 0
+        self._last_timer_progress = 0
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
         self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
@@ -48,7 +52,36 @@ class RunPanel(wx.Panel):
             self._sizer.Add(SamplePanel(self, sample, run, api), flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
 
         self.SetSizer(self._sizer)
+        self.Bind(wx.EVT_TIMER, self._update_progress_timer, self._timer)
         self.Layout()
+
+    def _update_progress_timer(self, event):
+        """Update the display when the timer is fired.
+
+        This method is actually responsible for updating the progress bar for the
+        run, and maintains the current upload speed for the run.
+
+        Arguments:
+            event: the event that called this method.
+        """
+        bytes_sent = self._progress_value - self._last_timer_progress
+
+        logging.info("bytes sent in last second: [{}]".format(bytes_sent))
+        speed = ""
+        if bytes_sent > 1000:
+            speed = "{} KB/s".format(bytes_sent/1000)
+        elif bytes_sent > 1000000:
+            speed = "{} MB/s".format(bytes_sent/1000000)
+
+        if self._progress_value < self._progress.GetRange():
+            self.Freeze()
+            self._progress.SetValue(self._progress_value)
+            progress_percent = (self._progress_value / float(self._progress.GetRange())) * 100
+            self._progress_text.SetLabel("{:3.0f}% {}".format(progress_percent, speed))
+            self.Layout()
+            self.Thaw()
+
+        self._last_timer_progress = self._progress_value
 
     def _upload_started(self):
         """Update the display when the upload is started.
@@ -70,6 +103,7 @@ class RunPanel(wx.Panel):
         # Update our parent sizer so that samples don't get hidden
         self.GetParent().Layout()
         self.Thaw()
+        self._timer.Start(1000)
 
     def _upload_complete(self):
         """Update the display when the upload has been completed.
@@ -84,10 +118,10 @@ class RunPanel(wx.Panel):
         self.Thaw()
 
     def _handle_progress(self, progress):
-        """Update the display when progress is provided by the API.
+        """Update the number of bytes sent provided by the API.
 
-        This method will update the progress bar and text to the current progress
-        for uploading the run when the run.upload_progress_topic is received.
+        This method will update the number of bytes sent for the current progress
+        of uploading the run when the run.upload_progress_topic is received.
 
         Note that the sender **does not** need to send the overall progress for
         the run. It *can*, but it does not need to. Instead, it may send the
@@ -107,11 +141,3 @@ class RunPanel(wx.Panel):
             current_progress = 0
         self._last_progress = progress
         self._progress_value += current_progress
-
-        if self._progress_value < self._progress.GetRange():
-            self.Freeze()
-            self._progress.SetValue(self._progress_value)
-            progress_percent = (self._progress_value / float(self._progress.GetRange())) * 100
-            self._progress_text.SetLabel("{:3.0f}%".format(progress_percent))
-            self.Layout()
-            self.Thaw()
