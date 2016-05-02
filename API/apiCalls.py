@@ -609,13 +609,13 @@ class ApiCalls(object):
             })
 
         e = encoder.MultipartEncoder(fields=files)
-        send_message("upload_started_" + sample.get_id())
+        send_message(sample.upload_started_topic)
 
         # instead of passing around a function to call, we're going to let the
         # monitor tell us when it's time to update the progress bar
-        if callback is None and hasattr(sample, 'progress_message_id'):
+        if callback is None:
             def monitor_callback(monitor):
-                send_message(sample.progress_message_id, progress=monitor.bytes_read)
+                send_message(sample.upload_progress_topic, progress=monitor.bytes_read)
             callback = monitor_callback
 
         monitor = encoder.MultipartEncoderMonitor(e, callback)

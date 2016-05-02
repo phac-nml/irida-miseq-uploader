@@ -56,6 +56,7 @@ class RunPanel(wx.Panel):
         This method will add the progress bar and progress text to the display
         when the run.upload_started_topic is received.
         """
+        pub.unsubscribe(self._upload_started, self._run.upload_started_topic)
         self.Freeze()
         self._progress = wx.Gauge(self, range=self._progress_max)
         self._progress_text = wx.StaticText(self, label="  0%")
