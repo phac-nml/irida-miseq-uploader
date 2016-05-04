@@ -6,6 +6,7 @@ from urllib2 import URLError
 from mock import patch, MagicMock
 from requests.exceptions import HTTPError as request_HTTPError
 from Model.SequenceFile import SequenceFile
+from Model.SequencingRun import SequencingRun
 
 import API
 
@@ -1022,6 +1023,8 @@ class TestApiCalls(unittest.TestCase):
                       "03-3333_S1_L001_R2_001.fastq.gz"]
         seq_file = SequenceFile({}, files)
         sample.set_seq_file(seq_file)
+	sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+	sample.run._sample_sheet_name = "sheet"
 
         kwargs = {
             "samples_list": [sample]

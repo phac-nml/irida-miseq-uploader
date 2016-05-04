@@ -1,7 +1,7 @@
 import os
 import logging
 
-class SequencingRun:
+class SequencingRun(object):
 
     def __init__(self, metadata = None, sample_list = None, sample_sheet = None):
         self._sample_list = sample_list
