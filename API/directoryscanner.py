@@ -8,10 +8,17 @@ from Validation.offlineValidation import validate_sample_sheet, validate_sample_
 from Parsers.miseqParser import parse_metadata, complete_parse_samples
 from Model.SequencingRun import SequencingRun
 from API.fileutils import find_file_by_name
+from API.pubsub import send_message
 
 logging.basicConfig(level = logging.INFO)
 
-def find_runs_in_directory(directory):
+class DirectoryScannerTopics(object):
+    """Topics issued by `find_runs_in_directory`"""
+    finished_run_scan = "finished_run_scan"
+    run_discovered = "run_discovered"
+
+
+def find_runs_in_directory(directory, ignore_uploaded=True):
     """Find and validate all runs the specified directory.
 
     Filters out any runs in the directory that have already
@@ -31,9 +38,14 @@ def find_runs_in_directory(directory):
     logging.info("found sample sheets: {}".format(", ".join(sample_sheets)))
 
     # filter directories that have been completely uploaded
-    sheets_to_upload = filter(lambda dir: not run_is_uploaded(path.dirname(dir)), sample_sheets)
+    if ignore_uploaded:
+        sheets_to_upload = filter(lambda dir: not run_is_uploaded(path.dirname(dir)), sample_sheets)
+    else:
+        sheets_to_upload = sample_sheets
     logging.info("filtered sample sheets: {}".format(", ".join(sheets_to_upload)))
     sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
+
+    send_message(DirectoryScannerTopics.finished_run_scan)
 
     return sequencing_runs
 
@@ -78,6 +90,8 @@ def process_sample_sheet(sample_sheet):
 
     logging.info("going to validate sequencing run")
     validate_run(sequencing_run)
+
+    send_message(DirectoryScannerTopics.run_discovered, run=sequencing_run)
 
     return sequencing_run
 
