@@ -114,6 +114,7 @@ class RunPanel(wx.Panel):
         self.Freeze()
         self._progress.SetValue(self._progress.GetRange())
         self._progress_text.SetLabel("100%")
+        self._timer.Stop()
         self.Layout()
         self.Thaw()
 

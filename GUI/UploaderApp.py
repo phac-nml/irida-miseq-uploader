@@ -1,18 +1,22 @@
 import wx
 import threading
 import logging
+import os
+
+import wx.lib.agw.hyperlink as hl
 
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub
 
 from ConfigParser import RawConfigParser
 from appdirs import user_config_dir
-
+from requests.exceptions import ConnectionError
 from os import path
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
 from API.runuploader import upload_run_to_server, RunUploaderTopics
+from API.apiCalls import ApiCalls
 
 from GUI.SettingsFrame import SettingsFrame
 from GUI.Panels import RunPanel
@@ -39,22 +43,21 @@ class UploaderAppPanel(wx.ScrolledWindow):
         """
         wx.ScrolledWindow.__init__(self, parent, style=wx.VSCROLL)
         self.SetScrollRate(xstep=20, ystep=20)
-
+        self._parent = parent
         self._discovered_runs = []
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
-        self._run_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
-        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
-
-        # start scanning the runs directory immediately
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
-        logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
-        threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
+        pub.subscribe(self._settings_changed, "set_updated_api")
+
+        self._settings_changed()
+
+    def _settings_changed(self, api=None):
+        self._sizer.Clear(True)
+        threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
         """Read the default directory from the configuration file.
@@ -67,6 +70,67 @@ class UploaderAppPanel(wx.ScrolledWindow):
         conf_parser = RawConfigParser()
         conf_parser.read(user_config_file)
         return conf_parser.get("Settings", "default_dir")
+
+    def _scan_directories(self):
+        logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
+        self._run_sizer = wx.BoxSizer(wx.VERTICAL)
+        self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
+        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
+        threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
+
+    def _connect_to_irida(self):
+        """Connect to IRIDA for online validation.
+
+        Returns:
+            A configured instance of API.apiCalls.
+        """
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+        conf_parser = RawConfigParser()
+        conf_parser.read(user_config_file)
+
+        client_id = conf_parser.get("Settings", "client_id")
+        client_secret = conf_parser.get("Settings", "client_secret")
+        baseURL = conf_parser.get("Settings", "baseURL")
+        username = conf_parser.get("Settings", "username")
+        password = conf_parser.get("Settings", "password")
+
+        try:
+            api = ApiCalls(client_id, client_secret, baseURL, username, password)
+            self._api = api
+
+            # only bother scanning once we've connected to IRIDA
+            wx.CallAfter(self._scan_directories)
+        except ConnectionError, e:
+            logging.info("Got a connection error when trying to connect to IRIDA.", exc_info=True)
+            wx.CallAfter(self._handle_connection_error, error_message="We couldn't connect to IRIDA at {}. The server might be down. Make sure that the connection address is correct (you can change the address by clicking on the 'Open Settings' button below) and try again, try again later, or contact an administrator.".format(baseURL))
+        except SyntaxError, e:
+            logging.info("Connected, but the response was garbled.", exc_info=True)
+            wx.CallAfter(self._handle_connection_error, error_message="We couldn't connect to IRIDA at {}. The server is up, but I didn't understand the response. Make sure that the connection address is correct (you can change the address by clicking on the 'Open Settings' button below) and try again, try again later, or contact an administrator.".format(baseURL))
+
+    def _handle_connection_error(self, error_message=None):
+        logging.error("Handling connection error.")
+
+        self.Freeze()
+
+        warning_image = os.path.join(os.path.dirname(__file__), "images", "Warning.png")
+        connection_error_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        image_controller = wx.StaticBitmap(self, wx.ID_ANY, wx.BitmapFromImage(wx.Image(warning_image, wx.BITMAP_TYPE_ANY)))
+        connection_error_sizer.Add(image_controller)
+        connection_error_sizer.Add(wx.StaticText(self, label="Failed to connect to IRIDA."), flag=wx.LEFT | wx.RIGHT, border=5)
+
+        self._sizer.Add(connection_error_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+        if error_message:
+            self._sizer.Add(wx.StaticText(self, label=wordwrap(error_message, 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+        open_settings_button = wx.Button(self, label="Open Settings")
+        self.Bind(wx.EVT_BUTTON, self._parent._open_settings, id=open_settings_button.GetId())
+        self._sizer.Add(open_settings_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+        self.Layout()
+        self.Thaw()
 
     def _finished_loading(self):
         """Update the display when the run scan is finished.
@@ -93,11 +157,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         logging.info("Adding run [{}]".format(run.sample_sheet_dir))
         self._discovered_runs.append(run)
 
-        ## this is **extraordinarily** yucky, but I just want access to the API
-        settings = SettingsFrame(self)
-        api = settings.attempt_connect_to_api()
-
-        run_panel = RunPanel(self, run, api)
+        run_panel = RunPanel(self, run, self._api)
         self.Freeze()
         self._run_sizer.Add(run_panel, flag=wx.EXPAND)
         self.Layout()
@@ -113,11 +173,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         """
         for run in self._discovered_runs:
             logging.info("Starting upload for {}".format(run.sample_sheet_dir))
-            ## this is **extraordinarily** yucky, but I just want access to the API
-            settings = SettingsFrame(self)
-            api = settings.attempt_connect_to_api()
-
-            threading.Thread(target=upload_run_to_server, kwargs={"api": api, "sequencing_run": run, "progress_callback": None}).start()
+            threading.Thread(target=upload_run_to_server, kwargs={"api": self._api, "sequencing_run": run, "progress_callback": None}).start()
 
 class UploaderAppFrame(wx.Frame):
     """The UploaderAppFrame is the super-container the Application.

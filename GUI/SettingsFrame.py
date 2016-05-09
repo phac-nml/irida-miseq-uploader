@@ -11,7 +11,7 @@ from wx.lib.pubsub import pub
 from appdirs import user_config_dir, user_log_dir
 
 from API.apiCalls import ApiCalls
-
+from API.pubsub import send_message
 
 DEFAULT_BASE_URL = "http://localhost:8080/api/"
 DEFAULT_USERNAME = "admin"
@@ -1049,7 +1049,7 @@ class SettingsPanel(wx.Panel):
 
         else:
             api = self.attempt_connect_to_api()
-            wx.CallAfter(pub.sendMessage, "set_updated_api", api=api)
+            send_message("set_updated_api", api=api)
 
             self.parent.Hide()  # running attached to iridaUploaderMain
 
