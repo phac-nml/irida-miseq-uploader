@@ -56,17 +56,17 @@ class UploaderAppPanel(wx.ScrolledWindow):
         self._settings_changed()
 
     def _settings_changed(self, api=None):
-	"""Reset the main display and attempt to connect to the server
-	   whenever the connection settings may have changed.
+    	"""Reset the main display and attempt to connect to the server
+    	   whenever the connection settings may have changed.
 
- 	Args:
-	    api: A placeholder for a complete api that's passed when the event is fired.
-	"""
+     	Args:
+    	    api: A placeholder for a complete api that's passed when the event is fired.
+    	"""
 
         # before doing anything, clear all of the children from the sizer and
         # also delete any windows attached (Buttons and stuff extend from Window!)
         self._sizer.Clear(deleteWindows=True)
-	# run connecting in a different thread so we don't freeze up the GUI
+	       # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
@@ -82,7 +82,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         return conf_parser.get("Settings", "default_dir")
 
     def _scan_directories(self):
-	"""Begin scanning directories for the default directory."""
+        """Begin scanning directories for the default directory."""
 
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -117,17 +117,46 @@ class UploaderAppPanel(wx.ScrolledWindow):
             wx.CallAfter(self._scan_directories)
         except ConnectionError, e:
             logging.info("Got a connection error when trying to connect to IRIDA.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message="We couldn't connect to IRIDA at {}. The server might be down. Make sure that the connection address is correct (you can change the address by clicking on the 'Open Settings' button below) and try again, try again later, or contact an administrator.".format(baseURL))
+            wx.CallAfter(self._handle_connection_error, error_message=(
+                "We couldn't connect to IRIDA at {}. The server might be down. Make "
+                "sure that the connection address is correct (you can change the "
+                "address by clicking on the 'Open Settings' button below) and try"
+                " again, try again later, or contact an administrator."
+                ).format(baseURL))
         except SyntaxError, e:
             logging.info("Connected, but the response was garbled.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message="We couldn't connect to IRIDA at {}. The server is up, but I didn't understand the response. Make sure that the connection address is correct (you can change the address by clicking on the 'Open Settings' button below) and try again, try again later, or contact an administrator.".format(baseURL))
+            wx.CallAfter(self._handle_connection_error, error_message=(
+                "We couldn't connect to IRIDA at {}. The server is up, but I "
+                "didn't understand the response. Make sure that the connection "
+                "address is correct (you can change the address by clicking on "
+                "the 'Open Settings' button below) and try again, try again"
+                " later, or contact an administrator."
+                ).format(baseURL))
+        except KeyError, e:
+            logging.info("Connected, but the OAuth credentials are wrong.", exc_info=True)
+            wx.CallAfter(self._handle_connection_error, error_message=(
+                "We couldn't connect to IRIDA at {}. The server is up, but it's "
+                "reporting that your credentials are wrong. Click on the 'Open Settings'"
+                " button below and check your credentials, then try again. If the "
+                "connection still doesn't work, contact an administrator."
+                ).format(baseURL))
+    	except:
+    	    logging.info("Some other kind of error happened.", exc_info=True)
+            wx.CallAfter(self._handle_connection_error, error_message=(
+                "We couldn't connect to IRIDA at {} for an unknown reason. Click "
+                "on the 'Open Settings' button below to check the URL and your "
+                "credentials, then try again. If the connection still doesn't "
+                "work, contact an administrator."
+            ))
+
+	# still need to handle invalid credentials.
 
     def _handle_connection_error(self, error_message=None):
-	"""Handle connection errors that might be thrown when initially connecting to IRIDA.
+    	"""Handle connection errors that might be thrown when initially connecting to IRIDA.
 
-	Args:
-	    error_message: A more detailed error message than "Can't connect"
-	"""
+    	Args:
+    	    error_message: A more detailed error message than "Can't connect"
+    	"""
 
         logging.error("Handling connection error.")
 
