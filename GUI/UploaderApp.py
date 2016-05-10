@@ -12,6 +12,7 @@ from ConfigParser import RawConfigParser
 from appdirs import user_config_dir
 from requests.exceptions import ConnectionError
 from os import path
+from urllib2 import URLError
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
@@ -51,7 +52,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
 
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
-        pub.subscribe(self._settings_changed, "set_updated_api")
+        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
 
         self._settings_changed()
 
@@ -140,6 +141,13 @@ class UploaderAppPanel(wx.ScrolledWindow):
                 " button below and check your credentials, then try again. If the "
                 "connection still doesn't work, contact an administrator."
                 ).format(baseURL))
+        except URLError, e:
+            logging.info("Couldn't connect to IRIDA because the URL is invalid.", exc_info=True)
+            wx.CallAfter(self._handle_connection_error, error_message=(
+                "We couldn't connect to IRIDA at {} because it isn't a valid URL. "
+                "Click on the 'Open Settings' button below to enter a new URL and "
+                "try again."
+            ).format(baseURL))
     	except:
     	    logging.info("Some other kind of error happened.", exc_info=True)
             wx.CallAfter(self._handle_connection_error, error_message=(
@@ -147,7 +155,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
                 "on the 'Open Settings' button below to check the URL and your "
                 "credentials, then try again. If the connection still doesn't "
                 "work, contact an administrator."
-            ))
+                ).format(baseURL))
 
     def _handle_connection_error(self, error_message=None):
     	"""Handle connection errors that might be thrown when initially connecting to IRIDA.

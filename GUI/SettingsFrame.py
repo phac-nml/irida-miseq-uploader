@@ -1049,7 +1049,7 @@ class SettingsPanel(wx.Panel):
 
         else:
             api = self.attempt_connect_to_api()
-            send_message("set_updated_api", api=api)
+            send_message(SettingsFrame.connection_details_changed_topic, api=api)
 
             self.parent.Hide()  # running attached to iridaUploaderMain
 
@@ -1149,7 +1149,7 @@ class SettingsPanel(wx.Panel):
 
 
 class SettingsFrame(wx.Frame):
-
+    connection_details_changed_topic = "connection_details_changed"
     def __init__(self, parent=None):
 
         self.WINDOW_SIZE = (700, 430)
