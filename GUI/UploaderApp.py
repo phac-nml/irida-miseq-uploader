@@ -20,9 +20,9 @@ from API.runuploader import upload_run_to_server, RunUploaderTopics
 from API.apiCalls import ApiCalls
 
 from GUI.SettingsFrame import SettingsFrame
-from GUI.Panels import RunPanel
+from GUI.Panels import RunPanel, InvalidSampleSheetsPanel
 
-class UploaderAppPanel(wx.ScrolledWindow):
+class UploaderAppPanel(wx.Panel):
     """The UploaderAppPanel is the super-container the discovered SequencingRuns.
 
     This panel is used to display the runs that are discovered. It's a scrolling
@@ -42,8 +42,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         Args:
             parent: the parent Window for this panel.
         """
-        wx.ScrolledWindow.__init__(self, parent, style=wx.VSCROLL)
-        self.SetScrollRate(xstep=20, ystep=20)
+        wx.Panel.__init__(self, parent)
         self._parent = parent
         self._discovered_runs = []
 
@@ -53,8 +52,12 @@ class UploaderAppPanel(wx.ScrolledWindow):
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
         pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
+        pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
 
         self._settings_changed()
+
+    def _sample_sheet_error(self, sample_sheet=None, error=None):
+        pass
 
     def _settings_changed(self, api=None):
     	"""Reset the main display and attempt to connect to the server
@@ -86,11 +89,15 @@ class UploaderAppPanel(wx.ScrolledWindow):
         """Begin scanning directories for the default directory."""
 
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
+        self.Freeze()
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        self._sizer.Add(InvalidSampleSheetsPanel(self), proportion=0, flag=wx.EXPAND)
         self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
         self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
+        self.Layout()
+        self.Thaw()
         threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
 
     def _connect_to_irida(self):
@@ -191,12 +198,13 @@ class UploaderAppPanel(wx.ScrolledWindow):
         When the `DirectoryScannerTopics.finished_run_scan` topic is received, add
         the upload button to the page so that the user can start the upload.
         """
-        self.Freeze()
-        upload_button = wx.Button(self, label="Upload")
-        self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
-        self.Layout()
-        self.Thaw()
+        if self._discovered_runs:
+            self.Freeze()
+            upload_button = wx.Button(self, label="Upload")
+            self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+            self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
+            self.Layout()
+            self.Thaw()
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.

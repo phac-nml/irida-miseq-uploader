@@ -82,5 +82,9 @@ class SequencingRun(object):
         return self._sample_sheet_name + ".upload_completed"
 
     @property
+    def offline_validation_topic(self):
+        return self._sample_sheet_name + ".offline_validation"
+
+    @property
     def online_validation_topic(self):
         return self._sample_sheet_name + ".online_validation"
