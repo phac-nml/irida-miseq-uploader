@@ -67,7 +67,7 @@ class RunPanel(wx.Panel):
         bytes_sent = self._progress_value - self._last_timer_progress
 
         logging.info("bytes sent in last second: [{}]".format(bytes_sent))
-        speed = ""
+        speed = "0 KB/s"
         if bytes_sent > 1000:
             speed = "{} KB/s".format(bytes_sent/1000)
         elif bytes_sent > 1000000:

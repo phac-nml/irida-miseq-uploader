@@ -11,7 +11,7 @@ from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from API.fileutils import find_file_by_name
-
+from API.pubsub import send_message
 
 def parse_metadata(sample_sheet_file):
 
@@ -82,7 +82,7 @@ def parse_metadata(sample_sheet_file):
         metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
     else:
         # this is an exceptional case, you can't have no read lengths!
-        raise SampleSheetError("Sample sheet must have read lenghts!")
+        raise SampleSheetError("Sample sheet must have read lengths!")
 
     return metadata_dict
 
