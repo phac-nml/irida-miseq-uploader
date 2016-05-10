@@ -146,7 +146,7 @@ class MainPanel(wx.Panel):
         # update self.api when Settings is closed
         # if it's not None (i.e can connect to API) enable the submit button
         pub.subscribe(self.set_updated_api,
-                      "set_updated_api")
+                      SettingsFrame.connection_details_changed_topic)
 
         # Updates upload speed and estimated remaining time labels
         pub.subscribe(self.update_remaining_time, "update_remaining_time")
@@ -858,7 +858,7 @@ class MainPanel(wx.Panel):
     def set_updated_api(self, api):
 
         """
-        Subscribed to message "set_updated_api".
+        Subscribed to message `SettingsFrame.connection_details_changed_topic`.
         This message is sent by SettingsPanel.close_handler().
         When SettingsPanel is closed update self.api to equal the newly created
         ApiCalls object from SettingsPanel
