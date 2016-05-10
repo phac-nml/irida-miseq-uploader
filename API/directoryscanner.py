@@ -18,7 +18,7 @@ class DirectoryScannerTopics(object):
     run_discovered = "run_discovered"
 
 
-def find_runs_in_directory(directory, ignore_uploaded=True):
+def find_runs_in_directory(directory):
     """Find and validate all runs the specified directory.
 
     Filters out any runs in the directory that have already
@@ -38,10 +38,7 @@ def find_runs_in_directory(directory, ignore_uploaded=True):
     logging.info("found sample sheets: {}".format(", ".join(sample_sheets)))
 
     # filter directories that have been completely uploaded
-    if ignore_uploaded:
-        sheets_to_upload = filter(lambda dir: not run_is_uploaded(path.dirname(dir)), sample_sheets)
-    else:
-        sheets_to_upload = sample_sheets
+    sheets_to_upload = filter(lambda dir: not run_is_uploaded(path.dirname(dir)), sample_sheets)
     logging.info("filtered sample sheets: {}".format(", ".join(sheets_to_upload)))
     sequencing_runs = [process_sample_sheet(sheet) for sheet in sheets_to_upload]
 
