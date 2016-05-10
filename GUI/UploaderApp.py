@@ -149,8 +149,6 @@ class UploaderAppPanel(wx.ScrolledWindow):
                 "work, contact an administrator."
             ))
 
-	# still need to handle invalid credentials.
-
     def _handle_connection_error(self, error_message=None):
     	"""Handle connection errors that might be thrown when initially connecting to IRIDA.
 
