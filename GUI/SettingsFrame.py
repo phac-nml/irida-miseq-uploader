@@ -249,15 +249,16 @@ class SettingsPanel(wx.Panel):
             self.Refresh()
 
         except ConnectionError, e:
+            logging.exception("Got a ConnectionError when connecting to IRIDA.")
             self.handle_URL_error(e)
-
         except KeyError, e:
+            logging.exception("Got a KeyError when connecting to IRIDA.")
             self.handle_key_error(e)
-
         except ValueError, e:
+            logging.exception("Got a ValueError when connecting to IRIDA.")
             self.handle_val_error(e)
-
         except:
+            logging.exception("Got an unexpected error when connecting to IRIDA.")
             self.handle_unexpected_error()
 
         return api
@@ -372,11 +373,14 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        err_description = ("Cannot connect to url: {url}\n".format(
+        err_description = ("Cannot connect to URL: {url}\n".format(
                            url=self.base_url_box.GetValue()))
 
-        err_log_msgs = [err_description,
-                        "Value error message: " + str(e.message)]
+        err_log_msgs = [err_description, ("Could not connect to IRIDA. This "
+            "either means that you've entered an invalid Server URL, or the "
+            "server is sending back nonsense. Check that you've entered the "
+            "correct URL and try again, try again later, or conract an "
+            "administrator")]
 
         err_labels = [self.url_err_label]
         err_boxes = [self.base_url_box]
