@@ -224,13 +224,24 @@ class UploaderAppPanel(wx.Panel):
         When the `DirectoryScannerTopics.finished_run_scan` topic is received, add
         the upload button to the page so that the user can start the upload.
         """
+        self.Freeze()
         if self._discovered_runs:
-            self.Freeze()
             upload_button = wx.Button(self, label="Upload")
             self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
             self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
-            self.Layout()
-            self.Thaw()
+        else:
+            all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            all_uploaded_header = wx.StaticText(self, label="✓ All sample sheets uploaded.")
+            all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+            all_uploaded_header.SetForegroundColour(wx.Colour(0, 255, 0))
+            all_uploaded_header.Wrap(350)
+            all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
+
+            self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+            self._sizer.Add(wx.StaticText(self, label=wordwrap("I scanned {}, but I didn't find any sample sheets that weren't already uploaded.".format(self._get_default_directory()), 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+        self.Layout()
+        self.Thaw()
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.
