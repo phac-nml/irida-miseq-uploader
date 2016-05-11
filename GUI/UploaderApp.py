@@ -124,7 +124,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
                 "address by clicking on the 'Open Settings' button below) and try"
                 " again, try again later, or contact an administrator."
                 ).format(baseURL))
-        except SyntaxError, e:
+        except (SyntaxError, ValueError) as e:
             logging.info("Connected, but the response was garbled.", exc_info=True)
             wx.CallAfter(self._handle_connection_error, error_message=(
                 "We couldn't connect to IRIDA at {}. The server is up, but I "
