@@ -82,7 +82,7 @@ def parse_metadata(sample_sheet_file):
         metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
     else:
         # this is an exceptional case, you can't have no read lengths!
-        raise SampleSheetError("Sample sheet must have read lengths!")
+        raise SampleSheetError("Sample sheet must have read lengths!", ["The sample sheet is missing important sections: no [Reads] section found."])
 
     return metadata_dict
 
