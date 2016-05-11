@@ -1,3 +1,4 @@
+# coding: utf8
 import wx
 import threading
 import logging
@@ -35,6 +36,12 @@ class UploaderAppPanel(wx.Panel):
             This will initiate adding the run to the panel.
         DirectoryScannerTopics.finished_run_scan: Run scanning has completed, so
             (if everything is in a valid state) add the upload button to the panel.
+        SettingsFrame.connection_details_changed_topic: The connection details
+            have changed (typically when there's invalid URL settings) so the
+            connection attempt should be retried.
+        DirectoryScannerTopics.garbled_sample_sheet: The sample sheet could not
+            be processed by the sample sheet processor, so errors should be displayed
+            to the client.
     """
     def __init__(self, parent):
         """Initialize the UploaderAppPanel.
@@ -57,7 +64,19 @@ class UploaderAppPanel(wx.Panel):
         self._settings_changed()
 
     def _sample_sheet_error(self, sample_sheet=None, error=None):
-        pass
+        """Show the invalid sample sheets panel whenever a sample sheet error
+        is raised.
+
+        Args:
+            sample_sheet: the sample sheet that's got the error
+            error: the validation error
+        """
+
+        self.Freeze()
+        self._sizer.Insert(0, self._invalid_sheets_panel)
+        self._invalid_sheets_panel.Show()
+        self.Layout()
+        self.Thaw()
 
     def _settings_changed(self, api=None):
     	"""Reset the main display and attempt to connect to the server
@@ -70,7 +89,14 @@ class UploaderAppPanel(wx.Panel):
         # before doing anything, clear all of the children from the sizer and
         # also delete any windows attached (Buttons and stuff extend from Window!)
         self._sizer.Clear(deleteWindows=True)
-	       # run connecting in a different thread so we don't freeze up the GUI
+        # and clear out the list of discovered runs that we might be uploading to the server.
+        self._discovered_runs = []
+        # initialize the invalid sheets panel so that it can listen for events
+        # before directory scanning starts, but hide it until we actually get
+        # an error raised by the validation part.
+        self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
+        self._invalid_sheets_panel.Hide()
+       # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
@@ -93,7 +119,6 @@ class UploaderAppPanel(wx.Panel):
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._sizer.Add(InvalidSampleSheetsPanel(self), proportion=0, flag=wx.EXPAND)
         self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
         self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
         self.Layout()
@@ -175,11 +200,12 @@ class UploaderAppPanel(wx.Panel):
 
         self.Freeze()
 
-        warning_image = os.path.join(os.path.dirname(__file__), "images", "Warning.png")
         connection_error_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        image_controller = wx.StaticBitmap(self, wx.ID_ANY, wx.BitmapFromImage(wx.Image(warning_image, wx.BITMAP_TYPE_ANY)))
-        connection_error_sizer.Add(image_controller)
-        connection_error_sizer.Add(wx.StaticText(self, label="Failed to connect to IRIDA."), flag=wx.LEFT | wx.RIGHT, border=5)
+        connection_error_header = wx.StaticText(self, label="✘ Uh-oh. I couldn't to connect to IRIDA.")
+        connection_error_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        connection_error_header.SetForegroundColour(wx.Colour(255, 0, 0))
+        connection_error_header.Wrap(350)
+        connection_error_sizer.Add(connection_error_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
         self._sizer.Add(connection_error_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
         if error_message:
