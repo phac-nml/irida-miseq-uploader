@@ -1,14 +1,15 @@
 from API.pubsub import send_message
 
 def project_exists(api, project_id, message_id=None):
-
-    proj_list = api.get_projects()
-
     try:
+        proj_list = api.get_projects()
         project = next(proj for proj in proj_list if proj.get_id() == project_id)
         if message_id:
             send_message(message_id, project=project)
         return True
+    except ConnectionError:
+        if message_id:
+            send_message(message_id, project=None)
     except StopIteration:
         if message_id:
             send_message(message_id, project=None)

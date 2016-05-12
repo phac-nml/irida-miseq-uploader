@@ -245,7 +245,7 @@ class TestSettingsFrame(unittest.TestCase):
         mock_apicalls.side_effect = [ValueError()]
         self.frame.sp.attempt_connect_to_api()
 
-        self.assertIn("Cannot connect to url",
+        self.assertIn("Cannot connect to URL",
                       self.frame.sp.log_panel.GetValue())
         self.assertNotIn("Message from server",
                          self.frame.sp.log_panel.GetValue())
