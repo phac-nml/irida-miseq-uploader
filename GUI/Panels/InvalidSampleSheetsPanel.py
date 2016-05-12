@@ -1,4 +1,4 @@
-# coding: utf8
+# coding: utf-8
 import wx
 import logging
 
@@ -19,6 +19,8 @@ class InvalidSampleSheetsPanel(wx.Panel):
         DirectoryScannerTopics.garbled_sample_sheet: The sample sheet could not
             be processed by the sample sheet processor, so errors should be displayed
             to the client.
+        DirectoryScannerTopics.missing_files: The sample sheet refers to files
+            that could not be found.
     """
     def __init__(self, parent, sheets_directory):
         """Initalize InvalidSampleSheetsPanel.
@@ -47,13 +49,14 @@ class InvalidSampleSheetsPanel(wx.Panel):
                 "their contents. Check these sample sheets in an editor outside "
                 "of the uploader, then click the 'Scan Again' button below.").format(sheets_directory),
             350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self._sizer.Add(self._errors_sizer)
+        self._sizer.Add(self._errors_sizer, flag=wx.EXPAND)
 
         scan_again_button = wx.Button(self, label="Scan Again")
         self.Bind(wx.EVT_BUTTON, lambda evt: send_message(SettingsFrame.connection_details_changed_topic), id=scan_again_button.GetId())
         self._sizer.Add(scan_again_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
 
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
+        pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
 
     def _sample_sheet_error(self, sample_sheet=None, error=None):
         """Show a list of errors raised during validation of a sample sheet.
@@ -71,6 +74,6 @@ class InvalidSampleSheetsPanel(wx.Panel):
         errors_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         for err in error.errors:
             errors_sizer.Add(wx.StaticText(self, label=u"• {}".format(err)), flag=wx.LEFT | wx.RIGHT, border=5)
-        self._errors_sizer.Add(errors_sizer)
+        self._errors_sizer.Add(errors_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=3)
         self.GetParent().Layout()
         self.Thaw()

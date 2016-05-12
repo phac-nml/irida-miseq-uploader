@@ -137,7 +137,9 @@ def complete_parse_samples(sample_sheet_file):
                      ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
                      "This usually happens when the Illumina MiSeq Reporter tool "
                      "does not generate any FastQ data.")
-                     .format(sample.get_id(), data_dir))
+                     .format(sample.get_id(), data_dir),
+                     ["No .fastq.gz file found for sample {}".format(sample.get_id())])
+
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))

@@ -1,4 +1,4 @@
-# coding: utf8
+# coding: utf-8
 import wx
 import threading
 import logging
@@ -60,6 +60,7 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
         pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
+        pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
 
         self._settings_changed()
 
@@ -73,7 +74,7 @@ class UploaderAppPanel(wx.Panel):
         """
 
         self.Freeze()
-        self._sizer.Insert(0, self._invalid_sheets_panel)
+        self._sizer.Insert(0, self._invalid_sheets_panel, flag=wx.EXPAND)
         self._invalid_sheets_panel.Show()
         self.Layout()
         self.Thaw()
@@ -119,8 +120,8 @@ class UploaderAppPanel(wx.Panel):
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
-        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
+        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.EXPAND)
+        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.ALIGN_CENTER)
         self.Layout()
         self.Thaw()
         threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
