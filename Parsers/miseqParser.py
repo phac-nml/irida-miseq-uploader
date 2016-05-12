@@ -220,7 +220,9 @@ def parse_samples(sample_sheet_file):
                      "Number of values: {val_len}").format(
                         data_len=len(sample_dict.keys()),
                         val_len=len(line)
-                    )
+                    ), [("Your sample sheet is malformed. I expected to find {} "
+                         "columns the [Data] section, but I only found {} columns "
+                         "for line {}.".format(len(sample_dict.keys()), len(line), line))]
                 )
 
         for index, key in enumerate(sample_dict.keys()):
