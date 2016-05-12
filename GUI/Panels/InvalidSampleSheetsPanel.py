@@ -37,7 +37,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
         self.SetSizer(self._sizer)
         self._errors_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        header = wx.StaticText(self, label=u"✘ Oops! Some of your sample sheets are not valid.")
+        header = wx.StaticText(self, label=u"✘ Looks like some sample sheets are not valid.")
         header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         header.SetForegroundColour(wx.Colour(255, 0, 0))
         header.Wrap(350)
@@ -73,7 +73,9 @@ class InvalidSampleSheetsPanel(wx.Panel):
         box = wx.StaticBox(self, label=basename(dirname(sample_sheet)) + separator + "SampleSheet.csv")
         errors_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         for err in error.errors:
-            errors_sizer.Add(wx.StaticText(self, label=u"• {}".format(err)), flag=wx.LEFT | wx.RIGHT, border=5)
+            error_text = wx.StaticText(self, label=u"• {}".format(err))
+            errors_sizer.Add(error_text, flag=wx.LEFT | wx.RIGHT, border=5)
+            error_text.Wrap(375)
         self._errors_sizer.Add(errors_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=3)
         self.GetParent().Layout()
         self.Thaw()
