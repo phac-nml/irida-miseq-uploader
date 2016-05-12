@@ -17,6 +17,7 @@ class DirectoryScannerTopics(object):
     finished_run_scan = "finished_run_scan"
     run_discovered = "run_discovered"
     garbled_sample_sheet = "garbled_sample_sheet"
+    missing_files = "missing_files"
 
 def find_runs_in_directory(directory):
     """Find and validate all runs the specified directory.
@@ -98,6 +99,10 @@ def process_sample_sheet(sample_sheet):
     except SampleError, e:
         logging.exception("Failed to parse sample.")
         send_message(DirectoryScannerTopics.garbled_sample_sheet, sample_sheet=sample_sheet, error=e)
+    except SequenceFileError as e:
+        logging.exception("Failed to find files for sample sheet.")
+        send_message(DirectoryScannerTopics.missing_files, sample_sheet=sample_sheet, error=e)
+
     return None
 
 def validate_run(sequencing_run):
