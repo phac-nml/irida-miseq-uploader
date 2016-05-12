@@ -379,7 +379,7 @@ class SettingsPanel(wx.Panel):
         err_log_msgs = [err_description, ("Could not connect to IRIDA. This "
             "either means that you've entered an invalid Server URL, or the "
             "server is sending back nonsense. Check that you've entered the "
-            "correct URL and try again, try again later, or conract an "
+            "correct URL and try again, try again later, or contact an "
             "administrator")]
 
         err_labels = [self.url_err_label]
