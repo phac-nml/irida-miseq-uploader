@@ -72,12 +72,16 @@ class UploaderAppPanel(wx.Panel):
             sample_sheet: the sample sheet that's got the error
             error: the validation error
         """
-
-        self.Freeze()
-        self._sizer.Insert(0, self._invalid_sheets_panel, flag=wx.EXPAND)
-        self._invalid_sheets_panel.Show()
-        self.Layout()
-        self.Thaw()
+        if not self._invalid_sheets_panel.IsShown():
+            self.Freeze()
+            # clear out the other panels that might already be added
+            self._sizer.Clear(deleteWindows=True)
+            
+            # add the sheets panel to the sizer and show it
+            self._sizer.Add(self._invalid_sheets_panel, flag=wx.EXPAND, proportion=1)
+            self._invalid_sheets_panel.Show()
+            self.Layout()
+            self.Thaw()
 
     def _settings_changed(self, api=None):
     	"""Reset the main display and attempt to connect to the server
@@ -225,24 +229,25 @@ class UploaderAppPanel(wx.Panel):
         When the `DirectoryScannerTopics.finished_run_scan` topic is received, add
         the upload button to the page so that the user can start the upload.
         """
-        self.Freeze()
-        if self._discovered_runs:
-            upload_button = wx.Button(self, label="Upload")
-            self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-            self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
-        else:
-            all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            all_uploaded_header = wx.StaticText(self, label="✓ All sample sheets uploaded.")
-            all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-            all_uploaded_header.SetForegroundColour(wx.Colour(0, 255, 0))
-            all_uploaded_header.Wrap(350)
-            all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
+        if not self._invalid_sheets_panel.IsShown():
+            self.Freeze()
+            if self._discovered_runs:
+                upload_button = wx.Button(self, label="Upload")
+                self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
+            else:
+                all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                all_uploaded_header = wx.StaticText(self, label="✓ All sample sheets uploaded.")
+                all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+                all_uploaded_header.SetForegroundColour(wx.Colour(0, 255, 0))
+                all_uploaded_header.Wrap(350)
+                all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
-            self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-            self._sizer.Add(wx.StaticText(self, label=wordwrap("I scanned {}, but I didn't find any sample sheets that weren't already uploaded.".format(self._get_default_directory()), 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self._sizer.Add(wx.StaticText(self, label=wordwrap("I scanned {}, but I didn't find any sample sheets that weren't already uploaded.".format(self._get_default_directory()), 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
 
-        self.Layout()
-        self.Thaw()
+            self.Layout()
+            self.Thaw()
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.
@@ -258,7 +263,7 @@ class UploaderAppPanel(wx.Panel):
 
         run_panel = RunPanel(self, run, self._api)
         self.Freeze()
-        self._run_sizer.Add(run_panel, flag=wx.EXPAND)
+        self._run_sizer.Add(run_panel, flag=wx.EXPAND, proportion=1)
         self.Layout()
         self.Thaw()
 
