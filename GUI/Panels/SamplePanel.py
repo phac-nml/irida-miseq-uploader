@@ -55,7 +55,7 @@ class SamplePanel(wx.Panel):
         """
         self.Freeze()
         if project:
-            self._status_label.SetLabel(project.get_name())
+            self._status_label.SetLabel("{} ({})".format(self._sample.get_project_id(), project.get_name()))
         else:
             self._status_label.SetLabel("Project with ID {} does not exist.".format(self._sample.get_project_id()))
         self.Layout()
