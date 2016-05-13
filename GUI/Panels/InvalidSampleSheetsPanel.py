@@ -7,6 +7,7 @@ from os.path import dirname, basename, sep as separator
 from wx.lib.pubsub import pub
 from wx.lib.wordwrap import wordwrap
 
+from Exceptions import SampleError, SampleSheetError, SequenceFileError
 from GUI.SettingsFrame import SettingsFrame
 from API.directoryscanner import DirectoryScannerTopics
 from API.pubsub import send_message
@@ -35,7 +36,6 @@ class InvalidSampleSheetsPanel(wx.Panel):
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
-        self._errors_sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.StaticText(self, label=u"✘ Looks like some sample sheets are not valid.")
         header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -49,7 +49,10 @@ class InvalidSampleSheetsPanel(wx.Panel):
                 "their contents. Check these sample sheets in an editor outside "
                 "of the uploader, then click the 'Scan Again' button below.").format(sheets_directory),
             350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self._sizer.Add(self._errors_sizer, flag=wx.EXPAND)
+
+        self._errors_tree = wx.TreeCtrl(self, style=wx.TR_DEFAULT_STYLE | wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT)
+        self._errors_tree_root = self._errors_tree.AddRoot("")
+        self._sizer.Add(self._errors_tree, flag=wx.EXPAND, proportion=1)
 
         scan_again_button = wx.Button(self, label="Scan Again")
         self.Bind(wx.EVT_BUTTON, lambda evt: send_message(SettingsFrame.connection_details_changed_topic), id=scan_again_button.GetId())
@@ -68,14 +71,25 @@ class InvalidSampleSheetsPanel(wx.Panel):
             sample_sheet: the sample sheet that failed to be parsed.
             error: the error that was raised during validation.
         """
-        logging.info("Handling sample sheet error for {}".format(basename(dirname(sample_sheet))))
+        sheet_name = basename(dirname(sample_sheet)) + separator + "SampleSheet.csv"
+        logging.info("Handling sample sheet error for {}".format(sheet_name))
         self.Freeze()
-        box = wx.StaticBox(self, label=basename(dirname(sample_sheet)) + separator + "SampleSheet.csv")
-        errors_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        sheet_errors_root = self._errors_tree.AppendItem(self._errors_tree_root, sheet_name)
+        sheet_errors_type = None
+
+        if isinstance(error, SampleError):
+            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing Project ID")
+        elif isinstance(error, SequenceFileError):
+            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing FASTQ files")
+        elif isinstance(error, SampleSheetError):
+            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing Important Data")
+
         for err in error.errors:
-            error_text = wx.StaticText(self, label=u"• {}".format(err))
-            errors_sizer.Add(error_text, flag=wx.LEFT | wx.RIGHT, border=5)
-            error_text.Wrap(375)
-        self._errors_sizer.Add(errors_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=3)
+            self._errors_tree.AppendItem(sheet_errors_type, err.strip())
+
+        self._errors_tree.Expand(sheet_errors_root)
+
+        self.Layout()
         self.GetParent().Layout()
         self.Thaw()
