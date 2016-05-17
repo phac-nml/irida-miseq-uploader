@@ -356,8 +356,7 @@ class ApiCalls(object):
             response = self.session.get(url)
 
         except StopIteration:
-            raise SampleError("The given sample ID: " +
-                              sample_id + " doesn't exist")
+            raise SampleError("The given sample ID: {} doesn't exist".format(sample_id), [])
 
         result = response.json()["resource"]["resources"]
 
@@ -453,11 +452,11 @@ class ApiCalls(object):
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
             else:
-                raise SampleError(("Error {status_code}: {err_msg}.\n" +
-                                  "Sample data: {sample_data}").format(
+                logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
+                raise SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(
                                   status_code=str(response.status_code),
                                   err_msg=response.text,
-                                  sample_data=str(sample)))
+                                  sample_data=str(sample)), ["IRIDA rejected the sample."])
         return json_res_list
 
     @exception_handler
@@ -564,8 +563,8 @@ class ApiCalls(object):
                                         "value": sample_id
                                     })
         except StopIteration:
-            raise SampleError("The given sample ID: " +
-                              sample_id + " doesn't exist")
+            raise SampleError("The given sample ID: {} doesn't exist".format(sample_id),
+                ["No sample with name [{}] exists in project [{}]".format(sample_id, project_id)])
 
         miseqRunId_key = "miseqRunId"
 
@@ -648,7 +647,9 @@ class ApiCalls(object):
                        status_code=str(response.status_code),
                        err_msg=response.reason,
                        ud=str(files))
-            raise SequenceFileError(err_msg)
+            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
+            logging.info(response.text)
+            raise SequenceFileError(err_msg, [])
 
         return json_res
 
