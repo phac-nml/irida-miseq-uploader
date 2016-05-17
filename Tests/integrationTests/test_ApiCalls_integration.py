@@ -90,7 +90,7 @@ class TestApiIntegration:
         if len(path_to_module) == 0:
             path_to_module = '.'
 
-        run = find_runs_in_directory(path.join(path_to_module, "fake_ngs_data"), ignore_uploaded=False).pop()
+        run = find_runs_in_directory(path.join(path_to_module, "fake_ngs_data")).pop()
         samples_list = run.sample_list
 
         # check that the sample with id 99-9999 (from SampleSheet.csv)
