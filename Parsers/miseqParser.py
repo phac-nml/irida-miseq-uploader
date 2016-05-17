@@ -184,8 +184,6 @@ def parse_samples(sample_sheet_file):
     # fill in values for keys. line is currently below the [Data] headers
     for line in csv_reader:
 
-        i = 0
-
         if len(sample_dict.keys()) != len(line):
             """
             if there is one more Data header compared to the length of
@@ -210,9 +208,8 @@ def parse_samples(sample_sheet_file):
                     )
                 )
 
-        for key in sample_dict.keys():
-            sample_dict[key] = line[i]  # assumes values are never empty
-            i = i + 1
+        for index, key in enumerate(sample_dict.keys()):
+            sample_dict[key] = line[index].strip()  # assumes values are never empty
 
         if len(sample_dict["sampleName"]) == 0:
             sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
