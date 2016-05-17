@@ -10,3 +10,6 @@ class SampleSheetError(Exception):
     @property
     def errors(self):
         return self._errors
+
+    def __str__(self):
+        return self.message

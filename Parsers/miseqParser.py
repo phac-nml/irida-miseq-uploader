@@ -291,7 +291,7 @@ def get_csv_reader(sample_sheet_file):
     else:
         msg = sample_sheet_file + " is not a valid SampleSheet file (it's"
         msg += "not a valid CSV file)."
-        raise SampleSheetError(msg)
+        raise SampleSheetError(msg, ["SampleSheet.csv cannot be parsed as a CSV file because it's not a regular file."])
 
     return csv_reader
 
