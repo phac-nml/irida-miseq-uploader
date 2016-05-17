@@ -147,7 +147,7 @@ class TestMiSeqParser(unittest.TestCase):
              "sequencerSampleId": "01-1111",
              "I5_Index_ID": "S01",
              "index2": "TTTTTTTT",
-             "description": "Super bug "},
+             "description": "Super bug"},
 
             {"Sample_Well": "02",
              "index": "GGGGGGGG",
@@ -158,7 +158,7 @@ class TestMiSeqParser(unittest.TestCase):
              "sequencerSampleId": "02-2222",
              "I5_Index_ID": "S02",
              "index2": "CCCCCCCC",
-             "description": "Scary bug "},
+             "description": "Scary bug"},
 
             {"Sample_Well": "03",
              "index": "CCCCCCCC",
@@ -169,7 +169,7 @@ class TestMiSeqParser(unittest.TestCase):
              "sequencerSampleId": "03-3333",
              "I5_Index_ID": "S03",
              "index2": "GGGGGGGG",
-             "description": "Deadly bug "}
+             "description": "Deadly bug"}
         ]
 
         sample_list_values = [sample.get_dict() for sample in sample_list]
@@ -281,9 +281,9 @@ class TestMiSeqParser(unittest.TestCase):
                          "sequencerSampleId": "03-3333",
                          "I5_Index_ID": "S03",
                          "index2": "GGGGGGGG",
-                         "description": "Deadly bug "})
+                         "description": "Deadly bug"})
 
-        correct_sample = {"description": "Deadly bug ",
+        correct_sample = {"description": "Deadly bug",
                           "sampleName": "03-3333",
                           "sequencerSampleId": "03-3333",
                           "sampleProject": "6"}
@@ -385,4 +385,4 @@ class TestMiSeqParser(unittest.TestCase):
 
         # test that these parsers don't throw on unexpected sections or keys
         metadata = parse_metadata(sample_sheet)
-        samples = complete_parse_samples(sample_sheet)        
+        samples = complete_parse_samples(sample_sheet)
