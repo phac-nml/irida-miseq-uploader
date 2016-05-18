@@ -49,6 +49,8 @@ def parse_metadata(sample_sheet_file):
         'Project Name': 'projectName'
     }
 
+    section = None
+
     for line in csv_reader:
         if "[Header]" in line or "[Settings]" in line:
             section = "header"
@@ -64,7 +66,10 @@ def parse_metadata(sample_sheet_file):
 
         if not line or not line[0]:
             continue
-        if section is "header":
+
+        if not section:
+            raise SampleSheetError("This sample sheet doesn't have any sections.", ["The sample sheet is missing important sections: no sections were found."])
+        elif section is "header":
             try:
                 key_name = metadata_key_translation_dict[line[0]]
                 metadata_dict[key_name] = line[1]
