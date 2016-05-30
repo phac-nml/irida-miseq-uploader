@@ -11,6 +11,7 @@ from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from API.directoryscanner import *
 from API.runuploader import *
 from API.pubsub import send_message
+from API.fileutils import find_file_by_name
 from threading import Thread
 from time import time
 from math import ceil
@@ -39,7 +40,7 @@ def check_config_dirs(conf_parser):
     if not path.exists(user_config_file):
         # find the default config dir from (at least) two directory levels
         # above this directory
-        conf_file = path.join(path_to_module, "..", "..", "config.conf")
+        conf_file = find_file_by_name(path.join(path_to_module, "..", ".."), "config.conf", depth=3)
 
         print "User config file doesn't exist, using defaults."
         copy2(conf_file, user_config_dir)

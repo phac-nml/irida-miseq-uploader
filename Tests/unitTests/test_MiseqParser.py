@@ -24,6 +24,10 @@ class TestMiSeqParser(unittest.TestCase):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
 
+    def test_super_invalid_sample_sheets(self):
+        with self.assertRaises(SampleSheetError):
+            parse_metadata(path.join(path_to_module, "super-invalid-sample-sheet", "SampleSheet.csv"))
+
     def test_get_csv_reader_no_sample_sheet(self):
 
         data_dir = path.join(path_to_module, "fake_ngs_data", "Data")

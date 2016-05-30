@@ -11,7 +11,7 @@ from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from API.fileutils import find_file_by_name
-
+from API.pubsub import send_message
 
 def parse_metadata(sample_sheet_file):
 
@@ -49,6 +49,8 @@ def parse_metadata(sample_sheet_file):
         'Project Name': 'projectName'
     }
 
+    section = None
+
     for line in csv_reader:
         if "[Header]" in line or "[Settings]" in line:
             section = "header"
@@ -64,7 +66,10 @@ def parse_metadata(sample_sheet_file):
 
         if not line or not line[0]:
             continue
-        if section is "header":
+
+        if not section:
+            raise SampleSheetError("This sample sheet doesn't have any sections.", ["The sample sheet is missing important sections: no sections were found."])
+        elif section is "header":
             try:
                 key_name = metadata_key_translation_dict[line[0]]
                 metadata_dict[key_name] = line[1]
@@ -82,7 +87,7 @@ def parse_metadata(sample_sheet_file):
         metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
     else:
         # this is an exceptional case, you can't have no read lengths!
-        raise SampleSheetError("Sample sheet must have read lenghts!")
+        raise SampleSheetError("Sample sheet must have read lengths!", ["The sample sheet is missing important sections: no [Reads] section found."])
 
     return metadata_dict
 
@@ -124,7 +129,8 @@ def complete_parse_samples(sample_sheet_file):
                  ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
                  "This usually happens when the Illumina MiSeq Reporter tool "
                  "does not generate any FastQ data.")
-                 .format(sample.get_id(), data_dir))
+                 .format(sample.get_id(), data_dir),
+                 ["No .fastq.gz file found for sample {}".format(sample.get_id())])
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
@@ -205,7 +211,9 @@ def parse_samples(sample_sheet_file):
                      "Number of values: {val_len}").format(
                         data_len=len(sample_dict.keys()),
                         val_len=len(line)
-                    )
+                    ), [("Your sample sheet is malformed. I expected to find {} "
+                         "columns the [Data] section, but I only found {} columns "
+                         "for line {}.".format(len(sample_dict.keys()), len(line), line))]
                 )
 
         for index, key in enumerate(sample_dict.keys()):
@@ -274,7 +282,7 @@ def get_csv_reader(sample_sheet_file):
     else:
         msg = sample_sheet_file + " is not a valid SampleSheet file (it's"
         msg += "not a valid CSV file)."
-        raise SampleSheetError(msg)
+        raise SampleSheetError(msg, ["SampleSheet.csv cannot be parsed as a CSV file because it's not a regular file."])
 
     return csv_reader
 
