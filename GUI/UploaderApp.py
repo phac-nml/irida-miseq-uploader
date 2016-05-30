@@ -1,3 +1,4 @@
+# coding: utf-8
 import wx
 import threading
 import logging
@@ -20,9 +21,9 @@ from API.runuploader import upload_run_to_server, RunUploaderTopics
 from API.apiCalls import ApiCalls
 
 from GUI.SettingsFrame import SettingsFrame
-from GUI.Panels import RunPanel
+from GUI.Panels import RunPanel, InvalidSampleSheetsPanel
 
-class UploaderAppPanel(wx.ScrolledWindow):
+class UploaderAppPanel(wx.Panel):
     """The UploaderAppPanel is the super-container the discovered SequencingRuns.
 
     This panel is used to display the runs that are discovered. It's a scrolling
@@ -35,6 +36,12 @@ class UploaderAppPanel(wx.ScrolledWindow):
             This will initiate adding the run to the panel.
         DirectoryScannerTopics.finished_run_scan: Run scanning has completed, so
             (if everything is in a valid state) add the upload button to the panel.
+        SettingsFrame.connection_details_changed_topic: The connection details
+            have changed (typically when there's invalid URL settings) so the
+            connection attempt should be retried.
+        DirectoryScannerTopics.garbled_sample_sheet: The sample sheet could not
+            be processed by the sample sheet processor, so errors should be displayed
+            to the client.
     """
     def __init__(self, parent):
         """Initialize the UploaderAppPanel.
@@ -42,8 +49,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
         Args:
             parent: the parent Window for this panel.
         """
-        wx.ScrolledWindow.__init__(self, parent, style=wx.VSCROLL)
-        self.SetScrollRate(xstep=20, ystep=20)
+        wx.Panel.__init__(self, parent)
         self._parent = parent
         self._discovered_runs = []
 
@@ -53,8 +59,29 @@ class UploaderAppPanel(wx.ScrolledWindow):
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
         pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
+        pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
+        pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
 
         self._settings_changed()
+
+    def _sample_sheet_error(self, sample_sheet=None, error=None):
+        """Show the invalid sample sheets panel whenever a sample sheet error
+        is raised.
+
+        Args:
+            sample_sheet: the sample sheet that's got the error
+            error: the validation error
+        """
+        if not self._invalid_sheets_panel.IsShown():
+            self.Freeze()
+            # clear out the other panels that might already be added
+            self._sizer.Clear(deleteWindows=True)
+            
+            # add the sheets panel to the sizer and show it
+            self._sizer.Add(self._invalid_sheets_panel, flag=wx.EXPAND, proportion=1)
+            self._invalid_sheets_panel.Show()
+            self.Layout()
+            self.Thaw()
 
     def _settings_changed(self, api=None):
     	"""Reset the main display and attempt to connect to the server
@@ -67,7 +94,14 @@ class UploaderAppPanel(wx.ScrolledWindow):
         # before doing anything, clear all of the children from the sizer and
         # also delete any windows attached (Buttons and stuff extend from Window!)
         self._sizer.Clear(deleteWindows=True)
-	       # run connecting in a different thread so we don't freeze up the GUI
+        # and clear out the list of discovered runs that we might be uploading to the server.
+        self._discovered_runs = []
+        # initialize the invalid sheets panel so that it can listen for events
+        # before directory scanning starts, but hide it until we actually get
+        # an error raised by the validation part.
+        self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
+        self._invalid_sheets_panel.Hide()
+       # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
@@ -86,11 +120,14 @@ class UploaderAppPanel(wx.ScrolledWindow):
         """Begin scanning directories for the default directory."""
 
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
+        self.Freeze()
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.TOP | wx.EXPAND)
-        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.BOTTOM | wx.ALIGN_CENTER)
+        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.EXPAND)
+        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.ALIGN_CENTER)
+        self.Layout()
+        self.Thaw()
         threading.Thread(target=find_runs_in_directory, kwargs={"directory": self._get_default_directory()}).start()
 
     def _connect_to_irida(self):
@@ -168,11 +205,12 @@ class UploaderAppPanel(wx.ScrolledWindow):
 
         self.Freeze()
 
-        warning_image = os.path.join(os.path.dirname(__file__), "images", "Warning.png")
         connection_error_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        image_controller = wx.StaticBitmap(self, wx.ID_ANY, wx.BitmapFromImage(wx.Image(warning_image, wx.BITMAP_TYPE_ANY)))
-        connection_error_sizer.Add(image_controller)
-        connection_error_sizer.Add(wx.StaticText(self, label="Failed to connect to IRIDA."), flag=wx.LEFT | wx.RIGHT, border=5)
+        connection_error_header = wx.StaticText(self, label="✘ Uh-oh. I couldn't to connect to IRIDA.")
+        connection_error_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        connection_error_header.SetForegroundColour(wx.Colour(255, 0, 0))
+        connection_error_header.Wrap(350)
+        connection_error_sizer.Add(connection_error_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
         self._sizer.Add(connection_error_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
         if error_message:
@@ -191,12 +229,25 @@ class UploaderAppPanel(wx.ScrolledWindow):
         When the `DirectoryScannerTopics.finished_run_scan` topic is received, add
         the upload button to the page so that the user can start the upload.
         """
-        self.Freeze()
-        upload_button = wx.Button(self, label="Upload")
-        self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
-        self.Layout()
-        self.Thaw()
+        if not self._invalid_sheets_panel.IsShown():
+            self.Freeze()
+            if self._discovered_runs:
+                upload_button = wx.Button(self, label="Upload")
+                self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
+            else:
+                all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                all_uploaded_header = wx.StaticText(self, label="✓ All sample sheets uploaded.")
+                all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+                all_uploaded_header.SetForegroundColour(wx.Colour(0, 255, 0))
+                all_uploaded_header.Wrap(350)
+                all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
+
+                self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self._sizer.Add(wx.StaticText(self, label=wordwrap("I scanned {}, but I didn't find any sample sheets that weren't already uploaded.".format(self._get_default_directory()), 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+            self.Layout()
+            self.Thaw()
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.
@@ -212,7 +263,7 @@ class UploaderAppPanel(wx.ScrolledWindow):
 
         run_panel = RunPanel(self, run, self._api)
         self.Freeze()
-        self._run_sizer.Add(run_panel, flag=wx.EXPAND)
+        self._run_sizer.Add(run_panel, flag=wx.EXPAND, proportion=1)
         self.Layout()
         self.Thaw()
 
