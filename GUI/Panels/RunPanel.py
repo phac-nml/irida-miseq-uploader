@@ -41,6 +41,7 @@ class RunPanel(wx.Panel):
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
         self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
+        logging.info("Total file size for run is {}".format(self._progress_max))
 
         self._sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
 
@@ -68,15 +69,16 @@ class RunPanel(wx.Panel):
 
         logging.info("bytes sent in last second: [{}]".format(bytes_sent))
         speed = "0 KB/s"
-        if bytes_sent > 1000:
+        if bytes_sent > 1000000:
+            speed = "{:2.0f} MB/s".format(bytes_sent/1000000.0)
+        else:
             speed = "{} KB/s".format(bytes_sent/1000)
-        elif bytes_sent > 1000000:
-            speed = "{} MB/s".format(bytes_sent/1000000)
 
-        if self._progress_value < self._progress.GetRange():
+
+        if self._progress_value < self._progress_max:
             self.Freeze()
-            self._progress.SetValue(self._progress_value)
-            progress_percent = (self._progress_value / float(self._progress.GetRange())) * 100
+            progress_percent = (self._progress_value / float(self._progress_max)) * 100
+            self._progress.SetValue(progress_percent)
             self._progress_text.SetLabel("{:3.0f}% {}".format(progress_percent, speed))
             self.Layout()
             self.Thaw()
@@ -89,9 +91,10 @@ class RunPanel(wx.Panel):
         This method will add the progress bar and progress text to the display
         when the run.upload_started_topic is received.
         """
+        logging.info("Upload started for {} with max size {}".format(self._run.upload_started_topic, self._progress_max))
         pub.unsubscribe(self._upload_started, self._run.upload_started_topic)
         self.Freeze()
-        self._progress = wx.Gauge(self, range=self._progress_max)
+        self._progress = wx.Gauge(self, id=wx.ID_ANY, range=100, size=(250, 20))
         self._progress_text = wx.StaticText(self, label="  0%")
         progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
