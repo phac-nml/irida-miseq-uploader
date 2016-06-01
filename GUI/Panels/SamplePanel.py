@@ -32,6 +32,14 @@ class SamplePanel(wx.Panel):
         """
         wx.Panel.__init__(self, parent)
         self._sample = sample
+
+        self._timer = wx.Timer(self)
+
+        self._progress_value = 0
+        self._last_timer_progress = 0
+
+        self._progress_max = sample.get_files_size()
+
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self._label = wx.StaticText(self, label=self._sample.get_id())
@@ -40,6 +48,9 @@ class SamplePanel(wx.Panel):
         self._sizer.Add(self._status_label)
 
         self.SetSizer(self._sizer)
+
+        self.Bind(wx.EVT_TIMER, self._update_progress_timer, self._timer)
+
         self.Layout()
 
         pub.subscribe(self._validation_results, sample.online_validation_topic)
@@ -70,10 +81,32 @@ class SamplePanel(wx.Panel):
         logging.info("Upload started for sample {}".format(self._sample.get_id()))
         self.Freeze()
         self._status_label.Destroy()
-        self._progress = wx.Gauge(self, range=self._sample.get_files_size())
+        self._progress = wx.Gauge(self, range=100, size=(100, 20))
         self._sizer.Add(self._progress)
         self.Layout()
         self.Thaw()
+        self._timer.Start(1000)
+
+    def _update_progress_timer(self, event):
+        """Update the display when the timer is fired.
+
+        This method is actually responsible for updating the progress bar for the
+        sample.
+
+        Arguments:
+            event: the event that called this method.
+        """
+        bytes_sent = self._progress_value - self._last_timer_progress
+        logging.info("bytes sent in the last second for {}: [{}]".format(self._sample.get_id(), bytes_sent))
+
+        if self._progress_value < self._progress_max:
+            self.Freeze()
+            progress_percent = (self._progress_value / float(self._progress_max)) * 100
+            self._progress.SetValue(progress_percent)
+            self.Layout()
+            self.Thaw()
+
+        self._last_timer_progress = self._progress_value
 
     def _upload_progress(self, progress):
         """Update the display when progress is provided by the API.
@@ -81,7 +114,4 @@ class SamplePanel(wx.Panel):
         Args:
             progress: the total number of bytes sent by the API for this sample.
         """
-        if progress < self._progress.GetRange():
-            self._progress.SetValue(progress)
-        else:
-            self._progress.SetValue(self._progress.GetRange())
+        self._progress_value = progress
