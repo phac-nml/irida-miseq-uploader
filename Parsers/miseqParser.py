@@ -111,10 +111,10 @@ def complete_parse_samples(sample_sheet_file):
     for sample in sample_list:
         properties_dict = parse_out_sequence_file(sample)
         # this is the Illumina-defined pattern for naming fastq files, from:
-        # http://support.illumina.com/content/dam/illumina-support/help/BaseSpaceHelp_v2/Content/Vault/Informatics/Sequencing_Analysis/BS/swSEQ_mBS_FASTQFiles.htm
-        # and also referred to in BaseSpace:
         # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
-        file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+        file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.sample_name),
+                                                                                                 sample_number=sample.sample_number)
+        logging.info("Looking for files with pattern {}".format(file_pattern))
         pf_list = find_file_by_name(directory = data_dir,
                                     name_pattern = file_pattern,
                                     depth = 1)
@@ -182,7 +182,7 @@ def parse_samples(sample_sheet_file):
             set_attributes = True
 
     # fill in values for keys. line is currently below the [Data] headers
-    for line in csv_reader:
+    for sample_number, line in enumerate(csv_reader):
 
         if len(sample_dict.keys()) != len(line):
             """
@@ -214,7 +214,7 @@ def parse_samples(sample_sheet_file):
         if len(sample_dict["sampleName"]) == 0:
             sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
 
-        sample = Sample(deepcopy(sample_dict))
+        sample = Sample(deepcopy(sample_dict), sample_number=sample_number+1)
         sample_list.append(sample)
 
     return sample_list

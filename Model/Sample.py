@@ -6,14 +6,26 @@ Keys: 'sampleName','description','sequencerSampleId','sampleProject'
 """
 
 
-class Sample:
+class Sample(object):
 
-    def __init__(self, new_samp_dict):
+    def __init__(self, new_samp_dict, sample_number=None):
         self.sample_dict = dict(new_samp_dict)
         self.seq_file = None
+        self._sample_number = sample_number
 
     def get_id(self):
+        try:
+            return self.sample_dict["sequencerSampleId"]
+        except KeyError:
+            return self.sample_dict["sampleName"]
+
+    @property
+    def sample_name(self):
         return self.get("sampleName")
+
+    @property
+    def sample_number(self):
+        return self._sample_number
 
     def get_project_id(self):
         return self.get("sampleProject")
@@ -56,6 +68,7 @@ class Sample:
                 sample_dict = dict(obj.get_dict())
                 # get sample dict and make a copy of it
                 sample_dict.pop("sampleProject")
+                sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
                 return sample_dict
             else:
                 return json.JSONEncoder.default(self, obj)
