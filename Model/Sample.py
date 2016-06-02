@@ -68,7 +68,8 @@ class Sample(object):
                 sample_dict = dict(obj.get_dict())
                 # get sample dict and make a copy of it
                 sample_dict.pop("sampleProject")
-                sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
+                if "sampleName" not in sample_dict:
+                    sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
                 return sample_dict
             else:
                 return json.JSONEncoder.default(self, obj)
