@@ -119,12 +119,25 @@ def complete_parse_samples(sample_sheet_file):
                                     name_pattern = file_pattern,
                                     depth = 1)
         if not pf_list:
-            raise SequenceFileError(
-                ("The uploader was unable to find an files with a file name that ends with "
-                 ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
-                 "This usually happens when the Illumina MiSeq Reporter tool "
-                 "does not generate any FastQ data.")
-                 .format(sample.get_id(), data_dir))
+            # OK. So we didn't find any files using the **correct** file name
+            # definition according to Illumina. Let's try again with our deprecated
+            # behaviour, where we didn't actually care about the sample number:
+            file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.get_id()))
+            logging.info("Looking for files with pattern {}".format(file_pattern))
+            pf_list = find_file_by_name(directory = data_dir,
+                                        name_pattern = file_pattern,
+                                        depth = 1)
+
+            if not pf_list:
+                # we **still** didn't find anything. It's pretty likely, then that
+                # there aren't any fastq files in the directory that match what
+                # the sample sheet says...
+                raise SequenceFileError(
+                    ("The uploader was unable to find an files with a file name that ends with "
+                     ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
+                     "This usually happens when the Illumina MiSeq Reporter tool "
+                     "does not generate any FastQ data.")
+                     .format(sample.get_id(), data_dir))
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
