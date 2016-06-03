@@ -68,7 +68,12 @@ class Sample(object):
                 sample_dict = dict(obj.get_dict())
                 # get sample dict and make a copy of it
                 sample_dict.pop("sampleProject")
-                if "sampleName" not in sample_dict:
+                if "sequencerSampleId" in sample_dict:
+                    # if the sample ID field is populated, then we've just Finished
+                    # reading the run from disk and we're preparing to send data
+                    # to the server. The server is using the sample ID field as the
+                    # name of the sample, so overwrite whatever we *were* using to
+                    # find files with the sample ID field.
                     sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
                 return sample_dict
             else:
