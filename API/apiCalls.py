@@ -256,7 +256,7 @@ class ApiCalls(object):
         """
 
         if self.cached_projects is None:
-
+            logging.info("Loading projects from server.")
             url = self.get_link(self.base_URL, "projects")
             response = self.session.get(url)
 
@@ -277,6 +277,8 @@ class ApiCalls(object):
                 raise KeyError(msg_arg + " not found." + " Available keys: " +
                                ", ".join(result[0].keys()))
             self.cached_projects = project_list
+        else:
+            logging.info("Loading projects from cache.")
 
         return self.cached_projects
 
@@ -364,7 +366,7 @@ class ApiCalls(object):
         return result
 
     @exception_handler
-    def send_project(self, project):
+    def send_project(self, project, clear_cache=True):
         """
         post request to send a project to IRIDA via API
         the project being sent requires a name that is at least
@@ -380,7 +382,8 @@ class ApiCalls(object):
         when post fails then an error will be raised so return statement is
             not even reached.
         """
-        self.cached_projects = None
+        if clear_cache:
+            self.cached_projects = None
 
         json_res = {}
         if len(project.get_name()) >= 5:
@@ -423,6 +426,7 @@ class ApiCalls(object):
         """
 
         self.cached_samples = {} # reset the cache, we're updating stuff
+        self.cached_projects = None
         json_res_list = []
 
         for sample in samples_list:
