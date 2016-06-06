@@ -11,7 +11,6 @@ import logging
 
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
-from requests_toolbelt.multipart import encoder
 from appdirs import user_config_dir
 
 from Model.Project import Project
@@ -528,6 +527,10 @@ class ApiCalls(object):
 
         return json_res_list
 
+    def _kill_connections(self):
+        self._stop_upload = True
+        self.session.close()
+
     def _send_sequence_files(self, sample, callback, upload_id):
 
         """
@@ -546,6 +549,7 @@ class ApiCalls(object):
         """
 
         json_res = {}
+        self._stop_upload = False
 
         try:
             project_id = sample.get_project_id()
@@ -570,32 +574,53 @@ class ApiCalls(object):
             raise SampleError("The given sample ID: {} doesn't exist".format(sample_id),
                 ["No sample with name [{}] exists in project [{}]".format(sample_id, project_id)])
 
-        miseqRunId_key = "miseqRunId"
+        boundary = "B0undary"
+        read_size = 32000
+
+        def generator():
+
+            logging.info("In the generator, getting ready to send.")
+            logging.info("Send the initial junk, about to send the file.")
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"file1\"; filename=\"{filename}\"\r\n"
+            "\r\n").format(boundary=boundary, filename=sample.get_files()[0].replace("\\", "/"))
+
+            bytes_read = 0
+            logging.info("Sent the headers for the file, about to start sending lines.")
+            with open(sample.get_files()[0], "rb") as fastq_file:
+                data = fastq_file.read(read_size)
+                while data and not self._stop_upload:
+                    bytes_read += len(data)
+                    send_message(sample.upload_progress_topic, progress=bytes_read)
+                    yield data
+                    data = fastq_file.read(read_size)
+
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"file2\"; filename=\"{filename}\"\r\n"
+            "\r\n"
+            ).format(boundary=boundary, filename=sample.get_files()[1].replace("\\", "/"))
+
+            with open(sample.get_files()[1], "rb") as fastq_file:
+                data = fastq_file.read(read_size)
+                while data and not self._stop_upload:
+                    bytes_read += len(data)
+                    send_message(sample.upload_progress_topic, progress=bytes_read)
+                    yield data
+                    data = fastq_file.read(read_size)
+
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"parameters2\"\r\n"
+            "Content-Type: application/json\r\n\r\n"
+            "{{ \"miseqRunId\": \"{miseq_run_id}\" }}\r\n"
+            "\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"parameters1\"\r\n"
+            "Content-Type: application/json\r\n\r\n"
+            "{{ \"miseqRunId\": \"{miseq_run_id}\" }}\r\n"
+            "--{boundary}--").format(boundary=boundary, miseq_run_id=str(upload_id))
 
         if sample.is_paired_end():
             logging.info("sending paired-end file")
             url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
-            parameters1 = ("\"{key1}\": \"{value1}\"," +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter1", value2="p1")
-            parameters1 = "{" + parameters1 + "}"
-
-            parameters2 = ("\"{key1}\": \"{value1}\", " +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter2", value2="p2")
-            parameters2 = "{" + parameters2 + "}"
-
-            files = ({
-                    "file1": (sample.get_files()[0].replace("\\", "/"),
-                              open(sample.get_files()[0], "rb")),
-                    "parameters1": ("", parameters1, "application/json"),
-                    "file2": (sample.get_files()[1].replace("\\", "/"),
-                              open(sample.get_files()[1], "rb")),
-                    "parameters2": ("", parameters2, "application/json")
-            })
-
         else:
             logging.info("sending single-end file")
             url = seq_url
@@ -611,46 +636,19 @@ class ApiCalls(object):
                     "parameters": ("", parameters1, "application/json")
             })
 
-        e = encoder.MultipartEncoder(fields=files)
         send_message(sample.upload_started_topic)
 
-        # instead of passing around a function to call, we're going to let the
-        # monitor tell us when it's time to update the progress bar
-        if callback is None:
-            def monitor_callback(monitor):
-                send_message(sample.upload_progress_topic, progress=monitor.bytes_read)
-            callback = monitor_callback
-
-        monitor = encoder.MultipartEncoderMonitor(e, callback)
-
-        monitor.files = deepcopy(sample.get_files())
-        monitor.total_bytes_read = self.total_bytes_read
-        monitor.size_of_all_seq_files = self.size_of_all_seq_files
-
-        monitor.ov_upload_pct = 0.0
-        monitor.cf_upload_pct = 0.0
-        monitor.prev_cf_pct = 0.0
-        monitor.prev_ov_pct = 0.0
-        monitor.prev_bytes = 0
-
-        monitor.start_time = self.start_time
-
-        headers = {"Content-Type": monitor.content_type}
-
         logging.info("Sending files to [{}]".format(url))
-        response = self.session.post(url, data=monitor, headers=headers)
-        self.total_bytes_read = monitor.total_bytes_read
+        response = self.session.post(url, data=generator(), headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
             send_message('completed_uploading_sample', sample = sample)
         else:
-            err_msg = ("Error {status_code}: {err_msg}\n" +
-                       "Upload data: {ud}").format(
+            err_msg = ("Error {status_code}: {err_msg}\n").format(
                        status_code=str(response.status_code),
-                       err_msg=response.reason,
-                       ud=str(files))
+                       err_msg=response.reason)
             logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
             logging.info(response.text)
             raise SequenceFileError(err_msg, [])

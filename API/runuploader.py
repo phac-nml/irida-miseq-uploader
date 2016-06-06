@@ -1,10 +1,13 @@
 from Validation.onlineValidation import project_exists, sample_exists
-from wx.lib.pubsub import pub
-import logging
 from Exceptions.ProjectError import ProjectError
 from API.pubsub import send_message
+
 from os import path
+from wx.lib.pubsub import pub
+
 import json
+import logging
+import threading
 
 class RunUploaderTopics(object):
     start_online_validation = "start_online_validation"
@@ -12,6 +15,23 @@ class RunUploaderTopics(object):
     start_checking_samples = "start_checking_samples"
     start_uploading_samples = "start_uploading_samples"
     finished_uploading_samples = "finished_uploading_samples"
+
+class RunUploader(threading.Thread):
+    def __init__(self, api, runs, name='RunUploaderThread'):
+        self._stop_event = threading.Event()
+        self._sleep_period = 1.0
+        self._api = api
+        self._runs = runs
+        threading.Thread.__init__(self, name=name)
+
+    def run(self):
+        for run in self._runs:
+            upload_run_to_server(api=self._api, sequencing_run=run, progress_callback=None)
+
+    def join(self, timeout=None):
+        logging.info("Going to try killing connections on exit.")
+        self._api._kill_connections()
+        threading.Thread.join(self, timeout)
 
 def upload_run_to_server(api, sequencing_run, progress_callback):
     """Upload a single run to the server.
