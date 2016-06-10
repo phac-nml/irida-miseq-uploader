@@ -1,6 +1,7 @@
 import ast
 import json
 import httplib
+import itertools
 from urllib2 import urlopen, URLError
 from urlparse import urljoin
 from time import time
@@ -577,46 +578,59 @@ class ApiCalls(object):
         boundary = "B0undary"
         read_size = 32000
 
-        def generator():
-
-            logging.info("In the generator, getting ready to send.")
-            logging.info("Send the initial junk, about to send the file.")
+        def _send_file(filename, parameter_name, bytes_read=0):
+            ### Send the boundary header section for the file
+            logging.info("Sending the boundary header section for {}".format(filename))
             yield ("\r\n--{boundary}\r\n"
-            "Content-Disposition: form-data; name=\"file1\"; filename=\"{filename}\"\r\n"
-            "\r\n").format(boundary=boundary, filename=sample.get_files()[0].replace("\\", "/"))
+            "Content-Disposition: form-data; name=\"{parameter_name}\"; filename=\"{filename}\"\r\n"
+            "\r\n").format(boundary=boundary, parameter_name=parameter_name, filename=filename.replace("\\", "/"))
 
+            ### Send the contents of the file, read_size bytes at a time until
+            ### we've either read the entire file, or we've been instructed to
+            ### stop the upload by the UI
+            logging.info("Starting to send the file {}".format(filename))
+            with open(filename, "rb") as fastq_file:
+                data = fastq_file.read(read_size)
+                while data and not self._stop_upload:
+                    bytes_read += len(data)
+                    send_message(sample.upload_progress_topic, progress=bytes_read)
+                    yield data
+                    data = fastq_file.read(read_size)
+                logging.info("Finished sending file {}".format(filename))
+                if self._stop_upload:
+                    logging.info("Halting upload on user request.")
+
+        def _send_parameters(parameter_name, parameters):
+            logging.info("Going to send parameters for {}".format(parameter_name))
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"{parameter_name}\"\r\n"
+            "Content-Type: application/json\r\n\r\n"
+            "{parameters}\r\n").format(boundary=boundary, parameter_name=parameter_name, parameters=parameters)
+
+        def _finish_request():
+            yield "--{boundary}--".format(boundary=boundary)
+
+        def _sample_upload_generator(sample):
             bytes_read = 0
-            logging.info("Sent the headers for the file, about to start sending lines.")
-            with open(sample.get_files()[0], "rb") as fastq_file:
-                data = fastq_file.read(read_size)
-                while data and not self._stop_upload:
-                    bytes_read += len(data)
-                    send_message(sample.upload_progress_topic, progress=bytes_read)
-                    yield data
-                    data = fastq_file.read(read_size)
 
-            yield ("\r\n--{boundary}\r\n"
-            "Content-Disposition: form-data; name=\"file2\"; filename=\"{filename}\"\r\n"
-            "\r\n"
-            ).format(boundary=boundary, filename=sample.get_files()[1].replace("\\", "/"))
+            file_metadata = sample.get_sample_metadata()
+            file_metadata["miseqRunId"] = str(upload_id)
+            file_metadata_json = json.dumps(file_metadata)
 
-            with open(sample.get_files()[1], "rb") as fastq_file:
-                data = fastq_file.read(read_size)
-                while data and not self._stop_upload:
-                    bytes_read += len(data)
-                    send_message(sample.upload_progress_topic, progress=bytes_read)
-                    yield data
-                    data = fastq_file.read(read_size)
+            if sample.is_paired_end():
+                return itertools.chain(
+                    _send_file(filename=sample.get_files()[0], parameter_name="file1"),
+                    _send_file(filename=sample.get_files()[1], parameter_name="file2", bytes_read=path.getsize(sample.get_files()[0])),
+                    _send_parameters(parameter_name="parameters1", parameters=file_metadata_json),
+                    _send_parameters(parameter_name="parameters2", parameters=file_metadata_json),
+                    _finish_request())
+            else:
+                return itertools.chain(
+                    _send_file(filename=sample.get_files()[0], param_name="file"),
+                    _send_parameters(parameter_name="parameters", parameters=file_metadata_json),
+                    _finish_request())
 
-            yield ("\r\n--{boundary}\r\n"
-            "Content-Disposition: form-data; name=\"parameters2\"\r\n"
-            "Content-Type: application/json\r\n\r\n"
-            "{{ \"miseqRunId\": \"{miseq_run_id}\" }}\r\n"
-            "\r\n--{boundary}\r\n"
-            "Content-Disposition: form-data; name=\"parameters1\"\r\n"
-            "Content-Type: application/json\r\n\r\n"
-            "{{ \"miseqRunId\": \"{miseq_run_id}\" }}\r\n"
-            "--{boundary}--").format(boundary=boundary, miseq_run_id=str(upload_id))
+
 
         if sample.is_paired_end():
             logging.info("sending paired-end file")
@@ -624,22 +638,12 @@ class ApiCalls(object):
         else:
             logging.info("sending single-end file")
             url = seq_url
-            parameters1 = ("\"{key1}\": \"{value1}\"," +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter1", value2="p1")
-            parameters1 = "{" + parameters1 + "}"
-
-            files = ({
-                    "file": (sample.get_files()[0].replace("\\", "/"),
-                              open(sample.get_files()[0], "rb")),
-                    "parameters": ("", parameters1, "application/json")
-            })
 
         send_message(sample.upload_started_topic)
 
         logging.info("Sending files to [{}]".format(url))
-        response = self.session.post(url, data=generator(), headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
+        response = self.session.post(url, data=_sample_upload_generator(sample),
+                                     headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
