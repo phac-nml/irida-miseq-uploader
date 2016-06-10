@@ -508,7 +508,7 @@ class ApiCalls(object):
         by `_send_sequence_files` below to stop generating data and raise an exception
         that will set the run to an error state on the server.
         """
-        
+
         self._stop_upload = True
         self.session.close()
 

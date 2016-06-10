@@ -50,6 +50,13 @@ class RunUploader(threading.Thread):
         self._api._kill_connections()
         threading.Thread.join(self, timeout)
 
+class RunUploaderTopics(object):
+    start_online_validation = "start_online_validation"
+    online_validation_failure = "online_validation_failure"
+    start_checking_samples = "start_checking_samples"
+    start_uploading_samples = "start_uploading_samples"
+    finished_uploading_samples = "finished_uploading_samples"
+
 def upload_run_to_server(api, sequencing_run, progress_callback):
     """Upload a single run to the server.
 
@@ -141,7 +148,6 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
-
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.

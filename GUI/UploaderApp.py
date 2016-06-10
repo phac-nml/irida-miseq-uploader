@@ -76,7 +76,6 @@ class UploaderAppPanel(wx.Panel):
             self.Freeze()
             # clear out the other panels that might already be added
             self._sizer.Clear(deleteWindows=True)
-
             # add the sheets panel to the sizer and show it
             self._sizer.Add(self._invalid_sheets_panel, flag=wx.EXPAND, proportion=1)
             self._invalid_sheets_panel.Show()
