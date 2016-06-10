@@ -14,6 +14,10 @@ class Sample(object):
         self._sample_number = sample_number
 
     def get_id(self):
+        # When pulling sample records from the server, the sample name *is* the
+        # identifier for the sample, so if it's not specified in the dictionary
+        # that we're using to build this sample, set it as the sample name that
+        # we got from the server.
         try:
             return self.sample_dict["sequencerSampleId"]
         except KeyError:
