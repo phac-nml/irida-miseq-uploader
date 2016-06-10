@@ -28,7 +28,6 @@ class RunUploader(threading.Thread):
             name: the name of the thread.
         """
         self._stop_event = threading.Event()
-        self._sleep_period = 1.0
         self._api = api
         self._runs = runs
         threading.Thread.__init__(self, name=name)
