@@ -23,25 +23,6 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
 
-def exception_handler(fn):
-    def decorator(*args, **kwargs):
-        """
-        Run the function (fn) and if any errors are raised then
-        the publisher sends a messaage which calls
-        handle_api_thread_error() in iridaUploaderMain.MainPanel
-        """
-        try:
-            return fn(*args, **kwargs)
-        except Exception, e:
-            logging.error("An error occurred while uploading in function {function_name}, publishing message to inform API: [{exception}]".format(function_name=fn.__name__, exception=str(e)))
-            send_message(
-                "handle_api_thread_error",
-                function_name=fn.__name__,
-                exception=e)
-            raise
-
-    return decorator
-
 class ApiCalls(object):
 
     def __init__(self, client_id, client_secret,
@@ -116,7 +97,6 @@ class ApiCalls(object):
 
         return oauth_serv
 
-    @exception_handler
     def get_access_token(self, oauth_service):
         """
         get access token to be used to get session from oauth_service
@@ -247,7 +227,6 @@ class ApiCalls(object):
 
         return retVal
 
-    @exception_handler
     def get_projects(self):
         """
         API call to api/projects to get list of projects
@@ -282,7 +261,6 @@ class ApiCalls(object):
 
         return self.cached_projects
 
-    @exception_handler
     def get_samples(self, project=None, sample=None):
         """
         API call to api/projects/project_id/samples
@@ -320,7 +298,6 @@ class ApiCalls(object):
 
         return self.cached_samples[project_id]
 
-    @exception_handler
     def get_sequence_files(self, sample):
         """
         API call to api/projects/project_id/sample_id/sequenceFiles
@@ -364,7 +341,6 @@ class ApiCalls(object):
 
         return result
 
-    @exception_handler
     def send_project(self, project, clear_cache=True):
         """
         post request to send a project to IRIDA via API
@@ -411,7 +387,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def send_samples(self, samples_list):
         """
         post request to send sample(s) to the given project
@@ -463,7 +438,6 @@ class ApiCalls(object):
                                   sample_data=str(sample)), ["IRIDA rejected the sample."])
         return json_res_list
 
-    @exception_handler
     def get_file_size_list(self, samples_list):
         """
         calculate file size for the files in a sample
@@ -483,7 +457,6 @@ class ApiCalls(object):
 
         return file_size_list
 
-    @exception_handler
     def send_sequence_files(self, samples_list, callback=None,
                                  upload_id=1):
 
@@ -529,6 +502,13 @@ class ApiCalls(object):
         return json_res_list
 
     def _kill_connections(self):
+        """Terminate any currently running uploads.
+
+        This method simply sets a flag to instruct any in-progress generators called
+        by `_send_sequence_files` below to stop generating data and raise an exception
+        that will set the run to an error state on the server.
+        """
+        
         self._stop_upload = True
         self.session.close()
 
@@ -680,6 +660,10 @@ class ApiCalls(object):
         response = self.session.post(url, data=_sample_upload_generator(sample),
                                      headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
 
+        if self._stop_upload:
+            logging.info("Upload was halted on user request, raising exception so that server upload status is set to error state.")
+            raise SequenceFileError("Upload halted on user request.", [])
+
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
@@ -694,7 +678,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def create_seq_run(self, metadata_dict):
 
         """
@@ -751,7 +734,6 @@ class ApiCalls(object):
                                    response.reason)
         return json_res
 
-    @exception_handler
     def get_seq_runs(self):
 
         """
@@ -774,7 +756,6 @@ class ApiCalls(object):
 
         return pair_seq_run_list
 
-    @exception_handler
     def set_seq_run_complete(self, identifier):
 
         """
@@ -791,7 +772,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def set_seq_run_uploading(self, identifier):
 
         """
@@ -824,7 +804,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def _set_seq_run_upload_status(self, identifier, status):
 
         """
