@@ -579,15 +579,30 @@ class ApiCalls(object):
         read_size = 32000
 
         def _send_file(filename, parameter_name, bytes_read=0):
-            ### Send the boundary header section for the file
+            """This function is a generator that yields a multipart form-data
+            entry for the specified file. This function will yield `read_size`
+            bytes of the specified file name at a time as the generator is called.
+            This function will also terminate generating data when the field
+            `self._stop_upload` is set.
+
+            Args:
+                filename: the file to read and yield in `read_size` chunks to
+                          the server.
+                parameter_name: the form field name to send to the server.
+                bytes_read: used for sending messages to the UI layer indicating
+                            the total number of bytes sent when sending the sample
+                            to the server.
+            """
+
+            # Send the boundary header section for the file
             logging.info("Sending the boundary header section for {}".format(filename))
             yield ("\r\n--{boundary}\r\n"
             "Content-Disposition: form-data; name=\"{parameter_name}\"; filename=\"{filename}\"\r\n"
             "\r\n").format(boundary=boundary, parameter_name=parameter_name, filename=filename.replace("\\", "/"))
 
-            ### Send the contents of the file, read_size bytes at a time until
-            ### we've either read the entire file, or we've been instructed to
-            ### stop the upload by the UI
+            # Send the contents of the file, read_size bytes at a time until
+            # we've either read the entire file, or we've been instructed to
+            # stop the upload by the UI
             logging.info("Starting to send the file {}".format(filename))
             with open(filename, "rb") as fastq_file:
                 data = fastq_file.read(read_size)
@@ -601,6 +616,14 @@ class ApiCalls(object):
                     logging.info("Halting upload on user request.")
 
         def _send_parameters(parameter_name, parameters):
+            """This function is a generator that yields a multipart form-data
+            entry with additional file metadata.
+
+            Args:
+                parameter_name: the form field name to use to send to the server.
+                parameters: a JSON encoded object with the metadata for the file.
+            """
+
             logging.info("Going to send parameters for {}".format(parameter_name))
             yield ("\r\n--{boundary}\r\n"
             "Content-Disposition: form-data; name=\"{parameter_name}\"\r\n"
@@ -608,9 +631,19 @@ class ApiCalls(object):
             "{parameters}\r\n").format(boundary=boundary, parameter_name=parameter_name, parameters=parameters)
 
         def _finish_request():
+            """This function is a generator that yields the terminal boundary
+            entry for a multipart form-data upload."""
+
             yield "--{boundary}--".format(boundary=boundary)
 
         def _sample_upload_generator(sample):
+            """This function accepts the sample and composes a series of generators
+            that are used to send the file contents and metadata for the sample.
+
+            Args:
+                sample: the sample to send to the server
+            """
+
             bytes_read = 0
 
             file_metadata = sample.get_sample_metadata()
@@ -618,6 +651,8 @@ class ApiCalls(object):
             file_metadata_json = json.dumps(file_metadata)
 
             if sample.is_paired_end():
+                # Compose a collection of generators to send both files of a paired-end
+                # file set and the corresponding metadata
                 return itertools.chain(
                     _send_file(filename=sample.get_files()[0], parameter_name="file1"),
                     _send_file(filename=sample.get_files()[1], parameter_name="file2", bytes_read=path.getsize(sample.get_files()[0])),
@@ -625,12 +660,12 @@ class ApiCalls(object):
                     _send_parameters(parameter_name="parameters2", parameters=file_metadata_json),
                     _finish_request())
             else:
+                # Compose a generator to send the single file from a single-end
+                # file set and the corresponding metadata.
                 return itertools.chain(
                     _send_file(filename=sample.get_files()[0], param_name="file"),
                     _send_parameters(parameter_name="parameters", parameters=file_metadata_json),
                     _finish_request())
-
-
 
         if sample.is_paired_end():
             logging.info("sending paired-end file")

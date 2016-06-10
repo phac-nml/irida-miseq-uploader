@@ -9,11 +9,11 @@ Keys: 'sampleName','description','sequencerSampleId','sampleProject'
 
 class Sample(object):
 
-    def __init__(self, new_samp_dict, sample_number=None, run=None):
+    def __init__(self, new_samp_dict, run=None, sample_number=None):
         self.sample_dict = dict(new_samp_dict)
         self.seq_file = None
-        self._sample_number = sample_number
         self._run = run
+        self._sample_number = sample_number
 
     def get_id(self):
         # When pulling sample records from the server, the sample name *is* the
