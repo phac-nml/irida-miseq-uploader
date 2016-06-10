@@ -731,7 +731,7 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = MagicMock(side_effect=[StopIteration])
 
-        sample = API.apiCalls.Sample({"sampleProject": "999"})
+        sample = API.apiCalls.Sample({"sampleProject": "999", "sampleName": "1"})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.get_sequence_files(sample)
@@ -928,7 +928,7 @@ class TestApiCalls(unittest.TestCase):
         api.get_link = MagicMock(side_effect=[StopIteration])
 
         proj_id = "-1"
-        sample = API.apiCalls.Sample({"sampleProject": proj_id})
+        sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "1"})
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_samples([sample])
@@ -961,7 +961,7 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        sample = API.apiCalls.Sample({"sampleProject": "1"})
+        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "1"})
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
@@ -1086,7 +1086,8 @@ class TestApiCalls(unittest.TestCase):
         sample_id = "-1"
         sample = API.apiCalls.Sample({
             "sampleProject": proj_id,
-            "sampleName": sample_id
+            "sampleName": sample_id,
+            "sequencerSampleId": sample_id
         })
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)

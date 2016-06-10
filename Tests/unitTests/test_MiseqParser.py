@@ -390,3 +390,14 @@ class TestMiSeqParser(unittest.TestCase):
         # test that these parsers don't throw on unexpected sections or keys
         metadata = parse_metadata(sample_sheet)
         samples = complete_parse_samples(sample_sheet)
+
+    def test_parse_common_sample_name(self):
+        sample_sheet = path.join(path_to_module, 'testSampleNameAndId', 'SampleSheet.csv')
+
+        samples = complete_parse_samples(sample_sheet)
+        self.assertEqual(3, len(samples))
+
+        for sample in samples:
+            self.assertTrue(sample.is_paired_end())
+            for file_name in sample.get_files():
+                self.assertTrue(path.basename(file_name).startswith(sample.sample_name))
