@@ -970,10 +970,9 @@ class TestApiCalls(unittest.TestCase):
                         session_response.text in str(err.exception))
 
     @patch("API.apiCalls.RawConfigParser")
-    @patch("__builtin__.open")
     @patch("API.apiCalls.ApiCalls.create_session")
-    def test_send_sequence_files_valid(self, mock_cs, mock_open_,
-                                            mock_config_parser):
+    @patch("os.path.getsize")
+    def test_send_sequence_files_valid(self, getsize, mock_cs, mock_config_parser):
 
         mock_cs.side_effect = [None]
 
@@ -1008,7 +1007,6 @@ class TestApiCalls(unittest.TestCase):
 
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
-        API.apiCalls.encoder.MultipartEncoder = MagicMock()
         API.apiCalls.ApiCalls.get_file_size_list = MagicMock()
 
         sample_dict = {
@@ -1023,8 +1021,8 @@ class TestApiCalls(unittest.TestCase):
                       "03-3333_S1_L001_R2_001.fastq.gz"]
         seq_file = SequenceFile({}, files)
         sample.set_seq_file(seq_file)
-	sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
-	sample.run._sample_sheet_name = "sheet"
+    	sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
 
         kwargs = {
             "samples_list": [sample]
@@ -1035,9 +1033,6 @@ class TestApiCalls(unittest.TestCase):
 
         json_res = json_res_list[0]
         self.assertEqual(json_res, json_dict)
-
-        mock_open_.assert_any_call(sample.get_files()[0], "rb")
-        mock_open_.assert_any_call(sample.get_files()[1], "rb")
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_sequence_files_invalid_proj_id(self, mock_cs):
