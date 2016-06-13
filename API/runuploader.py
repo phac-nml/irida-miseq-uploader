@@ -147,6 +147,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
+	raise
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.
