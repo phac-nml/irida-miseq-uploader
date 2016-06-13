@@ -1,6 +1,7 @@
 1.6.0 to 1.7.0
 ==============
 * Use the sample name and ID columns correctly in `SampleSheet.csv`: the sample name column is used for naming `.fastq.gz` files, the sample ID column is used for sending data to IRIDA.
+* Discard the cache of projects whenever sending data to the server.
 
 1.5.0 to 1.6.0
 ==============
