@@ -11,7 +11,7 @@ import wx.lib.agw.hyperlink as hl
 from os import path
 from distutils.version import LooseVersion
 from github3 import GitHub
-from GUI import MainFrame, UploaderAppFrame
+from GUI import UploaderAppFrame
 
 path_to_module = path.dirname(__file__)
 app_config = path.join(path_to_module, 'irida-uploader.cfg')
@@ -25,13 +25,8 @@ class Uploader(wx.App):
         self.get_app_info()
         self.check_for_update()
 
-        if not show_new_ui:
-            self.frame = MainFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
-            self.frame.Show()
-            self.frame.mp.api = self.frame.settings_frame.attempt_connect_to_api()
-        else:
-            frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
-            frame.Show()
+	frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
+        frame.Show()
 
     def get_app_info(self):
         config_parser = ConfigParser.ConfigParser()
@@ -101,21 +96,6 @@ class NewVersionMessageDialog(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-
-def main():
-    app = Uploader(show_new_ui=False)
-    app.MainLoop()
-
-def run_new_interface():
-    logging.info("Running new interface.")
-    app = Uploader(show_new_ui=True)
-    app.MainLoop()
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the IRIDA Uploader.")
-    parser.add_argument('--new-interface', help='Use the new IRIDA uploader interface.', action='store_true')
-    args = parser.parse_args()
-    if args.new_interface:
-        run_new_interface()
-    else:
-        main()
+    app = Uploader()
+    app.MainLoop()
