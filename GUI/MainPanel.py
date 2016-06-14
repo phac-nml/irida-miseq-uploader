@@ -46,6 +46,8 @@ def check_config_dirs(conf_parser):
             "client_secret": "testClientSecret"
         }
 
+        conf_parser.add_section("Settings")
+
         for key in defaults.keys():
             conf_parser.set("Settings", key, defaults[key])
 
