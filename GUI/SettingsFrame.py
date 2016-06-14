@@ -13,17 +13,9 @@ from appdirs import user_config_dir, user_log_dir
 from API.apiCalls import ApiCalls
 from API.pubsub import send_message
 
-DEFAULT_BASE_URL = "http://localhost:8080/api/"
-DEFAULT_USERNAME = "admin"
-DEFAULT_PASSWORD = "password1"
-DEFAULT_CLIENT_ID = "testClient"
-DEFAULT_CLIENT_SECRET = "testClientSecret"
-
-
 path_to_module = path.dirname(__file__)
 if len(path_to_module) == 0:
     path_to_module = '.'
-
 
 class SettingsPanel(wx.Panel):
 
