@@ -50,7 +50,7 @@ def check_config_dirs(conf_parser):
 
         for key in defaults.keys():
             conf_parser.set("Settings", key, defaults[key])
-
+    else:
         conf_parser.read(conf_file)
 
 class MainPanel(wx.Panel):
