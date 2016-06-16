@@ -1,11 +1,12 @@
 import wx
+import wx.lib.scrolledpanel as scrolled
 import logging
 
 from wx.lib.pubsub import pub
 
 from SamplePanel import SamplePanel
 
-class RunPanel(wx.Panel):
+class RunPanel(scrolled.ScrolledPanel):
     """A wx.Panel to show the contents of a SequencingRun.
 
     This panel is used to show a complete sequencing run.
@@ -29,7 +30,7 @@ class RunPanel(wx.Panel):
             run: The sequencing run that should be displayed.
             api: An initialized instance of an API for interacting with IRIDA.
         """
-        wx.Panel.__init__(self, parent, style=wx.SUNKEN_BORDER)
+        scrolled.ScrolledPanel.__init__(self, parent, style=wx.SUNKEN_BORDER)
         box = wx.StaticBox(self, label=run.sample_sheet_name)
         self._timer = wx.Timer(self)
 
@@ -55,6 +56,7 @@ class RunPanel(wx.Panel):
         self.SetSizer(self._sizer)
         self.Bind(wx.EVT_TIMER, self._update_progress_timer, self._timer)
         self.Layout()
+        self.SetupScrolling()
 
     def _update_progress_timer(self, event):
         """Update the display when the timer is fired.
