@@ -52,6 +52,7 @@ class UploaderAppPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self._parent = parent
         self._discovered_runs = []
+        self._selected_directory = None
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
@@ -61,8 +62,19 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
+        pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
         self._settings_changed()
+
+    def _directory_selected(self, directory):
+        """The user has selected a different directory from default, so restart
+        scanning using the selected directory.
+
+        Args:
+            directory: The directory to scan.
+        """
+        self._selected_directory = directory
+        wx.CallAfter(self._settings_changed)
 
     def _sample_sheet_error(self, sample_sheet=None, error=None):
         """Show the invalid sample sheets panel whenever a sample sheet error
@@ -104,16 +116,21 @@ class UploaderAppPanel(wx.Panel):
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
-        """Read the default directory from the configuration file.
+        """Read the default directory from the configuration file, or, if the user
+        has selected a directory manually, return the manually selected directory.
 
         Returns:
             A string containing the default directory to scan.
         """
-        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
 
-        conf_parser = RawConfigParser()
-        conf_parser.read(user_config_file)
-        return conf_parser.get("Settings", "default_dir")
+        if not self._selected_directory:
+            user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+            conf_parser = RawConfigParser()
+            conf_parser.read(user_config_file)
+            return conf_parser.get("Settings", "default_dir")
+        else:
+            return self._selected_directory
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
@@ -288,6 +305,8 @@ class UploaderAppFrame(wx.Frame):
         The frame sets up the menu and adds an "About" dialog.
     """
 
+    directory_selected_topic = "directory_selected_topic"
+
     def __init__(self, parent=None, app_name=None, app_version=None, app_url=None, *args, **kwargs):
         """Initialize the UploaderAppFrame
 
@@ -317,6 +336,7 @@ class UploaderAppFrame(wx.Frame):
         file_menu = wx.Menu()
         help_menu = wx.Menu()
 
+        self.Bind(wx.EVT_MENU, self._directory_chooser, file_menu.Append(wx.ID_OPEN, 'Open directory...'))
         self.Bind(wx.EVT_MENU, self._open_settings, file_menu.Append(wx.ID_PROPERTIES, 'Settings...'))
         file_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, lambda evt: self.Close(), file_menu.Append(wx.ID_EXIT))
@@ -325,6 +345,16 @@ class UploaderAppFrame(wx.Frame):
         menubar.Append(file_menu, '&File')
         menubar.Append(help_menu, '&Help')
         self.SetMenuBar(menubar)
+
+    def _directory_chooser(self, event):
+        """Open a directory chooser to select a directory other than default."""
+        logging.info("Going to open a folder chooser")
+        dir_dialog = wx.DirDialog(self, style=wx.DD_DIR_MUST_EXIST)
+        response = dir_dialog.ShowModal()
+
+        if response == wx.ID_OK:
+            logging.info("User selected directory [{}]".format(dir_dialog.GetPath()))
+            send_message(UploaderAppFrame.directory_selected_topic, directory=dir_dialog.GetPath())
 
     def _open_about(self, event):
         """Open the about dialog."""
