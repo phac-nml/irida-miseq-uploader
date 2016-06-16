@@ -17,7 +17,7 @@ from urllib2 import URLError
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
-from API.runuploader import upload_run_to_server, RunUploaderTopics
+from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 
 from GUI.SettingsFrame import SettingsFrame
@@ -76,7 +76,6 @@ class UploaderAppPanel(wx.Panel):
             self.Freeze()
             # clear out the other panels that might already be added
             self._sizer.Clear(deleteWindows=True)
-            
             # add the sheets panel to the sizer and show it
             self._sizer.Add(self._invalid_sheets_panel, flag=wx.EXPAND, proportion=1)
             self._invalid_sheets_panel.Show()
@@ -275,9 +274,13 @@ class UploaderAppPanel(wx.Panel):
         Args:
             event: the button event that initiated the method.
         """
-        for run in self._discovered_runs:
-            logging.info("Starting upload for {}".format(run.sample_sheet_dir))
-            threading.Thread(target=upload_run_to_server, kwargs={"api": self._api, "sequencing_run": run, "progress_callback": None}).start()
+
+        self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs)
+        self._upload_thread.start()
+
+    def Destroy(self):
+        self._upload_thread.join()
+        wx.Panel.Destroy(self)
 
 class UploaderAppFrame(wx.Frame):
     """The UploaderAppFrame is the super-container the Application.

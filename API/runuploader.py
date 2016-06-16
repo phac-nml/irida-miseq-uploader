@@ -1,10 +1,53 @@
 from Validation.onlineValidation import project_exists, sample_exists
-from wx.lib.pubsub import pub
-import logging
 from Exceptions.ProjectError import ProjectError
 from API.pubsub import send_message
+
 from os import path
+from wx.lib.pubsub import pub
+
 import json
+import logging
+import threading
+
+class RunUploaderTopics(object):
+    start_online_validation = "start_online_validation"
+    online_validation_failure = "online_validation_failure"
+    start_checking_samples = "start_checking_samples"
+    start_uploading_samples = "start_uploading_samples"
+    finished_uploading_samples = "finished_uploading_samples"
+
+class RunUploader(threading.Thread):
+    """A convenience thread wrapper for uploading runs to the server."""
+
+    def __init__(self, api, runs, name='RunUploaderThread'):
+        """Initialize a `RunUploader`.
+
+        Args:
+            api: an initialized connection to IRIDA.
+            runs: a list of runs to upload to the server.
+            name: the name of the thread.
+        """
+        self._stop_event = threading.Event()
+        self._api = api
+        self._runs = runs
+        threading.Thread.__init__(self, name=name)
+
+    def run(self):
+        """Initiate upload. The upload happens serially, one run at a time."""
+        for run in self._runs:
+            upload_run_to_server(api=self._api, sequencing_run=run, progress_callback=None)
+
+    def join(self, timeout=None):
+        """Kill the thread.
+
+        This will politely ask the API to terminate connections.
+
+        Args:
+            timeout: the length of time to wait before bailing out.
+        """
+        logging.info("Going to try killing connections on exit.")
+        self._api._kill_connections()
+        threading.Thread.join(self, timeout)
 
 class RunUploaderTopics(object):
     start_online_validation = "start_online_validation"
@@ -31,7 +74,6 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
 
     filename = path.join(sequencing_run.sample_sheet_dir,
                          ".miseqUploaderInfo")
-
 
     def _handle_upload_sample_complete(sample):
         """Handle the event that happens when a sample has finished uploading.
@@ -95,13 +137,17 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     send_message(sequencing_run.upload_started_topic)
 
     logging.info("About to start uploading samples.")
-    api.send_sequence_files(samples_list = samples_to_upload,
-                                 callback = progress_callback, upload_id = run_id)
-    send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
-    send_message(sequencing_run.upload_completed_topic)
-    api.set_seq_run_complete(run_id)
-    _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
-
+    try:
+        api.send_sequence_files(samples_list = samples_to_upload,
+                                     callback = progress_callback, upload_id = run_id)
+        send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
+        send_message(sequencing_run.upload_completed_topic)
+        api.set_seq_run_complete(run_id)
+        _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
+    except Exception as e:
+        logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
+        api.set_seq_run_error(run_id)
+	raise
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.

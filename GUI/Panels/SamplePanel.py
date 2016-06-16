@@ -97,7 +97,7 @@ class SamplePanel(wx.Panel):
             event: the event that called this method.
         """
         bytes_sent = self._progress_value - self._last_timer_progress
-        logging.info("bytes sent in the last second for {}: [{}]".format(self._sample.get_id(), bytes_sent))
+        logging.info("bytes sent in the last second for {}: [{}, total {}/{}]".format(self._sample.get_id(), bytes_sent, self._progress_value, self._progress_max))
 
         if self._progress_value < self._progress_max:
             self.Freeze()
@@ -105,6 +105,9 @@ class SamplePanel(wx.Panel):
             self._progress.SetValue(progress_percent)
             self.Layout()
             self.Thaw()
+        else:
+            self._timer.Stop()
+            self.HideWithEffect(wx.SHOW_EFFECT_BLEND)
 
         self._last_timer_progress = self._progress_value
 

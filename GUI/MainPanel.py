@@ -11,11 +11,9 @@ from wx.lib.agw.genericmessagedialog import GenericMessageDialog as GMD
 from API.directoryscanner import *
 from API.runuploader import *
 from API.pubsub import send_message
-from API.fileutils import find_file_by_name
 from threading import Thread
 from time import time
 from math import ceil
-from shutil import copy2
 
 path_to_module = path.dirname(__file__)
 user_config_dir = user_config_dir("iridaUploader")
@@ -40,11 +38,19 @@ def check_config_dirs(conf_parser):
     if not path.exists(user_config_file):
         # find the default config dir from (at least) two directory levels
         # above this directory
-        conf_file = find_file_by_name(path.join(path_to_module, "..", ".."), "config.conf", depth=3)
+        defaults = {
+            "baseURL": "http://localhost:8080/api/",
+            "username": "admin",
+            "password": "password1",
+            "client_id": "testClient",
+            "client_secret": "testClientSecret"
+        }
 
-        print "User config file doesn't exist, using defaults."
-        copy2(conf_file, user_config_dir)
+        conf_parser.add_section("Settings")
 
+        for key in defaults.keys():
+            conf_parser.set("Settings", key, defaults[key])
+    else:
         conf_parser.read(conf_file)
 
 class MainPanel(wx.Panel):

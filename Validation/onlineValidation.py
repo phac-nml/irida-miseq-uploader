@@ -1,4 +1,5 @@
 from API.pubsub import send_message
+from requests import ConnectionError
 
 def project_exists(api, project_id, message_id=None):
     try:
