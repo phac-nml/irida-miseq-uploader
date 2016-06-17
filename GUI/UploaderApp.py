@@ -17,6 +17,7 @@ from urllib2 import URLError
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
+from API.directorymonitor import monitor_directory, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 
@@ -63,6 +64,8 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
+        pub.subscribe(self._start_upload, DirectoryMonitorTopics.new_run_observed)
+        threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
 
         self._settings_changed()
 
@@ -283,7 +286,7 @@ class UploaderAppPanel(wx.Panel):
         self.Layout()
         self.Thaw()
 
-    def _start_upload(self, event):
+    def _start_upload(self, event=None):
         """Initiate uploading runs to the server.
 
         This will upload multiple runs simultaneously, one per thread.
