@@ -1,12 +1,12 @@
 import wx
-import wx.lib.scrolledpanel as scrolled
 import logging
 
 from wx.lib.pubsub import pub
+from wx.lib.scrolledpanel import ScrolledPanel
 
 from SamplePanel import SamplePanel
 
-class RunPanel(scrolled.ScrolledPanel):
+class RunPanel(ScrolledPanel):
     """A wx.Panel to show the contents of a SequencingRun.
 
     This panel is used to show a complete sequencing run.
@@ -30,7 +30,7 @@ class RunPanel(scrolled.ScrolledPanel):
             run: The sequencing run that should be displayed.
             api: An initialized instance of an API for interacting with IRIDA.
         """
-        scrolled.ScrolledPanel.__init__(self, parent, style=wx.SUNKEN_BORDER)
+        ScrolledPanel.__init__(self, parent, style=wx.SUNKEN_BORDER)
         box = wx.StaticBox(self, label=run.sample_sheet_name)
         self._timer = wx.Timer(self)
 
@@ -39,6 +39,7 @@ class RunPanel(scrolled.ScrolledPanel):
         self._progress_value = 0
         self._last_progress = 0
         self._last_timer_progress = 0
+        self._sample_panels = {}
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
         self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
@@ -51,7 +52,8 @@ class RunPanel(scrolled.ScrolledPanel):
         pub.subscribe(self._upload_complete, run.upload_completed_topic)
 
         for sample in run.sample_list:
-            self._sizer.Add(SamplePanel(self, sample, run, api), flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
+            self._sample_panels[sample.get_id()] = SamplePanel(self, sample, run, api)
+            self._sizer.Add(self._sample_panels[sample.get_id()], flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
 
         self.SetSizer(self._sizer)
         self.Bind(wx.EVT_TIMER, self._update_progress_timer, self._timer)
@@ -110,18 +112,29 @@ class RunPanel(scrolled.ScrolledPanel):
         self.Thaw()
         self._timer.Start(1000)
 
-    def _upload_complete(self):
+    def _upload_complete(self, sample=None):
         """Update the display when the upload has been completed.
 
         This method will set the progress bar to it's maximum value and show
         text of 100% when the run.upload_completed_topic is received.
         """
-        self.Freeze()
-        self._progress.SetValue(self._progress.GetRange())
-        self._progress_text.SetLabel("100%")
-        self._timer.Stop()
-        self.Layout()
-        self.Thaw()
+        if sample:
+            logging.info("Upload completed for sample {}".format(sample.get_id()))
+            sample_panel = self._sample_panels[sample.get_id()]
+
+            # Move the completed sample to the bottom of the list.
+            sample_panel.HideWithEffect(wx.SHOW_EFFECT_BLEND)
+            self._sizer.Detach(sample_panel)
+            self._sizer.Add(sample_panel, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
+            sample_panel.ShowWithEffect(wx.SHOW_EFFECT_BLEND)
+            self.Layout()
+        else:
+            self.Freeze()
+            self._progress.SetValue(self._progress.GetRange())
+            self._progress_text.SetLabel("100%")
+            self._timer.Stop()
+            self.Layout()
+            self.Thaw()
 
     def _handle_progress(self, progress):
         """Update the number of bytes sent provided by the API.

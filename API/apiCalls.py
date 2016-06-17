@@ -667,7 +667,7 @@ class ApiCalls(object):
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
-            send_message('completed_uploading_sample', sample = sample)
+            send_message(sample.upload_completed_topic, sample=sample)
         else:
             err_msg = ("Error {status_code}: {err_msg}\n").format(
                        status_code=str(response.status_code),

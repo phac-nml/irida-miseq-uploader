@@ -222,7 +222,7 @@ class UploaderAppPanel(wx.Panel):
         self.Freeze()
 
         connection_error_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        connection_error_header = wx.StaticText(self, label="✘ Uh-oh. I couldn't to connect to IRIDA.")
+        connection_error_header = wx.StaticText(self, label=u"✘ Uh-oh. I couldn't to connect to IRIDA.")
         connection_error_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         connection_error_header.SetForegroundColour(wx.Colour(255, 0, 0))
         connection_error_header.Wrap(350)
@@ -253,9 +253,9 @@ class UploaderAppPanel(wx.Panel):
                 self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
             else:
                 all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                all_uploaded_header = wx.StaticText(self, label="✓ All sample sheets uploaded.")
+                all_uploaded_header = wx.StaticText(self, label=u"✓ All sample sheets uploaded.")
                 all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-                all_uploaded_header.SetForegroundColour(wx.Colour(0, 255, 0))
+                all_uploaded_header.SetForegroundColour(wx.Colour(51, 204, 51))
                 all_uploaded_header.Wrap(350)
                 all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
