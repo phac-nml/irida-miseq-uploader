@@ -64,10 +64,23 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
-        pub.subscribe(self._start_upload, DirectoryMonitorTopics.new_run_observed)
+        pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+        pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
         threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
 
         self._settings_changed()
+
+    def _prepare_for_automatic_upload(self):
+        self.Freeze()
+        self._sizer.Clear(deleteWindows=True)
+        
+        self._run_sizer = wx.BoxSizer(wx.VERTICAL)
+        self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.EXPAND)
+        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.ALIGN_CENTER)
+        self.Layout()
+        self.Thaw()
 
     def _directory_selected(self, directory):
         """The user has selected a different directory from default, so restart
