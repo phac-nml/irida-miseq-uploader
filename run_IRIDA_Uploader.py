@@ -96,6 +96,9 @@ class NewVersionMessageDialog(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-if __name__ == "__main__":
+def main():
     app = Uploader()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()
