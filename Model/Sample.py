@@ -75,6 +75,10 @@ class Sample(object):
         return self._run.upload_started_topic + "." + self.get_id()
 
     @property
+    def upload_completed_topic(self):
+        return self._run.upload_completed_topic + "." + self.get_id()
+
+    @property
     def online_validation_topic(self):
         return self._run.online_validation_topic + "." + self.get_id()
 

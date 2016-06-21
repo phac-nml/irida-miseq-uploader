@@ -1,3 +1,4 @@
+# coding: utf-8
 import wx
 import logging
 import threading
@@ -55,8 +56,13 @@ class SamplePanel(wx.Panel):
 
         pub.subscribe(self._validation_results, sample.online_validation_topic)
         pub.subscribe(self._upload_started, sample.upload_started_topic)
+        pub.subscribe(self._upload_completed, sample.upload_completed_topic)
         pub.subscribe(self._upload_progress, sample.upload_progress_topic)
         threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
+
+    @property
+    def sample(self):
+        return self._sample
 
     def _validation_results(self, project=None):
         """Show the results of the online validation (checking if the project exists).
@@ -87,6 +93,20 @@ class SamplePanel(wx.Panel):
         self.Thaw()
         self._timer.Start(1000)
 
+    def _upload_completed(self, sample=None):
+        """Stop the timer and hide self when the upload is complete."""
+
+        logging.info("Upload complete for sample {}".format(self._sample.get_id()))
+        self._timer.Stop()
+        self.Freeze()
+        complete_label = wx.StaticText(self, label=u"✓")
+        complete_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        complete_label.SetForegroundColour(wx.Colour(51, 204, 51))
+        self._sizer.Add(complete_label, flag=wx.EXPAND | wx.RIGHT, border=5)
+        self._progress.Destroy()
+        self.Layout()
+        self.Thaw()
+
     def _update_progress_timer(self, event):
         """Update the display when the timer is fired.
 
@@ -99,15 +119,11 @@ class SamplePanel(wx.Panel):
         bytes_sent = self._progress_value - self._last_timer_progress
         logging.info("bytes sent in the last second for {}: [{}, total {}/{}]".format(self._sample.get_id(), bytes_sent, self._progress_value, self._progress_max))
 
-        if self._progress_value < self._progress_max:
-            self.Freeze()
-            progress_percent = (self._progress_value / float(self._progress_max)) * 100
-            self._progress.SetValue(progress_percent)
-            self.Layout()
-            self.Thaw()
-        else:
-            self._timer.Stop()
-            self.HideWithEffect(wx.SHOW_EFFECT_BLEND)
+        self.Freeze()
+        progress_percent = (self._progress_value / float(self._progress_max)) * 100
+        self._progress.SetValue(progress_percent)
+        self.Layout()
+        self.Thaw()
 
         self._last_timer_progress = self._progress_value
 
