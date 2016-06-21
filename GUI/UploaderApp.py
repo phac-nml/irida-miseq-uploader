@@ -81,6 +81,7 @@ class UploaderAppPanel(wx.Panel):
 
         self.Freeze()
         self._sizer.Clear(deleteWindows=True)
+        self._discovered_runs = []
 
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
