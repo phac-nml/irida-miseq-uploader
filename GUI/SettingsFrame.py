@@ -1,7 +1,7 @@
 import sys
 import logging
 from os import path, makedirs
-from ConfigParser import RawConfigParser, NoSectionError
+from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 from collections import OrderedDict
 
 import wx
@@ -202,6 +202,10 @@ class SettingsPanel(wx.Panel):
                                             "Settings", "completion_cmd", "")
         self.config_dict["default_dir"] = self._get_config_value(
                                             "Settings", "default_dir", "")
+        try:
+            self.config_dict["monitor_default_dir"] = self.conf_parser.getboolean("Settings", "monitor_default_dir")
+        except (ValueError, NoOptionError) as e:
+            self.config_dict["monitor_default_dir"] = False
 
     def create_api_obj(self):
 
@@ -896,12 +900,14 @@ class SettingsPanel(wx.Panel):
         no return value
         """
 
-        default_dir_label = wx.StaticText(
-            self, id=-1, label="Default directory")
-        default_dir_label.SetFont(self.LABEL_TXT_FONT)
+        default_dir_label = wx.StaticText(self, label="Default directory")
 
         self.default_dir_box = wx.DirPickerCtrl(self,
                                                path=self.config_dict["default_dir"])
+        self.monitor_checkbox = wx.CheckBox(self, label="Monitor directory for new runs?")
+        self.monitor_checkbox.SetValue(self.config_dict["monitor_default_dir"])
+        self.monitor_checkbox.SetToolTipString("Monitor the default directory for when the Illumina Software indicates that the analysis is complete and ready to upload (when CompletedJobInfo.xml is written to the directory).")
+
         self.default_dir_box.SetFont(self.TEXTBOX_FONT)
         self.default_dir_box.Bind(wx.EVT_KILL_FOCUS, self.save_changes)
 
@@ -912,8 +918,10 @@ class SettingsPanel(wx.Panel):
         self.basedir_sizer.Add(default_dir_label,
                                       flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                       border=self.ICON_SPACE)
-        self.basedir_sizer.Add(self.default_dir_box, proportion=1,
+        self.basedir_sizer.Add(self.default_dir_box, proportion=2,
                                       flag=wx.EXPAND)
+        self.basedir_sizer.Add(self.monitor_checkbox, proportion=1, flag=wx.EXPAND)
+
 
     def print_config_to_log_panel(self, changes_dict):
 
@@ -1106,6 +1114,7 @@ class SettingsPanel(wx.Panel):
         val_dict["client_secret"] = self.client_secret_box.GetValue()
         val_dict["completion_cmd"] = self.completion_cmd_box.GetValue()
         val_dict["default_dir"] = self.default_dir_box.GetPath()
+        val_dict["monitor_default_dir"] = self.monitor_checkbox.GetValue()
 
         return val_dict
 
