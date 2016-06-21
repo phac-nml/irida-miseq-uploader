@@ -9,7 +9,7 @@ import wx.lib.agw.hyperlink as hl
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub
 
-from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser, NoOptionError
 from appdirs import user_config_dir
 from requests.exceptions import ConnectionError
 from os import path
@@ -67,11 +67,14 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
-        # topics to handle when monitoring a directory for automatic upload
-        pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-        pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
 
-        threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+        if self._should_monitor_directory():
+            logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
+            # topics to handle when monitoring a directory for automatic upload
+            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+
+            threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
 
         self._settings_changed()
 
@@ -139,6 +142,21 @@ class UploaderAppPanel(wx.Panel):
         self._invalid_sheets_panel.Hide()
        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
+
+    def _should_monitor_directory(self):
+        """Check the configuration file to see if we should be monitoring the default
+        directory for new uploads.
+
+        Returns:
+            A boolean indicating whether or not we should monitor the default directory.
+        """
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+        conf_parser = RawConfigParser()
+        conf_parser.read(user_config_file)
+        try:
+            return conf_parser.getboolean("Settings", "monitor_default_dir")
+        except (ValueError, NoOptionError) as e:
+            return False
 
     def _get_default_directory(self):
         """Read the default directory from the configuration file, or, if the user
