@@ -34,7 +34,7 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
 
-        pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
+        pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
         upload_run_to_server(api, run_to_upload, None)
 
@@ -57,7 +57,7 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
 
-        pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
+        pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
         upload_run_to_server(api, run_to_upload, None)
 
@@ -84,7 +84,7 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
 
-        pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
+        pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
         upload_run_to_server(api, run_to_upload, None)
 
@@ -110,7 +110,7 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
 
-        pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
+        pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
         upload_run_to_server(api, run_to_upload, None)
 
@@ -147,7 +147,7 @@ class TestRunUploader:
             logging.info("Succeeded in failing to upload files.")
             run_to_upload.sample_list[1].get_files = original_files_method
 
-        pub.subscribe(self.update_samples_counter, 'completed_uploading_sample')
+        pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
         upload_run_to_server(api, run_to_upload, None)
 
         assert 1 == self.sample_count
