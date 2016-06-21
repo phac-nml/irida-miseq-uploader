@@ -58,22 +58,30 @@ class UploaderAppPanel(wx.Panel):
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
 
+        # topics to handle from directory scanning
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
-        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
+        # topics to handle when settings have changed in the settings frame
+        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
+        # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
+        # topics to handle when monitoring a directory for automatic upload
         pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
         pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+
         threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
 
         self._settings_changed()
 
     def _prepare_for_automatic_upload(self):
+        """Clear out anything else that happens to be on the panel before Starting
+        an automatic upload."""
+
         self.Freeze()
         self._sizer.Clear(deleteWindows=True)
-        
+
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
         self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
