@@ -68,14 +68,6 @@ class UploaderAppPanel(wx.Panel):
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
-        if self._should_monitor_directory():
-            logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
-            # topics to handle when monitoring a directory for automatic upload
-            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-
-            threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
-
         self._settings_changed()
 
     def _prepare_for_automatic_upload(self):
@@ -140,6 +132,15 @@ class UploaderAppPanel(wx.Panel):
         # an error raised by the validation part.
         self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
         self._invalid_sheets_panel.Hide()
+
+        if self._should_monitor_directory():
+            logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
+            # topics to handle when monitoring a directory for automatic upload
+            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+
+            threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+
        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
@@ -156,6 +157,8 @@ class UploaderAppPanel(wx.Panel):
         try:
             return conf_parser.getboolean("Settings", "monitor_default_dir")
         except (ValueError, NoOptionError) as e:
+            # if the setting doesn't exist in the config file, handle it by assuming that
+            # we should not monitor the directory for changes...
             return False
 
     def _get_default_directory(self):
