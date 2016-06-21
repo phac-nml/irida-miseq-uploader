@@ -58,6 +58,7 @@ class SamplePanel(wx.Panel):
         pub.subscribe(self._upload_started, sample.upload_started_topic)
         pub.subscribe(self._upload_completed, sample.upload_completed_topic)
         pub.subscribe(self._upload_progress, sample.upload_progress_topic)
+
         threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
 
     @property
@@ -70,6 +71,8 @@ class SamplePanel(wx.Panel):
         Args:
             project: the project (if it exists) or None.
         """
+
+        pub.unsubscribe(self._validation_results, self._sample.online_validation_topic)
         self.Freeze()
         if project:
             self._status_label.SetLabel("{} ({})".format(self._sample.get_project_id(), project.get_name()))
@@ -85,6 +88,7 @@ class SamplePanel(wx.Panel):
         started topic is recieved.
         """
         logging.info("Upload started for sample {}".format(self._sample.get_id()))
+        pub.unsubscribe(self._upload_started, self._sample.upload_started_topic)
         self.Freeze()
         self._status_label.Destroy()
         self._progress = wx.Gauge(self, range=100, size=(100, 20))
@@ -97,6 +101,10 @@ class SamplePanel(wx.Panel):
         """Stop the timer and hide self when the upload is complete."""
 
         logging.info("Upload complete for sample {}".format(self._sample.get_id()))
+
+        pub.unsubscribe(self._upload_completed, self._sample.upload_completed_topic)
+        pub.unsubscribe(self._upload_progress, self._sample.upload_progress_topic)
+
         self._timer.Stop()
         self.Freeze()
         complete_label = wx.StaticText(self, label=u"✓")
