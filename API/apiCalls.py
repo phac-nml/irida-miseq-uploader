@@ -643,7 +643,7 @@ class ApiCalls(object):
                 # Compose a generator to send the single file from a single-end
                 # file set and the corresponding metadata.
                 return itertools.chain(
-                    _send_file(filename=sample.get_files()[0], param_name="file"),
+                    _send_file(filename=sample.get_files()[0], parameter_name="file"),
                     _send_parameters(parameter_name="parameters", parameters=file_metadata_json),
                     _finish_request())
 
