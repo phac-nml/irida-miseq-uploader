@@ -134,6 +134,14 @@ class UploaderAppPanel(wx.Panel):
         self._invalid_sheets_panel.Hide()
 
         if self._should_monitor_directory():
+            automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            auto_upload_enabled_text = wx.StaticText(self,
+                label=u"🛈 Automatic upload enabled.".format(directory=self._get_default_directory()))
+            auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+            auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
+            auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
+
+            self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
             logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
             # topics to handle when monitoring a directory for automatic upload
             pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
