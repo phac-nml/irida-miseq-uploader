@@ -1157,7 +1157,7 @@ class SettingsFrame(wx.Frame):
     connection_details_changed_topic = "connection_details_changed"
     def __init__(self, parent=None):
 
-        self.WINDOW_SIZE = (700, 450)
+        self.WINDOW_SIZE = (700, 475)
         self.parent = parent
         wx.Frame.__init__(self, parent=self.parent, id=wx.ID_ANY,
                           title="Settings",
