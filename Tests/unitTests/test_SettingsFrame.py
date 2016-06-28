@@ -102,6 +102,7 @@ class TestSettingsFrame(unittest.TestCase):
         foo = Foo()
         setattr(foo, "read", lambda f: None)
         setattr(foo, "get", lambda x, y: "")
+        setattr(foo, "getboolean", lambda x, y: False)
         mock_confparser.side_effect = [foo]
         # RawConfigParser will now return foo when called
         # foo.read takes one argument "f" and returns None

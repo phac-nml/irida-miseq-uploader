@@ -9,7 +9,7 @@ import wx.lib.agw.hyperlink as hl
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub
 
-from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser, NoOptionError
 from appdirs import user_config_dir
 from requests.exceptions import ConnectionError
 from os import path
@@ -17,6 +17,7 @@ from urllib2 import URLError
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
+from API.directorymonitor import monitor_directory, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 
@@ -57,14 +58,33 @@ class UploaderAppPanel(wx.Panel):
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
 
+        # topics to handle from directory scanning
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
         pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
-        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
+        # topics to handle when settings have changed in the settings frame
+        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
+        # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
         self._settings_changed()
+
+    def _prepare_for_automatic_upload(self):
+        """Clear out anything else that happens to be on the panel before Starting
+        an automatic upload."""
+
+        self.Freeze()
+        self._sizer.Clear(deleteWindows=True)
+        self._discovered_runs = []
+
+        self._run_sizer = wx.BoxSizer(wx.VERTICAL)
+        self._upload_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self._sizer.Add(self._run_sizer, proportion=1, flag=wx.EXPAND)
+        self._sizer.Add(self._upload_sizer, proportion=0, flag=wx.ALIGN_CENTER)
+        self.Layout()
+        self.Thaw()
 
     def _directory_selected(self, directory):
         """The user has selected a different directory from default, so restart
@@ -112,8 +132,42 @@ class UploaderAppPanel(wx.Panel):
         # an error raised by the validation part.
         self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
         self._invalid_sheets_panel.Hide()
+
+        if self._should_monitor_directory():
+            automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            auto_upload_enabled_text = wx.StaticText(self,
+                label=u"🛈 Automatic upload enabled.".format(directory=self._get_default_directory()))
+            auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+            auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
+            auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
+
+            self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+            logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
+            # topics to handle when monitoring a directory for automatic upload
+            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+
+            threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+
        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
+
+    def _should_monitor_directory(self):
+        """Check the configuration file to see if we should be monitoring the default
+        directory for new uploads.
+
+        Returns:
+            A boolean indicating whether or not we should monitor the default directory.
+        """
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+        conf_parser = RawConfigParser()
+        conf_parser.read(user_config_file)
+        try:
+            return conf_parser.getboolean("Settings", "monitor_default_dir")
+        except (ValueError, NoOptionError) as e:
+            # if the setting doesn't exist in the config file, handle it by assuming that
+            # we should not monitor the directory for changes...
+            return False
 
     def _get_default_directory(self):
         """Read the default directory from the configuration file, or, if the user
@@ -283,7 +337,7 @@ class UploaderAppPanel(wx.Panel):
         self.Layout()
         self.Thaw()
 
-    def _start_upload(self, event):
+    def _start_upload(self, event=None):
         """Initiate uploading runs to the server.
 
         This will upload multiple runs simultaneously, one per thread.

@@ -129,6 +129,10 @@ class RunPanel(ScrolledPanel):
             sample_panel.ShowWithEffect(wx.SHOW_EFFECT_BLEND)
             self.Layout()
         else:
+            logging.info("Upload completed for run {}".format(self._run.upload_started_topic))
+            pub.unsubscribe(self._handle_progress, self._run.upload_progress_topic)
+            pub.unsubscribe(self._upload_complete, self._run.upload_completed_topic)
+
             self.Freeze()
             self._progress.SetValue(self._progress.GetRange())
             self._progress_text.SetLabel("100%")

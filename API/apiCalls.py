@@ -556,7 +556,7 @@ class ApiCalls(object):
                 ["No sample with name [{}] exists in project [{}]".format(sample_id, project_id)])
 
         boundary = "B0undary"
-        read_size = 32000
+        read_size = 32768
 
         def _send_file(filename, parameter_name, bytes_read=0):
             """This function is a generator that yields a multipart form-data
@@ -584,7 +584,7 @@ class ApiCalls(object):
             # we've either read the entire file, or we've been instructed to
             # stop the upload by the UI
             logging.info("Starting to send the file {}".format(filename))
-            with open(filename, "rb") as fastq_file:
+            with open(filename, "rb", read_size) as fastq_file:
                 data = fastq_file.read(read_size)
                 while data and not self._stop_upload:
                     bytes_read += len(data)
@@ -643,7 +643,7 @@ class ApiCalls(object):
                 # Compose a generator to send the single file from a single-end
                 # file set and the corresponding metadata.
                 return itertools.chain(
-                    _send_file(filename=sample.get_files()[0], param_name="file"),
+                    _send_file(filename=sample.get_files()[0], parameter_name="file"),
                     _send_parameters(parameter_name="parameters", parameters=file_metadata_json),
                     _finish_request())
 
