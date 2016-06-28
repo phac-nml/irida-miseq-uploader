@@ -4,6 +4,7 @@ import logging
 import threading
 
 from wx.lib.pubsub import pub
+from API.pubsub import send_message
 from Validation import project_exists
 
 class SamplePanel(wx.Panel):
@@ -62,6 +63,9 @@ class SamplePanel(wx.Panel):
             pub.subscribe(self._upload_started, sample.upload_started_topic)
             threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
         else:
+            # this sample is already uploaded, so inform the run panel to move
+            # it down to the bottom of the list.
+            send_message(sample.upload_completed_topic, sample=sample)
             self._status_label.Destroy()
             self._upload_completed()
 
