@@ -5,6 +5,7 @@ from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 import logging
+import json
 
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
@@ -112,40 +113,50 @@ def complete_parse_samples(sample_sheet_file):
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
     data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
+    uploader_info_file = path.join(sample_sheet_dir, ".miseqUploaderInfo")
 
-    for sample in sample_list:
-        properties_dict = parse_out_sequence_file(sample)
-        # this is the Illumina-defined pattern for naming fastq files, from:
-        # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
-        file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.sample_name),
-                                                                                                 sample_number=sample.sample_number)
-        logging.info("Looking for files with pattern {}".format(file_pattern))
-        pf_list = find_file_by_name(directory = data_dir,
-                                    name_pattern = file_pattern,
-                                    depth = 1)
-        if not pf_list:
-            # OK. So we didn't find any files using the **correct** file name
-            # definition according to Illumina. Let's try again with our deprecated
-            # behaviour, where we didn't actually care about the sample number:
-            file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.get_id()))
+    with open(uploader_info_file, "rb") as reader:
+        uploader_info = json.load(reader)
+
+        for sample in sample_list:
+            properties_dict = parse_out_sequence_file(sample)
+            # this is the Illumina-defined pattern for naming fastq files, from:
+            # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
+            file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.sample_name),
+                                                                                                     sample_number=sample.sample_number)
             logging.info("Looking for files with pattern {}".format(file_pattern))
             pf_list = find_file_by_name(directory = data_dir,
                                         name_pattern = file_pattern,
                                         depth = 1)
-
             if not pf_list:
-                # we **still** didn't find anything. It's pretty likely, then that
-                # there aren't any fastq files in the directory that match what
-                # the sample sheet says...
-                raise SequenceFileError(
-                    ("The uploader was unable to find an files with a file name that ends with "
-                     ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
-                     "This usually happens when the Illumina MiSeq Reporter tool "
-                     "does not generate any FastQ data.")
-                     .format(sample.get_id(), data_dir))
-        sq = SequenceFile(properties_dict, pf_list)
+                # OK. So we didn't find any files using the **correct** file name
+                # definition according to Illumina. Let's try again with our deprecated
+                # behaviour, where we didn't actually care about the sample number:
+                file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.get_id()))
+                logging.info("Looking for files with pattern {}".format(file_pattern))
+                pf_list = find_file_by_name(directory = data_dir,
+                                            name_pattern = file_pattern,
+                                            depth = 1)
 
-        sample.set_seq_file(deepcopy(sq))
+                if not pf_list:
+                    # we **still** didn't find anything. It's pretty likely, then that
+                    # there aren't any fastq files in the directory that match what
+                    # the sample sheet says...
+                    raise SequenceFileError(
+                        ("The uploader was unable to find an files with a file name that ends with "
+                         ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
+                         "This usually happens when the Illumina MiSeq Reporter tool "
+                         "does not generate any FastQ data.")
+                         .format(sample.get_id(), data_dir))
+            sq = SequenceFile(properties_dict, pf_list)
+
+            sample.set_seq_file(deepcopy(sq))
+            try:
+                sample.already_uploaded = sample.get_id() in uploader_info['uploaded_samples']
+                logging.info("Sample {} was already uploaded.".format(sample.get_id()))
+            except KeyError:
+                logging.info("Sample {} was not already uploaded.".format(sample.get_id()))
+                pass
 
     return sample_list
 

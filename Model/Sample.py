@@ -14,6 +14,7 @@ class Sample(object):
         self.seq_file = None
         self._run = run
         self._sample_number = sample_number
+        self._already_uploaded = False
 
     def get_id(self):
         # When pulling sample records from the server, the sample name *is* the
@@ -24,6 +25,14 @@ class Sample(object):
             return self.sample_dict["sequencerSampleId"]
         except KeyError:
             return self.sample_dict["sampleName"]
+
+    @property
+    def already_uploaded(self):
+        return self._already_uploaded
+
+    @already_uploaded.setter
+    def already_uploaded(self, already_uploaded=False):
+        self._already_uploaded = already_uploaded
 
     @property
     def sample_name(self):

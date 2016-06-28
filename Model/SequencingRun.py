@@ -36,6 +36,14 @@ class SequencingRun(object):
     def sample_list(self, sample_list):
         self._sample_list = sample_list
 
+    @property
+    def uploaded_samples(self):
+        return filter(lambda sample: sample.already_uploaded, self.sample_list)
+
+    @property
+    def samples_to_upload(self):
+        return filter(lambda sample: not sample.already_uploaded, self.sample_list)
+
     def get_sample(self, sample_id):
         for sample in self._sample_list:
             if sample.get_id() == sample_id:
