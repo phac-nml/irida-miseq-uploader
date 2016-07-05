@@ -42,7 +42,7 @@ class RunPanel(ScrolledPanel):
         self._sample_panels = {}
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
-        self._progress_max = sum(sample.get_files_size() for sample in run.sample_list)
+        self._progress_max = sum(sample.get_files_size() for sample in run.samples_to_upload)
         logging.info("Total file size for run is {}".format(self._progress_max))
 
         self._sizer = wx.StaticBoxSizer(box, wx.VERTICAL)

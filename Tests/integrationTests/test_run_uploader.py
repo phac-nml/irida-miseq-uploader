@@ -11,7 +11,7 @@ from API.directoryscanner import find_runs_in_directory
 class TestRunUploader:
     sample_count = 0
 
-    def update_samples_counter(self, sample):
+    def update_samples_counter(self, sample=None):
         self.sample_count += 1
 
     def test_upload_run_cached_projects(self, api):

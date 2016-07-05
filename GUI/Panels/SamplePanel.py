@@ -4,6 +4,7 @@ import logging
 import threading
 
 from wx.lib.pubsub import pub
+from API.pubsub import send_message
 from Validation import project_exists
 
 class SamplePanel(wx.Panel):
@@ -38,7 +39,7 @@ class SamplePanel(wx.Panel):
 
         self._progress_value = 0
         self._last_timer_progress = 0
-
+        self._progress = None
         self._progress_max = sample.get_files_size()
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -54,12 +55,19 @@ class SamplePanel(wx.Panel):
 
         self.Layout()
 
-        pub.subscribe(self._validation_results, sample.online_validation_topic)
-        pub.subscribe(self._upload_started, sample.upload_started_topic)
         pub.subscribe(self._upload_completed, sample.upload_completed_topic)
         pub.subscribe(self._upload_progress, sample.upload_progress_topic)
 
-        threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
+        if not sample.already_uploaded:
+            pub.subscribe(self._validation_results, sample.online_validation_topic)
+            pub.subscribe(self._upload_started, sample.upload_started_topic)
+            threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
+        else:
+            # this sample is already uploaded, so inform the run panel to move
+            # it down to the bottom of the list.
+            send_message(sample.upload_completed_topic, sample=sample)
+            self._status_label.Destroy()
+            self._upload_completed()
 
     @property
     def sample(self):
@@ -110,8 +118,10 @@ class SamplePanel(wx.Panel):
         complete_label = wx.StaticText(self, label=u"✓")
         complete_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         complete_label.SetForegroundColour(wx.Colour(51, 204, 51))
+        complete_label.SetToolTipString("{} is completed uploading.".format(self._sample.get_id()))
         self._sizer.Add(complete_label, flag=wx.EXPAND | wx.RIGHT, border=5)
-        self._progress.Destroy()
+        if self._progress is not None:
+            self._progress.Destroy()
         self.Layout()
         self.Thaw()
 

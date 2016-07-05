@@ -75,11 +75,12 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     filename = path.join(sequencing_run.sample_sheet_dir,
                          ".miseqUploaderInfo")
 
-    def _handle_upload_sample_complete(sample):
+    def _handle_upload_sample_complete(sample=None):
         """Handle the event that happens when a sample has finished uploading.
 
         """
-
+        if sample is None:
+            raise Exception("sample is required!")
         with open(filename, "rb") as reader:
             uploader_info = json.load(reader)
             logging.info(uploader_info)
@@ -90,19 +91,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
         with open(filename, 'wb') as writer:
             json.dump(uploader_info, writer)
         logging.info("Finished updating info file.")
-
-    def _sample_already_uploaded(sample):
-        """Check whether or not a sample was already uploaded
-        """
-        with open(filename, "rb") as reader:
-            uploader_info = json.load(reader)
-            logging.info(uploader_info)
-            try:
-                logging.info("Checking if {} was already uploaded in {}.".format(sample.get_id(), uploader_info['uploaded_samples']))
-                return sample.get_id() in uploader_info['uploaded_samples']
-            except KeyError:
-                logging.info("sample {} was not uploaded.".format(sample.get_id()))
-                return False
+        pub.unsubscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
 
     # do online validation first.
     _online_validation(api, sequencing_run)
@@ -126,19 +115,17 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     logging.info("Sending samples to server: [{}].".format(", ".join([str(x) for x in samples_to_create])))
     api.send_samples(samples_to_create)
 
-    pub.subscribe(_handle_upload_sample_complete, 'completed_uploading_sample')
-
-    samples_to_upload = filter(lambda sample: not _sample_already_uploaded(sample), sequencing_run.sample_list)
-    skipped_samples = filter(lambda sample: _sample_already_uploaded(sample), sequencing_run.sample_list)
+    for sample in sequencing_run.samples_to_upload:
+        pub.subscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
 
     send_message("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir,
-                                               skipped_sample_ids = [sample.get_id() for sample in skipped_samples],
+                                               skipped_sample_ids = [sample.get_id() for sample in sequencing_run.uploaded_samples],
                                                run_id = run_id)
     send_message(sequencing_run.upload_started_topic)
 
     logging.info("About to start uploading samples.")
     try:
-        api.send_sequence_files(samples_list = samples_to_upload,
+        api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
                                      callback = progress_callback, upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
         send_message(sequencing_run.upload_completed_topic)

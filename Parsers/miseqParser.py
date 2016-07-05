@@ -5,6 +5,7 @@ from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 import logging
+import json
 
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
@@ -112,6 +113,13 @@ def complete_parse_samples(sample_sheet_file):
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
     data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
+    uploader_info_file = path.join(sample_sheet_dir, ".miseqUploaderInfo")
+
+    try:
+        with open(uploader_info_file, "rb") as reader:
+            uploader_info = json.load(reader)
+    except IOError:
+        uploader_info = None
 
     for sample in sample_list:
         properties_dict = parse_out_sequence_file(sample)
@@ -146,6 +154,14 @@ def complete_parse_samples(sample_sheet_file):
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
+
+        if uploader_info is not None:
+            try:
+                sample.already_uploaded = sample.get_id() in uploader_info['uploaded_samples']
+                logging.info("Sample {} was already uploaded.".format(sample.get_id()))
+            except KeyError:
+                logging.info("Sample {} was not already uploaded.".format(sample.get_id()))
+                pass
 
     return sample_list
 
