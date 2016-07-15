@@ -311,8 +311,9 @@ class SettingsDialog(wx.Dialog):
             logging.info("No default config file exists, loading defaults.")
             for config in default_settings:
                 self._defaults[config.setting] = config.default_value
+                self._field_changed(config.setting, config.default_value, attempt_connect=False)
 
-    def _field_changed(self, field_name, field_value):
+    def _field_changed(self, field_name, field_value, attempt_connect=True):
         """A field change has been detected, write it out to the config file.
 
         Args:
@@ -334,4 +335,5 @@ class SettingsDialog(wx.Dialog):
         with open(self._config_file, 'wb') as config_file:
             config_parser.write(config_file)
 
-        threading.Thread(target=connect_to_irida).start()
+        if attempt_connect:
+            threading.Thread(target=connect_to_irida).start()
