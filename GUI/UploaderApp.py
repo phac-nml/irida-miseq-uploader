@@ -55,7 +55,6 @@ class UploaderAppPanel(wx.Panel):
         self._selected_directory = None
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
 
         # topics to handle from directory scanning
         pub.subscribe(self._add_run, DirectoryScannerTopics.run_discovered)
@@ -68,6 +67,7 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
         self._settings_changed()
+        self.SetSizerAndFit(self._sizer)
 
     def _prepare_for_automatic_upload(self):
         """Clear out anything else that happens to be on the panel before Starting
@@ -134,8 +134,7 @@ class UploaderAppPanel(wx.Panel):
 
         if self._should_monitor_directory():
             automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            auto_upload_enabled_text = wx.StaticText(self,
-                label=u"🛈 Automatic upload enabled.".format(directory=self._get_default_directory()))
+            auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
             auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
             auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
             auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
