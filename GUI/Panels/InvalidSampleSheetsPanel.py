@@ -8,7 +8,6 @@ from wx.lib.pubsub import pub
 from wx.lib.wordwrap import wordwrap
 
 from Exceptions import SampleError, SampleSheetError, SequenceFileError
-from GUI.SettingsFrame import SettingsFrame
 from API.directoryscanner import DirectoryScannerTopics
 from API.pubsub import send_message
 
@@ -55,7 +54,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
         self._sizer.Add(self._errors_tree, flag=wx.EXPAND, proportion=1)
 
         scan_again_button = wx.Button(self, label="Scan Again")
-        self.Bind(wx.EVT_BUTTON, lambda evt: send_message(SettingsFrame.connection_details_changed_topic), id=scan_again_button.GetId())
+        #self.Bind(wx.EVT_BUTTON, lambda evt: send_message(SettingsFrame.connection_details_changed_topic), id=scan_again_button.GetId())
         self._sizer.Add(scan_again_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
 
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)

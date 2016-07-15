@@ -11,7 +11,9 @@ import wx.lib.agw.hyperlink as hl
 from os import path
 from distutils.version import LooseVersion
 from github3 import GitHub
-from GUI import UploaderAppFrame
+from GUI import UploaderAppFrame, SettingsDialog
+from appdirs import user_config_dir
+from wx.lib.pubsub import pub
 
 path_to_module = path.dirname(__file__)
 app_config = path.join(path_to_module, 'irida-uploader.cfg')
@@ -25,7 +27,16 @@ class Uploader(wx.App):
         self.get_app_info()
         self.check_for_update()
 
-	frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+        if not path.exists(user_config_file):
+            dialog = SettingsDialog()
+            dialog.ShowModal()
+
+        self._show_main_app()
+
+    def _show_main_app(self):
+        frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
         frame.Show()
 
     def get_app_info(self):

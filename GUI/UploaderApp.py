@@ -11,18 +11,17 @@ from wx.lib.pubsub import pub
 
 from ConfigParser import RawConfigParser, NoOptionError
 from appdirs import user_config_dir
-from requests.exceptions import ConnectionError
 from os import path
-from urllib2 import URLError
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
 from API.directorymonitor import monitor_directory, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
+from API.APIConnector import connect_to_irida, APIConnectorTopics
 
-from GUI.SettingsFrame import SettingsFrame
 from GUI.Panels import RunPanel, InvalidSampleSheetsPanel
+from GUI.SettingsDialog import SettingsDialog
 
 class UploaderAppPanel(wx.Panel):
     """The UploaderAppPanel is the super-container the discovered SequencingRuns.
@@ -64,7 +63,7 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.garbled_sample_sheet)
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
         # topics to handle when settings have changed in the settings frame
-        pub.subscribe(self._settings_changed, SettingsFrame.connection_details_changed_topic)
+        pub.subscribe(self._settings_changed, SettingsDialog.settings_closed_topic)
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
@@ -206,70 +205,22 @@ class UploaderAppPanel(wx.Panel):
         Returns:
             A configured instance of API.apiCalls.
         """
-        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
-
-        conf_parser = RawConfigParser()
-        conf_parser.read(user_config_file)
-
-        client_id = conf_parser.get("Settings", "client_id")
-        client_secret = conf_parser.get("Settings", "client_secret")
-        baseURL = conf_parser.get("Settings", "baseURL")
-        username = conf_parser.get("Settings", "username")
-        password = conf_parser.get("Settings", "password")
-
+        pub.subscribe(self._handle_connection_error, APIConnectorTopics.connection_error_topic)
         try:
-            api = ApiCalls(client_id, client_secret, baseURL, username, password)
-            self._api = api
-
+            self._api = connect_to_irida()
+        except:
+            logging.info("Failed to connect to IRIDA, handling error.")
+            # error handling is done by subscriptions.
+        else:
             # only bother scanning once we've connected to IRIDA
             wx.CallAfter(self._scan_directories)
-        except ConnectionError, e:
-            logging.info("Got a connection error when trying to connect to IRIDA.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message=(
-                "We couldn't connect to IRIDA at {}. The server might be down. Make "
-                "sure that the connection address is correct (you can change the "
-                "address by clicking on the 'Open Settings' button below) and try"
-                " again, try again later, or contact an administrator."
-                ).format(baseURL))
-        except (SyntaxError, ValueError) as e:
-            logging.info("Connected, but the response was garbled.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message=(
-                "We couldn't connect to IRIDA at {}. The server is up, but I "
-                "didn't understand the response. Make sure that the connection "
-                "address is correct (you can change the address by clicking on "
-                "the 'Open Settings' button below) and try again, try again"
-                " later, or contact an administrator."
-                ).format(baseURL))
-        except KeyError, e:
-            logging.info("Connected, but the OAuth credentials are wrong.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message=(
-                "We couldn't connect to IRIDA at {}. The server is up, but it's "
-                "reporting that your credentials are wrong. Click on the 'Open Settings'"
-                " button below and check your credentials, then try again. If the "
-                "connection still doesn't work, contact an administrator."
-                ).format(baseURL))
-        except URLError, e:
-            logging.info("Couldn't connect to IRIDA because the URL is invalid.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message=(
-                "We couldn't connect to IRIDA at {} because it isn't a valid URL. "
-                "Click on the 'Open Settings' button below to enter a new URL and "
-                "try again."
-            ).format(baseURL))
-    	except:
-    	    logging.info("Some other kind of error happened.", exc_info=True)
-            wx.CallAfter(self._handle_connection_error, error_message=(
-                "We couldn't connect to IRIDA at {} for an unknown reason. Click "
-                "on the 'Open Settings' button below to check the URL and your "
-                "credentials, then try again. If the connection still doesn't "
-                "work, contact an administrator."
-                ).format(baseURL))
 
     def _handle_connection_error(self, error_message=None):
-    	"""Handle connection errors that might be thrown when initially connecting to IRIDA.
+        """Handle connection errors that might be thrown when initially connecting to IRIDA.
 
-    	Args:
-    	    error_message: A more detailed error message than "Can't connect"
-    	"""
+        Args:
+            error_message: A more detailed error message than "Can't connect"
+        """
 
         logging.error("Handling connection error.")
 
@@ -292,6 +243,7 @@ class UploaderAppPanel(wx.Panel):
 
         self.Layout()
         self.Thaw()
+        pub.unsubscribe(self._handle_connection_error, APIConnectorTopics.connection_error_topic)
 
     def _finished_loading(self):
         """Update the display when the run scan is finished.
@@ -422,8 +374,5 @@ class UploaderAppFrame(wx.Frame):
 
     def _open_settings(self, event):
         """Open the settings dialog."""
-        settings = SettingsFrame(self)
-        # attempt to connect to the API *before* showing so that the icons are
-        # all initialized correctly.
-        settings.attempt_connect_to_api()
-        settings.Show()
+        dialog = SettingsDialog(self)
+        dialog.ShowModal()

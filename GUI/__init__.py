@@ -1,1 +1,2 @@
 from UploaderApp import UploaderAppFrame
+from SettingsDialog import SettingsDialog
