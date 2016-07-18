@@ -16,6 +16,7 @@ class APIConnectorTopics(object):
     connection_error_user_credentials_topic = connection_error_credentials_topic + ".user"
     connection_error_client_id_topic = connection_error_credentials_topic + ".client_id"
     connection_error_client_secret_topic = connection_error_credentials_topic + ".client_secret"
+    connection_success_topic = "APIConnector.connection_success_topic"
 
 lock = threading.Lock()
 
@@ -43,6 +44,7 @@ def connect_to_irida():
         if lock.acquire(False):
             logging.info("About to try connecting to IRIDA.")
             api = ApiCalls(client_id, client_secret, baseURL, username, password)
+            send_message(APIConnectorTopics.connection_success_topic, api=api)
             return api
         else:
             logging.info("Someone else is already trying to connect to IRIDA.")

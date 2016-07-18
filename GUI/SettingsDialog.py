@@ -15,11 +15,44 @@ from collections import namedtuple
 from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 
 def make_error_label(parent, tooltip=None):
-    error_label = wx.StaticText(parent, label=u"✘")
-    error_label.SetFont(wx.Font(wx.DEFAULT, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+    error_label = wx.StaticText(parent, label=tooltip)
+    error_label.SetFont()
     error_label.SetForegroundColour(wx.Colour(255, 0, 0))
     error_label.SetToolTipString(tooltip)
     return error_label
+
+class ProcessingPlaceholderText(wx.StaticText):
+    blocks = [u"▖", u"▘", u"▝", u"▗"]
+
+    def __init__(self, parent, *args, **kwargs):
+        wx.StaticText.__init__(self, parent, *args, **kwargs)
+        self._timer = wx.Timer(self)
+        self._current_char = 0
+
+        self.SetFont(wx.Font(wx.DEFAULT, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+
+        self.Bind(wx.EVT_TIMER, self._update_progress_text, self._timer)
+        self.Restart()
+
+    def _update_progress_text(self, evt=None):
+        super(ProcessingPlaceholderText, self).SetLabel(ProcessingPlaceholderText.blocks[self._current_char % 4])
+        self._current_char += 1
+
+    def SetError(self, error_message=None):
+        self._timer.Stop()
+        super(ProcessingPlaceholderText, self).SetLabel(u"✘")
+        self.SetToolTipString(error_message)
+        self.SetForegroundColour(wx.Colour(255, 0, 0))
+
+    def SetSuccess(self, api=None):
+        self._timer.Stop()
+        super(ProcessingPlaceholderText, self).SetLabel(u"✓")
+        self.SetForegroundColour(wx.Colour(51, 204, 51))
+
+    def Restart(self):
+        self.SetForegroundColour(wx.Colour(0, 0, 255))
+        self._update_progress_text()
+        self._timer.Start(500)
 
 class URLEntryPanel(wx.Panel):
     """Panel for allowing entry of a URL"""
@@ -31,35 +64,24 @@ class URLEntryPanel(wx.Panel):
         self._url.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
         self._url.SetValue(default_url)
 
-        self._error_label = None
+        self._status_label = ProcessingPlaceholderText(self)
 
         label = wx.StaticText(self, label="Server URL")
         label.SetToolTipString("URL for the IRIDA server API.")
         self._sizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
         self._sizer.Add(self._url, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._status_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
+
         self.SetSizerAndFit(self._sizer)
         self.Layout()
 
-        pub.subscribe(self._handle_connection_error, APIConnectorTopics.connection_error_url_topic)
+        pub.subscribe(self._status_label.SetError, APIConnectorTopics.connection_error_url_topic)
+        pub.subscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
 
     def _field_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="baseurl", field_value=self._url.GetValue())
-        if self._error_label:
-            self.Freeze()
-            self._error_label.Destroy()
-            self._error_label = None
-            self.Layout()
-            self.Thaw()
+        self._status_label.Restart()
         evt.Skip()
-
-    def _handle_connection_error(self, error_message=None):
-        logging.info("connection error")
-        if self._error_label is None:
-            self.Freeze()
-            self._error_label = make_error_label(self, error_message)
-            self._sizer.Add(self._error_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
-            self.Layout()
-            self.Thaw()
 
 class UserDetailsPanel(wx.Panel):
     """Panel for allowing entry of user credentials"""
@@ -67,8 +89,8 @@ class UserDetailsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         border = wx.StaticBox(self, label="User authorization")
         self._sizer = wx.StaticBoxSizer(border, wx.VERTICAL)
-        self._error_label_user = None
-        self._error_label_pass = None
+        self._status_label_user = ProcessingPlaceholderText(self)
+        self._status_label_pass = ProcessingPlaceholderText(self)
 
         self._username_sizer = wx.BoxSizer(wx.HORIZONTAL)
         username_label = wx.StaticText(self, label="Username")
@@ -79,6 +101,7 @@ class UserDetailsPanel(wx.Panel):
         self._username.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
         self._username.SetValue(default_user)
         self._username_sizer.Add(self._username, flag=wx.EXPAND, proportion=1)
+        self._username_sizer.Add(self._status_label_user, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
 
         self._sizer.Add(self._username_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -91,6 +114,7 @@ class UserDetailsPanel(wx.Panel):
         self._password.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
         self._password.SetValue(default_pass)
         self._password_sizer.Add(self._password, flag=wx.EXPAND, proportion=1)
+        self._password_sizer.Add(self._status_label_pass, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
 
         self._sizer.Add(self._password_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -98,35 +122,19 @@ class UserDetailsPanel(wx.Panel):
         self.Layout()
 
         pub.subscribe(self._handle_connection_error, APIConnectorTopics.connection_error_user_credentials_topic)
+        pub.subscribe(self._status_label_user.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.subscribe(self._status_label_pass.SetSuccess, APIConnectorTopics.connection_success_topic)
 
     def _field_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="username", field_value=self._username.GetValue())
         send_message(SettingsDialog.field_changed_topic, field_name="password", field_value=self._password.GetValue())
-        if self._error_label_user:
-            self.Freeze()
-            self._error_label_user.Destroy()
-            self._error_label_user = None
-            self.Layout()
-            self.Thaw()
-
-        if self._error_label_pass:
-            self.Freeze()
-            self._error_label_pass.Destroy()
-            self._error_label_pass = None
-            self.Layout()
-            self.Thaw()
+        self._status_label_user.Restart()
+        self._status_label_pass.Restart()
         evt.Skip()
 
     def _handle_connection_error(self, error_message=None):
-        logging.info("Username related exception.")
-        if self._error_label_user is None:
-            self.Freeze()
-            self._error_label_user = make_error_label(self, error_message)
-            self._error_label_pass = make_error_label(self, error_message)
-            self._username_sizer.Add(self._error_label_user, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
-            self._password_sizer.Add(self._error_label_pass, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
-            self.Layout()
-            self.Thaw()
+        self._status_label_user.SetError(error_message)
+        self._status_label_pass.SetError(error_message)
 
 class ClientDetailsPanel(wx.Panel):
     """Panel for allowing entry of client credentials"""
@@ -134,8 +142,8 @@ class ClientDetailsPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         border = wx.StaticBox(self, label="Client authorization")
         self._sizer = wx.StaticBoxSizer(border, wx.VERTICAL)
-        self._client_id_error_label = None
-        self._client_secret_error_label = None
+        self._client_id_status_label = ProcessingPlaceholderText(self)
+        self._client_secret_status_label = ProcessingPlaceholderText(self)
 
         self._client_id_sizer = wx.BoxSizer(wx.HORIZONTAL)
         client_id_label = wx.StaticText(self, label="Client ID")
@@ -146,6 +154,7 @@ class ClientDetailsPanel(wx.Panel):
         self._client_id.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
         self._client_id.SetValue(default_client_id)
         self._client_id_sizer.Add(self._client_id, flag=wx.EXPAND, proportion=1)
+        self._client_id_sizer.Add(self._client_id_status_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
 
         self._sizer.Add(self._client_id_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -158,49 +167,24 @@ class ClientDetailsPanel(wx.Panel):
         self._client_secret.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
         self._client_secret.SetValue(default_client_secret)
         self._client_secret_sizer.Add(self._client_secret, flag=wx.EXPAND, proportion=1)
+        self._client_secret_sizer.Add(self._client_secret_status_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
 
         self._sizer.Add(self._client_secret_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
         self.SetSizerAndFit(self._sizer)
         self.Layout()
 
-        pub.subscribe(self._handle_client_id_error, APIConnectorTopics.connection_error_client_id_topic)
-        pub.subscribe(self._handle_client_secret_error, APIConnectorTopics.connection_error_client_secret_topic)
+        pub.subscribe(self._client_id_status_label.SetError, APIConnectorTopics.connection_error_client_id_topic)
+        pub.subscribe(self._client_secret_status_label.SetError, APIConnectorTopics.connection_error_client_secret_topic)
+        pub.subscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.subscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
 
     def _field_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="client_id", field_value=self._client_id.GetValue())
         send_message(SettingsDialog.field_changed_topic, field_name="client_secret", field_value=self._client_secret.GetValue())
-        if self._client_id_error_label:
-            self.Freeze()
-            self._client_id_error_label.Destroy()
-            self._client_id_error_label = None
-            self.Layout()
-            self.Thaw()
-        if self._client_secret_error_label:
-            self.Freeze()
-            self._client_secret_error_label.Destroy()
-            self._client_secret_error_label = None
-            self.Layout()
-            self.Thaw()
+        self._client_id_status_label.Restart()
+        self._client_secret_status_label.Restart()
         evt.Skip()
-
-    def _handle_client_id_error(self, error_message=None):
-        logging.info("Client id error")
-        if self._client_id_error_label is None:
-            self.Freeze()
-            self._client_id_error_label = make_error_label(self, error_message)
-            self._client_id_sizer.Add(self._client_id_error_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
-            self.Layout()
-            self.Thaw()
-
-    def _handle_client_secret_error(self, error_message=None):
-        logging.info("client secret error")
-        if self._client_secret_error_label is None:
-            self.Freeze()
-            self._client_secret_error_label = make_error_label(self, error_message)
-            self._client_secret_sizer.Add(self._client_secret_error_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
-            self.Layout()
-            self.Thaw()
 
 class PostProcessingTaskPanel(wx.Panel):
     """Panel for allowing entry of a post-processing task."""
@@ -238,7 +222,7 @@ class DefaultDirectoryPanel(wx.Panel):
         monitor_checkbox.SetValue(monitor_directory)
         monitor_checkbox.SetToolTipString("Monitor the default directory for when the Illumina Software indicates that the analysis is complete and ready to upload (when CompletedJobInfo.xml is written to the directory).")
         monitor_checkbox.Bind(wx.EVT_CHECKBOX, lambda evt: send_message(SettingsDialog.field_changed_topic, field_name="monitor_default_dir", field_value=monitor_checkbox.GetValue()))
-        self._sizer.Add(monitor_checkbox, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
+        self._sizer.Add(monitor_checkbox, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=5, proportion=0)
 
         self.SetSizerAndFit(self._sizer)
         self.Layout()
