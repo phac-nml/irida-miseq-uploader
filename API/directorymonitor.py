@@ -1,11 +1,15 @@
 import os
 import logging
 
+from wx.lib.pubsub import pub
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory
+
+observer = Observer()
 
 class DirectoryMonitorTopics(object):
     """Topics for monitoring directories for new runs."""
@@ -35,6 +39,8 @@ class CompletedJobInfoEventHandler(FileSystemEventHandler):
 
             # now tell the UI to start
             send_message(DirectoryMonitorTopics.finished_discovering_run)
+        else:
+            logging.info("Ignoring file event [{}] with path [{}]".format(str(event), event.src_path))
 
 def monitor_directory(directory):
     """Starts monitoring the specified directory in a background thread. File events
@@ -45,6 +51,13 @@ def monitor_directory(directory):
     """
     logging.info("Getting ready to monitor directory {}".format(directory))
     event_handler = CompletedJobInfoEventHandler()
-    observer = Observer()
     observer.schedule(event_handler, directory, recursive=True)
+    pub.subscribe(stop_monitoring, DirectoryMonitorTopics.new_run_observed)
     observer.start()
+
+def stop_monitoring():
+    """Tells watchdog to stop watching the directory when the newly processed run
+    was discovered."""
+    logging.info("Halting monitoring on directory because run was discovered.")
+    observer.stop()
+    observer.join()

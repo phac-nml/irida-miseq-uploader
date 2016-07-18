@@ -10,8 +10,6 @@ from Model.SequencingRun import SequencingRun
 from API.fileutils import find_file_by_name
 from API.pubsub import send_message
 
-logging.basicConfig(level = logging.INFO)
-
 class DirectoryScannerTopics(object):
     """Topics issued by `find_runs_in_directory`"""
     finished_run_scan = "finished_run_scan"
