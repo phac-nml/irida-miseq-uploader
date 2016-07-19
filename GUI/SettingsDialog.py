@@ -244,8 +244,8 @@ class SettingsDialog(wx.Dialog):
         self._sizer.Add(URLEntryPanel(self, default_url=self._defaults["baseurl"]), flag=wx.EXPAND | wx.ALL, border=5)
 
         authorization_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        authorization_sizer.Add(UserDetailsPanel(self, default_user=self._defaults["username"], default_pass=self._defaults["password"]), flag=wx.EXPAND | wx.RIGHT, border=2, proportion=1)
-        authorization_sizer.Add(ClientDetailsPanel(self, default_client_id=self._defaults["client_id"], default_client_secret=self._defaults["client_secret"]), flag=wx.EXPAND | wx.LEFT, border=2, proportion=1)
+        authorization_sizer.Add(ClientDetailsPanel(self, default_client_id=self._defaults["client_id"], default_client_secret=self._defaults["client_secret"]), flag=wx.EXPAND | wx.RIGHT, border=2, proportion=1)
+        authorization_sizer.Add(UserDetailsPanel(self, default_user=self._defaults["username"], default_pass=self._defaults["password"]), flag=wx.EXPAND | wx.LEFT, border=2, proportion=1)
         self._sizer.Add(authorization_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
         self._sizer.Add(PostProcessingTaskPanel(self, default_post_process=self._defaults["completion_cmd"]), flag=wx.EXPAND | wx.ALL, border=5)
