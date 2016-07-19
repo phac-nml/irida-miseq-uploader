@@ -5,14 +5,16 @@ import wx
 class ProcessingPlaceholderText(wx.StaticText):
     """Displays a spinner until the parent calls either `SetSuccess` or `SetError`."""
 
-    blocks = [u"▖", u"▘", u"▝", u"▗"]
+    # clock faces through 12 o'clock
+    blocks = [u"\U0001F550", u"\U0001F551", u"\U0001F552", u"\U0001F553", u"\U0001F554", u"\U0001F555", u"\U0001F556", u"\U0001F557", u"\U0001F558", u"\U0001F559", u"\U0001F55a", u"\U0001F55b"]
 
     def __init__(self, parent, *args, **kwargs):
         wx.StaticText.__init__(self, parent, *args, **kwargs)
         self._timer = wx.Timer(self)
         self._current_char = 0
 
-        self.SetFont(wx.Font(wx.DEFAULT, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        # this is the only font face on windows that actually renders the clock faces correctly.
+        self.SetFont(wx.Font(wx.DEFAULT, wx.DEFAULT, wx.NORMAL, wx.DEFAULT, face="Segoe UI Symbol"))
 
         self.Bind(wx.EVT_TIMER, self._update_progress_text, self._timer)
         self.Restart()
