@@ -18,6 +18,8 @@ class APIConnectorTopics(object):
     connection_error_client_secret_topic = connection_error_credentials_topic + ".client_secret"
     connection_success_topic = "APIConnector.connection_success_topic"
     connection_success_valid_url = "APIConnector.connection_success_valid_url"
+    connection_success_valid_client_id = "APIConnector.connection_success_valid_client_id"
+    connection_success_valid_client_secret = "APIConnector.connection_success_valid_client_secret"
 
 lock = threading.Lock()
 
@@ -77,10 +79,17 @@ def connect_to_irida():
 
         if "Bad credentials" in message:
             topic = APIConnectorTopics.connection_error_user_credentials_topic
+            # if we're getting bad credentials, then that means the API is allowing
+            # us to try authenticate with a username and password, so our client id
+            # and secret are both correct:
+            send_message(APIConnectorTopics.connection_success_valid_client_secret)
         elif "clientId does not exist" in message:
             topic = APIConnectorTopics.connection_error_client_id_topic
         elif "Bad client credentials" in message:
             topic = APIConnectorTopics.connection_error_client_secret_topic
+            # if we're getting a bad client secret message, that means that the
+            # client ID is valid.
+            send_message(APIConnectorTopics.connection_success_valid_client_id)
         else:
             topic = APIConnectorTopics.connection_error_credentials_topic
 

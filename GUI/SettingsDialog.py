@@ -99,7 +99,7 @@ class UserDetailsPanel(wx.Panel):
         self._username_sizer.Add(username_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
 
         self._username = wx.TextCtrl(self)
-        self._username.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
+        self._username.Bind(wx.EVT_KILL_FOCUS, self._username_changed)
         self._username.SetValue(default_user)
         self._username_sizer.Add(self._username, flag=wx.EXPAND, proportion=1)
         self._username_sizer.Add(self._status_label_user, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
@@ -112,7 +112,7 @@ class UserDetailsPanel(wx.Panel):
         self._password_sizer.Add(password_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
 
         self._password = wx.TextCtrl(self, style=wx.TE_PASSWORD)
-        self._password.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
+        self._password.Bind(wx.EVT_KILL_FOCUS, self._password_changed)
         self._password.SetValue(default_pass)
         self._password_sizer.Add(self._password, flag=wx.EXPAND, proportion=1)
         self._password_sizer.Add(self._status_label_pass, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
@@ -126,10 +126,13 @@ class UserDetailsPanel(wx.Panel):
         pub.subscribe(self._status_label_user.SetSuccess, APIConnectorTopics.connection_success_topic)
         pub.subscribe(self._status_label_pass.SetSuccess, APIConnectorTopics.connection_success_topic)
 
-    def _field_changed(self, evt=None):
+    def _username_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="username", field_value=self._username.GetValue())
-        send_message(SettingsDialog.field_changed_topic, field_name="password", field_value=self._password.GetValue())
         self._status_label_user.Restart()
+        evt.Skip()
+
+    def _password_changed(self, evt=None):
+        send_message(SettingsDialog.field_changed_topic, field_name="password", field_value=self._password.GetValue())
         self._status_label_pass.Restart()
         evt.Skip()
 
@@ -152,7 +155,7 @@ class ClientDetailsPanel(wx.Panel):
         self._client_id_sizer.Add(client_id_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
 
         self._client_id = wx.TextCtrl(self)
-        self._client_id.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
+        self._client_id.Bind(wx.EVT_KILL_FOCUS, self._client_id_changed)
         self._client_id.SetValue(default_client_id)
         self._client_id_sizer.Add(self._client_id, flag=wx.EXPAND, proportion=1)
         self._client_id_sizer.Add(self._client_id_status_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
@@ -165,7 +168,7 @@ class ClientDetailsPanel(wx.Panel):
         self._client_secret_sizer.Add(client_secret_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5, proportion=0)
 
         self._client_secret = wx.TextCtrl(self)
-        self._client_secret.Bind(wx.EVT_KILL_FOCUS, self._field_changed)
+        self._client_secret.Bind(wx.EVT_KILL_FOCUS, self._client_secret_changed)
         self._client_secret.SetValue(default_client_secret)
         self._client_secret_sizer.Add(self._client_secret, flag=wx.EXPAND, proportion=1)
         self._client_secret_sizer.Add(self._client_secret_status_label, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, border=5, proportion=0)
@@ -179,11 +182,16 @@ class ClientDetailsPanel(wx.Panel):
         pub.subscribe(self._client_secret_status_label.SetError, APIConnectorTopics.connection_error_client_secret_topic)
         pub.subscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
         pub.subscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.subscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_id)
+        pub.subscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_secret)
 
-    def _field_changed(self, evt=None):
+    def _client_id_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="client_id", field_value=self._client_id.GetValue())
-        send_message(SettingsDialog.field_changed_topic, field_name="client_secret", field_value=self._client_secret.GetValue())
         self._client_id_status_label.Restart()
+        evt.Skip()
+
+    def _client_secret_changed(self, evt=None):
+        send_message(SettingsDialog.field_changed_topic, field_name="client_secret", field_value=self._client_secret.GetValue())
         self._client_secret_status_label.Restart()
         evt.Skip()
 
