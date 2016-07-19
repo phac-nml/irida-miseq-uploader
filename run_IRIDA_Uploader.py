@@ -8,7 +8,7 @@ import argparse
 import wx.lib.delayedresult as dr
 import wx.lib.agw.hyperlink as hl
 
-from os import path
+from os import path, makedirs
 from distutils.version import LooseVersion
 from github3 import GitHub
 from GUI import UploaderAppFrame, SettingsDialog
@@ -21,7 +21,7 @@ if not path.isfile(app_config):
     app_config = path.join(path_to_module, '..', 'irida-uploader.cfg')
 
 if not path.exists(user_log_dir("iridaUploader")):
-    path.makedirs(user_log_dir("iridaUploader"))
+    makedirs(user_log_dir("iridaUploader"))
 
 log_format = '%(asctime)s %(levelname)s\t%(filename)s:%(funcName)s:%(lineno)d - %(message)s'
 

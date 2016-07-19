@@ -45,9 +45,10 @@ class RunUploader(threading.Thread):
         # command
         if self._post_processing_task:
             send_message(RunUploaderTopics.started_post_processing)
-            # blocks until the command is complete
             logging.info("About to launch post-processing command: {}".format(self._post_processing_task))
+            # blocks until the command is complete
             subprocess.call(self._post_processing_task, shell=True)
+            logging.info("Post-processing command is complete, informing UI.")
             send_message(RunUploaderTopics.finished_post_processing)
 
     def join(self, timeout=None):

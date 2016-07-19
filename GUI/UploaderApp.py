@@ -22,6 +22,7 @@ from API.APIConnector import connect_to_irida, APIConnectorTopics
 
 from GUI.Panels import RunPanel, InvalidSampleSheetsPanel
 from GUI.SettingsDialog import SettingsDialog
+from GUI.ProcessingPlaceholderText import ProcessingPlaceholderText
 
 class UploaderAppPanel(wx.Panel):
     """The UploaderAppPanel is the super-container the discovered SequencingRuns.
@@ -311,7 +312,35 @@ class UploaderAppPanel(wx.Panel):
         """
         post_processing_task = self._read_config_option("completion_cmd")
         self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
+        pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
         self._upload_thread.start()
+
+    def _post_processing_task_started(self):
+        """Show a 'processing' message on the UI while the post processing task is executing."""
+        pub.unsubscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
+        pub.subscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
+        logging.info("Post-processing started, updating UI.")
+        self._post_processing_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._post_processing_placeholder = ProcessingPlaceholderText(self)
+        self._post_processing_placeholder.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self._post_processing_text = wx.StaticText(self, label="Executing post-processing task.")
+        self._post_processing_text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self._post_processing_text.SetToolTipString("Executing command `{}`.".format(self._read_config_option("completion_cmd")))
+        self._post_processing_sizer.Add(self._post_processing_text, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=5, proportion=1)
+        self._post_processing_sizer.Add(self._post_processing_placeholder, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=5, proportion=0)
+
+        self.Freeze()
+        self._sizer.Insert(0, self._post_processing_sizer, flag=wx.EXPAND | wx.ALL, border=5)
+        self.Layout()
+        self.Thaw()
+
+    def _post_processing_task_completed(self):
+        """Show a 'completed' message on the UI when the post processing task is finished."""
+        pub.unsubscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
+        logging.info("Post-processing finished, updating UI.")
+        self._post_processing_text.SetLabel("Post-processing task complete.")
+        self._post_processing_text.SetToolTipString("Successfully executed command `{}`.".format(self._read_config_option("completion_cmd")))
+        self._post_processing_placeholder.SetSuccess()
 
     def Destroy(self):
         self._upload_thread.join()
