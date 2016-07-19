@@ -8,6 +8,7 @@ from wx.lib.pubsub import pub
 import json
 import logging
 import threading
+import subprocess
 
 class RunUploaderTopics(object):
     start_online_validation = "start_online_validation"
@@ -15,27 +16,39 @@ class RunUploaderTopics(object):
     start_checking_samples = "start_checking_samples"
     start_uploading_samples = "start_uploading_samples"
     finished_uploading_samples = "finished_uploading_samples"
+    started_post_processing = "started_post_processing"
+    finished_post_processing = "finished_post_processing"
 
 class RunUploader(threading.Thread):
     """A convenience thread wrapper for uploading runs to the server."""
 
-    def __init__(self, api, runs, name='RunUploaderThread'):
+    def __init__(self, api, runs, post_processing_task=None, name='RunUploaderThread'):
         """Initialize a `RunUploader`.
 
         Args:
             api: an initialized connection to IRIDA.
             runs: a list of runs to upload to the server.
+            post_processing_task: the system command to execute after the runs are uploaded
             name: the name of the thread.
         """
         self._stop_event = threading.Event()
         self._api = api
         self._runs = runs
+        self._post_processing_task = post_processing_task
         threading.Thread.__init__(self, name=name)
 
     def run(self):
         """Initiate upload. The upload happens serially, one run at a time."""
         for run in self._runs:
-            upload_run_to_server(api=self._api, sequencing_run=run, progress_callback=None)
+            upload_run_to_server(api=self._api, sequencing_run=run)
+        # once the run uploads are complete, we can launch the post-processing
+        # command
+        if self._post_processing_task:
+            send_message(RunUploaderTopics.started_post_processing)
+            # blocks until the command is complete
+            logging.info("About to launch post-processing command: {}".format(self._post_processing_task))
+            subprocess.call(self._post_processing_task, shell=True)
+            send_message(RunUploaderTopics.finished_post_processing)
 
     def join(self, timeout=None):
         """Kill the thread.
@@ -49,20 +62,12 @@ class RunUploader(threading.Thread):
         self._api._kill_connections()
         threading.Thread.join(self, timeout)
 
-class RunUploaderTopics(object):
-    start_online_validation = "start_online_validation"
-    online_validation_failure = "online_validation_failure"
-    start_checking_samples = "start_checking_samples"
-    start_uploading_samples = "start_uploading_samples"
-    finished_uploading_samples = "finished_uploading_samples"
-
-def upload_run_to_server(api, sequencing_run, progress_callback):
+def upload_run_to_server(api, sequencing_run):
     """Upload a single run to the server.
 
     Arguments:
     api -- the API object to use for interacting with the server
     sequencing_run -- the run to upload to the server
-    progress_callback -- the function to call for indicating upload progress
 
     Publishes messages:
     start_online_validation -- when running an online validation (checking project ids) starts
@@ -126,7 +131,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     logging.info("About to start uploading samples.")
     try:
         api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
-                                     callback = progress_callback, upload_id = run_id)
+                                     upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
         send_message(sequencing_run.upload_completed_topic)
         api.set_seq_run_complete(run_id)

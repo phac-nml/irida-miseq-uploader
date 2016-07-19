@@ -157,11 +157,9 @@ class UploaderAppPanel(wx.Panel):
         Returns:
             A boolean indicating whether or not we should monitor the default directory.
         """
-        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
-        conf_parser = RawConfigParser()
-        conf_parser.read(user_config_file)
+
         try:
-            return conf_parser.getboolean("Settings", "monitor_default_dir")
+            return self._read_config_option("monitor_default_dir", expected_type=bool)
         except (ValueError, NoOptionError) as e:
             # if the setting doesn't exist in the config file, handle it by assuming that
             # we should not monitor the directory for changes...
@@ -176,13 +174,28 @@ class UploaderAppPanel(wx.Panel):
         """
 
         if not self._selected_directory:
-            user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
-
-            conf_parser = RawConfigParser()
-            conf_parser.read(user_config_file)
-            return conf_parser.get("Settings", "default_dir")
+            return self._read_config_option("default_dir")
         else:
             return self._selected_directory
+
+    def _read_config_option(self, key, expected_type=None):
+        """Read the specified value from the configuration file.
+
+        Args:
+            key: the name of the key to read from the config file.
+            expected_type: read the config option as the specified type (if specified)
+        """
+        logging.info("Reading config option {} with expected type {}".format(key, expected_type))
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+        conf_parser = RawConfigParser()
+        conf_parser.read(user_config_file)
+        if not expected_type:
+            value = conf_parser.get("Settings", key)
+            logging.info("Got configuration for key {}: {}".format(key, value))
+            return conf_parser.get("Settings", key)
+        elif expected_type is bool:
+            return conf_parser.getboolean("Settings", key)
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
@@ -296,8 +309,8 @@ class UploaderAppPanel(wx.Panel):
         Args:
             event: the button event that initiated the method.
         """
-
-        self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs)
+        post_processing_task = self._read_config_option("completion_cmd")
+        self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
         self._upload_thread.start()
 
     def Destroy(self):

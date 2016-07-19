@@ -457,8 +457,7 @@ class ApiCalls(object):
 
         return file_size_list
 
-    def send_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1):
+    def send_sequence_files(self, samples_list, upload_id=1):
 
         """
         send sequence files found in each sample in samples_list
@@ -469,10 +468,7 @@ class ApiCalls(object):
 
         arguments:
             samples_list -- list containing Sample object(s)
-            callback -- optional callback argument for use with monitor
-                        callback function accepts a
-                        encoder.MultipartEncoderMonitor object as it's only
-                        parameter
+            upload_id -- the run to send the files to
 
         returns a list containing dictionaries of the result of post request.
         """
@@ -487,17 +483,8 @@ class ApiCalls(object):
 
         for sample in samples_list:
 
-            json_res = self._send_sequence_files(sample, callback,
-                                                      upload_id)
+            json_res = self._send_sequence_files(sample, upload_id)
             json_res_list.append(json_res)
-
-        if callback is not None:
-            send_message("seq_files_upload_complete")
-            completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
-            if len(completion_cmd) > 0:
-                send_message("display_completion_cmd_msg",
-                                completion_cmd=completion_cmd)
-                system(completion_cmd)
 
         return json_res_list
 
@@ -512,7 +499,7 @@ class ApiCalls(object):
         self._stop_upload = True
         self.session.close()
 
-    def _send_sequence_files(self, sample, callback, upload_id):
+    def _send_sequence_files(self, sample, upload_id):
 
         """
         post request to send sequence files found in given sample argument
@@ -521,10 +508,7 @@ class ApiCalls(object):
 
         arguments:
             sample -- Sample object
-            callback -- optional callback argument for use with monitor
-                        callback function accepts a
-                        encoder.MultipartEncoderMonitor object as it's only
-                        parameter
+            upload_id -- the run to upload the files to
 
         returns result of post request.
         """
