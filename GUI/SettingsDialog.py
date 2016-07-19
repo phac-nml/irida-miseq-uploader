@@ -22,6 +22,8 @@ def make_error_label(parent, tooltip=None):
     return error_label
 
 class ProcessingPlaceholderText(wx.StaticText):
+    """Displays a spinner until the parent calls either `SetSuccess` or `SetError`."""
+
     blocks = [u"▖", u"▘", u"▝", u"▗"]
 
     def __init__(self, parent, *args, **kwargs):
