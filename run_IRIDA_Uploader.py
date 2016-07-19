@@ -44,7 +44,7 @@ class Uploader(wx.App):
         user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
 
         if not path.exists(user_config_file):
-            dialog = SettingsDialog()
+            dialog = SettingsDialog(first_run=True)
             dialog.ShowModal()
 
         self._show_main_app()

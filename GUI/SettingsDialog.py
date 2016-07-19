@@ -241,9 +241,9 @@ class SettingsDialog(wx.Dialog):
     settings_closed_topic = "settings.settings_closed_topic"
 
     """The settings frame is where the user can configure user-configurable settings."""
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, first_run=False):
         wx.Dialog.__init__(self, parent, title="Settings", style=wx.DEFAULT_DIALOG_STYLE)
-
+        self._first_run = first_run
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self._config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
         self._defaults = {}
@@ -270,7 +270,11 @@ class SettingsDialog(wx.Dialog):
         threading.Thread(target=connect_to_irida).start()
 
     def _on_close(self, evt=None):
-        if type(evt) is wx.CommandEvent:
+
+        # only inform the UI that settings have changed if we're not being invoked
+        # to set up the initial configuration settings (i.e., the first run)
+        if type(evt) is wx.CommandEvent and not self._first_run:
+            logging.info("Closing settings dialog and informing UI to scan for sample sheets.")
             send_message(SettingsDialog.settings_closed_topic)
         evt.Skip()
 
