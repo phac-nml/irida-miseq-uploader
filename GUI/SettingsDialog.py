@@ -77,6 +77,7 @@ class URLEntryPanel(wx.Panel):
 
         pub.subscribe(self._status_label.SetError, APIConnectorTopics.connection_error_url_topic)
         pub.subscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.subscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_valid_url)
 
     def _field_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="baseurl", field_value=self._url.GetValue())

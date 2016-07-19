@@ -17,6 +17,7 @@ class APIConnectorTopics(object):
     connection_error_client_id_topic = connection_error_credentials_topic + ".client_id"
     connection_error_client_secret_topic = connection_error_credentials_topic + ".client_secret"
     connection_success_topic = "APIConnector.connection_success_topic"
+    connection_success_valid_url = "APIConnector.connection_success_valid_url"
 
 lock = threading.Lock()
 
@@ -89,6 +90,11 @@ def connect_to_irida():
             " button below and check your credentials, then try again. If the "
             "connection still doesn't work, contact an administrator."
             ).format(baseURL))
+
+        # in spite of it all, this means that we're probably actually trying to connect
+        # to a real IRIDA server, so let the settings dialog know that it can render
+        # a success icon beside the URL
+        send_message(APIConnectorTopics.connection_success_valid_url)
         raise
     except URLError as e:
         logging.info("Couldn't connect to IRIDA because the URL is invalid.", exc_info=True)
