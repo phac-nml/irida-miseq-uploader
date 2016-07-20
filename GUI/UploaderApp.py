@@ -325,16 +325,18 @@ class UploaderAppPanel(wx.Panel):
         pub.unsubscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
         pub.subscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
         logging.info("Post-processing started, updating UI.")
+
+        self.Freeze()
         self._post_processing_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._post_processing_placeholder = ProcessingPlaceholderText(self)
         self._post_processing_placeholder.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self._post_processing_text = wx.StaticText(self, label="Executing post-processing task.")
         self._post_processing_text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self._post_processing_text.Wrap(350)
         self._post_processing_text.SetToolTipString("Executing command `{}`.".format(self._read_config_option("completion_cmd")))
-        self._post_processing_sizer.Add(self._post_processing_text, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=5, proportion=1)
-        self._post_processing_sizer.Add(self._post_processing_placeholder, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=5, proportion=0)
+        self._post_processing_sizer.Add(self._post_processing_text, flag=wx.RIGHT, border=5, proportion=1)
+        self._post_processing_sizer.Add(self._post_processing_placeholder, flag=wx.LEFT, border=5, proportion=0)
 
-        self.Freeze()
         self._sizer.Insert(0, self._post_processing_sizer, flag=wx.EXPAND | wx.ALL, border=5)
         self.Layout()
         self.Thaw()
@@ -343,9 +345,13 @@ class UploaderAppPanel(wx.Panel):
         """Show a 'completed' message on the UI when the post processing task is finished."""
         pub.unsubscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
         logging.info("Post-processing finished, updating UI.")
+        self.Freeze()
         self._post_processing_text.SetLabel("Post-processing task complete.")
         self._post_processing_text.SetToolTipString("Successfully executed command `{}`.".format(self._read_config_option("completion_cmd")))
+        self._post_processing_text.Wrap(350)
         self._post_processing_placeholder.SetSuccess()
+        self.Layout()
+        self.Thaw()
 
     def Destroy(self):
         self._upload_thread.join()
