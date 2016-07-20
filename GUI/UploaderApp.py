@@ -9,16 +9,13 @@ import wx.lib.agw.hyperlink as hl
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub
 
-from ConfigParser import RawConfigParser, NoOptionError
-from appdirs import user_config_dir
-from os import path
-
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
 from API.directorymonitor import monitor_directory, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 from API.APIConnector import connect_to_irida, APIConnectorTopics
+from API.config import read_config_option
 
 from GUI.Panels import RunPanel, InvalidSampleSheetsPanel
 from GUI.SettingsDialog import SettingsDialog
@@ -133,7 +130,9 @@ class UploaderAppPanel(wx.Panel):
         self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
         self._invalid_sheets_panel.Hide()
 
-        if self._should_monitor_directory():
+        should_monitor_directory = read_config_option("monitor_default_dir", expected_type=bool, default_value=False)
+
+        if should_monitor_directory:
             automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
             auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
             auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -151,21 +150,6 @@ class UploaderAppPanel(wx.Panel):
        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
-    def _should_monitor_directory(self):
-        """Check the configuration file to see if we should be monitoring the default
-        directory for new uploads.
-
-        Returns:
-            A boolean indicating whether or not we should monitor the default directory.
-        """
-
-        try:
-            return self._read_config_option("monitor_default_dir", expected_type=bool)
-        except (ValueError, NoOptionError) as e:
-            # if the setting doesn't exist in the config file, handle it by assuming that
-            # we should not monitor the directory for changes...
-            return False
-
     def _get_default_directory(self):
         """Read the default directory from the configuration file, or, if the user
         has selected a directory manually, return the manually selected directory.
@@ -175,28 +159,9 @@ class UploaderAppPanel(wx.Panel):
         """
 
         if not self._selected_directory:
-            return self._read_config_option("default_dir")
+            return read_config_option("default_dir")
         else:
             return self._selected_directory
-
-    def _read_config_option(self, key, expected_type=None):
-        """Read the specified value from the configuration file.
-
-        Args:
-            key: the name of the key to read from the config file.
-            expected_type: read the config option as the specified type (if specified)
-        """
-        logging.info("Reading config option {} with expected type {}".format(key, expected_type))
-        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
-
-        conf_parser = RawConfigParser()
-        conf_parser.read(user_config_file)
-        if not expected_type:
-            value = conf_parser.get("Settings", key)
-            logging.info("Got configuration for key {}: {}".format(key, value))
-            return conf_parser.get("Settings", key)
-        elif expected_type is bool:
-            return conf_parser.getboolean("Settings", key)
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
@@ -310,7 +275,7 @@ class UploaderAppPanel(wx.Panel):
         Args:
             event: the button event that initiated the method.
         """
-        post_processing_task = self._read_config_option("completion_cmd")
+        post_processing_task = read_config_option("completion_cmd")
         self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
         pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
         # destroy the upload button once it's been clicked.
@@ -333,7 +298,7 @@ class UploaderAppPanel(wx.Panel):
         self._post_processing_text = wx.StaticText(self, label="Executing post-processing task.")
         self._post_processing_text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self._post_processing_text.Wrap(350)
-        self._post_processing_text.SetToolTipString("Executing command `{}`.".format(self._read_config_option("completion_cmd")))
+        self._post_processing_text.SetToolTipString("Executing command `{}`.".format(read_config_option("completion_cmd")))
         self._post_processing_sizer.Add(self._post_processing_text, flag=wx.RIGHT, border=5, proportion=1)
         self._post_processing_sizer.Add(self._post_processing_placeholder, flag=wx.LEFT, border=5, proportion=0)
 
@@ -347,7 +312,7 @@ class UploaderAppPanel(wx.Panel):
         logging.info("Post-processing finished, updating UI.")
         self.Freeze()
         self._post_processing_text.SetLabel("Post-processing task complete.")
-        self._post_processing_text.SetToolTipString("Successfully executed command `{}`.".format(self._read_config_option("completion_cmd")))
+        self._post_processing_text.SetToolTipString("Successfully executed command `{}`.".format(read_config_option("completion_cmd")))
         self._post_processing_text.Wrap(350)
         self._post_processing_placeholder.SetSuccess()
         self.Layout()

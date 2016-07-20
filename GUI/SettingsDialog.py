@@ -8,11 +8,9 @@ import types
 
 from API.pubsub import send_message
 from API.APIConnector import APIConnectorTopics, connect_to_irida
+from API.config import read_config_option, write_config_option
 from wx.lib.pubsub import pub
 from os import path
-from appdirs import user_config_dir
-from collections import namedtuple
-from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
 from GUI.ProcessingPlaceholderText import ProcessingPlaceholderText
 
 class URLEntryPanel(wx.Panel):
@@ -195,7 +193,7 @@ class DefaultDirectoryPanel(wx.Panel):
         monitor_checkbox = wx.CheckBox(self, label="Monitor directory for new runs?")
         monitor_checkbox.SetValue(monitor_directory)
         monitor_checkbox.SetToolTipString("Monitor the default directory for when the Illumina Software indicates that the analysis is complete and ready to upload (when CompletedJobInfo.xml is written to the directory).")
-        monitor_checkbox.Bind(wx.EVT_CHECKBOX, lambda evt: send_message(SettingsDialog.field_changed_topic, field_name="monitor_default_dir", field_value=monitor_checkbox.GetValue()))
+        monitor_checkbox.Bind(wx.EVT_CHECKBOX, lambda evt: send_message(SettingsDialog.field_changed_topic, field_name="monitor_default_dir", field_value=str(monitor_checkbox.GetValue())))
         self._sizer.Add(monitor_checkbox, flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=5, proportion=0)
 
         self.SetSizerAndFit(self._sizer)
@@ -210,19 +208,17 @@ class SettingsDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, title="Settings", style=wx.DEFAULT_DIALOG_STYLE)
         self._first_run = first_run
         self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self._config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
         self._defaults = {}
-        self._setup_default_values()
 
-        self._sizer.Add(URLEntryPanel(self, default_url=self._defaults["baseurl"]), flag=wx.EXPAND | wx.ALL, border=5)
+        self._sizer.Add(URLEntryPanel(self, default_url=read_config_option("baseurl")), flag=wx.EXPAND | wx.ALL, border=5)
 
         authorization_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        authorization_sizer.Add(ClientDetailsPanel(self, default_client_id=self._defaults["client_id"], default_client_secret=self._defaults["client_secret"]), flag=wx.EXPAND | wx.RIGHT, border=2, proportion=1)
-        authorization_sizer.Add(UserDetailsPanel(self, default_user=self._defaults["username"], default_pass=self._defaults["password"]), flag=wx.EXPAND | wx.LEFT, border=2, proportion=1)
+        authorization_sizer.Add(ClientDetailsPanel(self, default_client_id=read_config_option("client_id"), default_client_secret=read_config_option("client_secret")), flag=wx.EXPAND | wx.RIGHT, border=2, proportion=1)
+        authorization_sizer.Add(UserDetailsPanel(self, default_user=read_config_option("username"), default_pass=read_config_option("password")), flag=wx.EXPAND | wx.LEFT, border=2, proportion=1)
         self._sizer.Add(authorization_sizer, flag=wx.EXPAND | wx.ALL, border=5)
 
-        self._sizer.Add(PostProcessingTaskPanel(self, default_post_process=self._defaults["completion_cmd"]), flag=wx.EXPAND | wx.ALL, border=5)
-        self._sizer.Add(DefaultDirectoryPanel(self, default_directory=self._defaults["default_dir"], monitor_directory=self._defaults["monitor_default_dir"]), flag=wx.EXPAND | wx.ALL, border=5)
+        self._sizer.Add(PostProcessingTaskPanel(self, default_post_process=read_config_option("completion_cmd")), flag=wx.EXPAND | wx.ALL, border=5)
+        self._sizer.Add(DefaultDirectoryPanel(self, default_directory=read_config_option("default_dir"), monitor_directory=read_config_option("monitor_default_dir", expected_type=bool)), flag=wx.EXPAND | wx.ALL, border=5)
 
         self._sizer.Add(self.CreateSeparatedButtonSizer(flags=wx.OK), flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -235,7 +231,6 @@ class SettingsDialog(wx.Dialog):
         threading.Thread(target=connect_to_irida).start()
 
     def _on_close(self, evt=None):
-
         # only inform the UI that settings have changed if we're not being invoked
         # to set up the initial configuration settings (i.e., the first run)
         if type(evt) is wx.CommandEvent and not self._first_run:
@@ -243,59 +238,17 @@ class SettingsDialog(wx.Dialog):
             send_message(SettingsDialog.settings_closed_topic)
         evt.Skip()
 
-    def _setup_default_values(self):
-        """Load initial values for settings from the config file, or use a default value."""
-
-        SettingsDefault = namedtuple('SettingsDefault', ['setting', 'default_value'])
-
-        default_settings = [SettingsDefault._make(["client_id", ""]),
-                            SettingsDefault._make(["client_secret", ""]),
-                            SettingsDefault._make(["username", ""]),
-                            SettingsDefault._make(["password", ""]),
-                            SettingsDefault._make(["baseurl", ""]),
-                            SettingsDefault._make(["completion_cmd", ""]),
-                            SettingsDefault._make(["default_dir", path.expanduser("~")]),
-                            SettingsDefault._make(["monitor_default_dir", False])]
-
-        if path.exists(self._config_file):
-            logging.info("Loading configuration settings from {}".format(self._config_file))
-            config_parser = RawConfigParser()
-            config_parser.read(self._config_file)
-            for config in default_settings:
-                if config_parser.has_option("Settings", config.setting):
-                    if type(config.default_value) is types.BooleanType:
-                        self._defaults[config.setting] = config_parser.getboolean("Settings", config.setting)
-                    else:
-                        self._defaults[config.setting] = config_parser.get("Settings", config.setting)
-                else:
-                    self._defaults[config.setting] = config.default_value
-        else:
-            logging.info("No default config file exists, loading defaults.")
-            for config in default_settings:
-                self._defaults[config.setting] = config.default_value
-                self._field_changed(config.setting, config.default_value, attempt_connect=False)
-
     def _field_changed(self, field_name, field_value, attempt_connect=True):
         """A field change has been detected, write it out to the config file.
 
         Args:
             field_name: the field name that was changed.
             field_value: the current value of the field to write out.
+            attempt_connect: if an attempt should be made to connect to IRIDA after
+                writing out the value to the config file.
         """
         logging.info("Saving changes {field_name} -> {field_value}".format(field_name=field_name, field_value=field_value))
-        config_parser = RawConfigParser()
-        config_parser.read(self._config_file)
-
-        if not config_parser.has_section("Settings"):
-            config_parser.add_section("Settings")
-
-        config_parser.set("Settings", field_name, field_value)
-
-        if not path.exists(path.dirname(self._config_file)):
-            os.makedirs(path.dirname(self._config_file))
-
-        with open(self._config_file, 'wb') as config_file:
-            config_parser.write(config_file)
+        write_config_option(field_name, field_value)
 
         if attempt_connect:
             threading.Thread(target=connect_to_irida).start()

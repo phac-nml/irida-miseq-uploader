@@ -6,13 +6,11 @@ from urllib2 import urlopen, URLError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
-from os import path, system
-from ConfigParser import RawConfigParser
+from os import path
 import logging
 
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
-from appdirs import user_config_dir
 
 from Model.Project import Project
 from Model.Sample import Sample
@@ -46,11 +44,6 @@ class ApiCalls(object):
         self.username = username
         self.password = password
         self.max_wait_time = max_wait_time
-
-        self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_config_dir("iridaUploader"),
-                                     "config.conf")
-        self.conf_parser.read(self.config_file)
 
         self.create_session()
         self.cached_projects = None
