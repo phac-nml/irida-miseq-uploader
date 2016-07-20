@@ -313,6 +313,11 @@ class UploaderAppPanel(wx.Panel):
         post_processing_task = self._read_config_option("completion_cmd")
         self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
         pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
+        # destroy the upload button once it's been clicked.
+        self.Freeze()
+        self._upload_sizer.Clear(True)
+        self.Layout()
+        self.Thaw()
         self._upload_thread.start()
 
     def _post_processing_task_started(self):
