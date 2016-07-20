@@ -59,7 +59,12 @@ def read_config_option(key, expected_type=None, default_value=None):
             raise
 
 def write_config_option(field_name, field_value):
+    """Write the configuration file out with the new key.
 
+    Args:
+        field_name: the name of the field to write
+        field_value: the value to write to the file
+    """
     conf_parser.set("Settings", field_name, field_value)
 
     if not os.path.exists(os.path.dirname(user_config_file)):
