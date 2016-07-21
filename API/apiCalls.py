@@ -49,6 +49,19 @@ class ApiCalls(object):
         self.cached_projects = None
         self.cached_samples = {}
 
+    @property
+    def session(self):
+        try:
+            self._session.options(self.base_URL)
+            logging.debug("Existing session still works, going to reuse it.")
+        except:
+            logging.debug("Token is probably expired, going to get a new session.")
+            oauth_service = self.get_oauth_service()
+            access_token = self.get_access_token(oauth_service)
+            self._session = oauth_service.get_session(access_token)
+
+        return self._session
+
     def create_session(self):
         """
         create session to be re-used until expiry for get and post calls
@@ -62,7 +75,7 @@ class ApiCalls(object):
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self.session = oauth_service.get_session(access_token)
+            self._session = oauth_service.get_session(access_token)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is\
                     False:
