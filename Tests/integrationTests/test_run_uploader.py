@@ -35,7 +35,7 @@ class TestRunUploader:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
-        upload_run_to_server(api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload)
 
         assert 2 == self.sample_count
 
@@ -57,7 +57,7 @@ class TestRunUploader:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
-        upload_run_to_server(api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload)
 
         assert 2 == self.sample_count
 
@@ -83,7 +83,7 @@ class TestRunUploader:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
-        upload_run_to_server(api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload)
 
         assert 2 == self.sample_count
 
@@ -108,7 +108,7 @@ class TestRunUploader:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
 
-        upload_run_to_server(api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload)
 
         assert 1 == self.sample_count
 
@@ -138,12 +138,12 @@ class TestRunUploader:
         run_to_upload.sample_list[1].get_files = lambda: (_ for _ in ()).throw(Exception('foobar'))
 
         try:
-            upload_run_to_server(api, run_to_upload, None)
+            upload_run_to_server(api, run_to_upload)
         except:
             logging.info("Succeeded in failing to upload files.")
             run_to_upload.sample_list[1].get_files = original_files_method
 
         pub.subscribe(self.update_samples_counter, run_to_upload.sample_list[1].upload_completed_topic)
-        upload_run_to_server(api, run_to_upload, None)
+        upload_run_to_server(api, run_to_upload)
 
         assert 1 == self.sample_count

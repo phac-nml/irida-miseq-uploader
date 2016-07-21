@@ -969,10 +969,9 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue(str(session_response.status_code) + ": " +
                         session_response.text in str(err.exception))
 
-    @patch("API.apiCalls.RawConfigParser")
     @patch("API.apiCalls.ApiCalls.create_session")
     @patch("os.path.getsize")
-    def test_send_sequence_files_valid(self, getsize, mock_cs, mock_config_parser):
+    def test_send_sequence_files_valid(self, getsize, mock_cs):
 
         mock_cs.side_effect = [None]
 

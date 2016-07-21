@@ -2,10 +2,9 @@ import logging
 import threading
 
 from os import path
-from ConfigParser import RawConfigParser
-from appdirs import user_config_dir
 from API.pubsub import send_message
 from API import ApiCalls
+from API.config import read_config_option
 from requests.exceptions import ConnectionError
 from urllib2 import URLError
 
@@ -29,16 +28,11 @@ def connect_to_irida():
     Returns:
         A configured instance of API.apiCalls.
     """
-    user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
-
-    conf_parser = RawConfigParser()
-    conf_parser.read(user_config_file)
-
-    client_id = conf_parser.get("Settings", "client_id")
-    client_secret = conf_parser.get("Settings", "client_secret")
-    baseURL = conf_parser.get("Settings", "baseURL")
-    username = conf_parser.get("Settings", "username")
-    password = conf_parser.get("Settings", "password")
+    client_id = read_config_option("client_id")
+    client_secret = read_config_option("client_secret")
+    baseURL = read_config_option("baseURL")
+    username = read_config_option("username")
+    password = read_config_option("password")
 
     try:
         # Several threads might be attempting to connect at the same time, so lock
