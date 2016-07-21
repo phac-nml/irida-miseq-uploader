@@ -47,12 +47,16 @@ class ApiCalls(object):
         self.max_wait_time = max_wait_time
 
         self._session_lock = threading.Lock()
+        self._session_set_externally = False
         self.create_session()
         self.cached_projects = None
         self.cached_samples = {}
 
     @property
     def session(self):
+        if self._session_set_externally:
+            return self._session
+
         try:
             self._session_lock.acquire()
             response = self._session.options(self.base_URL)
@@ -69,6 +73,11 @@ class ApiCalls(object):
             self._session_lock.release()
 
         return self._session
+
+    @session.setter
+    def session(self, session):
+        self._session = session
+        self._session_set_externally = True
 
     def create_session(self):
         """
