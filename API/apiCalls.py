@@ -8,6 +8,7 @@ from time import time
 from copy import deepcopy
 from os import path
 import logging
+import threading
 
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
@@ -45,9 +46,38 @@ class ApiCalls(object):
         self.password = password
         self.max_wait_time = max_wait_time
 
+        self._session_lock = threading.Lock()
+        self._session_set_externally = False
         self.create_session()
         self.cached_projects = None
         self.cached_samples = {}
+
+    @property
+    def session(self):
+        if self._session_set_externally:
+            return self._session
+
+        try:
+            self._session_lock.acquire()
+            response = self._session.options(self.base_URL)
+            if response.status_code != httplib.OK:
+                raise Exception
+            else:
+                logging.debug("Existing session still works, going to reuse it.")
+        except:
+            logging.debug("Token is probably expired, going to get a new session.")
+            oauth_service = self.get_oauth_service()
+            access_token = self.get_access_token(oauth_service)
+            self._session = oauth_service.get_session(access_token)
+        finally:
+            self._session_lock.release()
+
+        return self._session
+
+    @session.setter
+    def session(self, session):
+        self._session = session
+        self._session_set_externally = True
 
     def create_session(self):
         """
@@ -62,7 +92,7 @@ class ApiCalls(object):
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self.session = oauth_service.get_session(access_token)
+            self._session = oauth_service.get_session(access_token)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is\
                     False:

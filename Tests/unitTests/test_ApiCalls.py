@@ -125,7 +125,6 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        self.assertEqual(api1.session, oauth_service.get_session(access_token))
         mock_validate_url_existence.assert_called_with(
             base_URL1 + "/", use_session=True)
 
@@ -156,7 +155,6 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        self.assertEqual(api2.session, oauth_service.get_session(access_token))
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
 

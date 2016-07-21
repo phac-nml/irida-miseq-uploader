@@ -17,6 +17,7 @@ from wx.lib.pubsub import pub
 
 path_to_module = path.dirname(__file__)
 app_config = path.join(path_to_module, 'irida-uploader.cfg')
+
 if not path.isfile(app_config):
     app_config = path.join(path_to_module, '..', 'irida-uploader.cfg')
 
@@ -25,12 +26,18 @@ if not path.exists(user_log_dir("iridaUploader")):
 
 log_format = '%(asctime)s %(levelname)s\t%(filename)s:%(funcName)s:%(lineno)d - %(message)s'
 
+# if any logging gets called before `basicConfig`, our attempts to configure the
+# logging here will be clobbered. This removes any existing handlers that might
+# have been set up when some other log message was printed, so that we can
+# actually configure the logging the way we want.
+logging.getLogger().handlers = []
 logging.basicConfig(level=logging.DEBUG,
                     filename=path.join(user_log_dir("iridaUploader"), 'irida-uploader.log'),
                     format=log_format,
                     filemode='w')
 
 console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
 console.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(console)
 
