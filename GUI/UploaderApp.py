@@ -356,6 +356,7 @@ class UploaderAppPanel(wx.Panel):
 
     def Destroy(self):
         self._upload_thread.join()
+        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         wx.Panel.Destroy(self)
 
 class UploaderAppFrame(wx.Frame):

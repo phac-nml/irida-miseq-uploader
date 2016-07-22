@@ -14,6 +14,7 @@ class DirectoryMonitorTopics(object):
     """Topics for monitoring directories for new runs."""
     new_run_observed = "new_run_observed"
     finished_discovering_run = "finished_discovering_run"
+    shut_down_directory_monitor = "shut_down_directory_monitor"
 
 class CompletedJobInfoEventHandler(FileSystemEventHandler):
     """A subclass of watchdog.events.FileSystemEventHandler that will run
@@ -63,5 +64,6 @@ def monitor_directory(directory):
 
     pub.subscribe(stop_monitoring, SettingsDialog.settings_closed_topic)
     pub.subscribe(stop_monitoring, DirectoryMonitorTopics.new_run_observed)
+    pub.subscribe(stop_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
 
     observer.start()
