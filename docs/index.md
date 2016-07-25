@@ -15,7 +15,7 @@ The IRIDA MiSeq Uploader can be run on Microsoft Windows, or any other operating
 
 You can download pre-built packages for Windows from our [GitHub releases page](https://github.com/phac-nml/irida-miseq-uploader/releases/latest).
 
-You may also run the uploader on Linux or Mac, provided you have access to `pip` and [wxPython](https://wxpython.org/). Instructions for running the uploader on Linux or Mac can be found in our [`README.md` file](https://github.com/phac-nml/irida-miseq-uploader/blob/development/README.md).
+You may also run the uploader on Linux or Mac, provided you have access to `pip` and [wxPython](https://wxpython.org/). Instructions for running the uploader on Linux or Mac can be found in our [`README.md` file](https://github.com/phac-nml/irida-miseq-uploader/blob/master/README.md).
 
 ## Preparing your sample sheet
 Before using the uploader, you must prepare your sequencing run with IRIDA-specific project IDs. You can either enter the project IDs when you're creating your sample sheet using the Illumina Experiment Manager or after creating the sample sheet by editing `SampleSheet.csv` with Microsoft Excel or Windows Notepad.
