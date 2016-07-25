@@ -244,7 +244,15 @@ class UploaderAppPanel(wx.Panel):
                 all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
                 self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-                self._sizer.Add(wx.StaticText(self, label=wordwrap("I scanned {}, but I didn't find any sample sheets that weren't already uploaded.".format(self._get_default_directory()), 350, wx.ClientDC(self))), flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+                all_uploaded_details = wx.StaticText(self, label="I scanned {}, but I didn't find any sample sheets that weren't already uploaded. Click 'Scan again' to try finding new runs.".format(self._get_default_directory()))
+                all_uploaded_details.Wrap(350)
+
+                self._sizer.Add(all_uploaded_details, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+
+                scan_again = wx.Button(self, label="Scan again")
+                self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
 
             self.Layout()
             self.Thaw()
@@ -262,12 +270,39 @@ class UploaderAppPanel(wx.Panel):
         self._discovered_runs.append(run)
 
         run_panel = RunPanel(self, run, self._api)
+        pub.subscribe(self._upload_failed, run.upload_failed_topic)
+
         self.Freeze()
         self._run_sizer.Add(run_panel, flag=wx.EXPAND, proportion=1)
         self.Layout()
         self.Thaw()
 
-    def _start_upload(self, event=None):
+    def _upload_failed(self, exception=None):
+        """The upload failed, add a button to restart the upload.
+
+        Args:
+            exception: the error that caused the upload.
+        """
+        logging.info("Adding try again button on upload failure.")
+        self.Freeze()
+        try_again = wx.Button(self, label="Try again")
+        self._upload_sizer.Add(try_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+        self.Bind(wx.EVT_BUTTON, self._retry_upload, id=try_again.GetId())
+        self.Layout()
+        self.Thaw()
+
+    def _retry_upload(self, evt=None):
+        """Retry the upload after a failure is encountered.
+
+        Args:
+            evt: the event that fired this upload.
+        """
+        self._prepare_for_automatic_upload()
+        pub.unsubscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
+        pub.subscribe(self._start_upload, DirectoryScannerTopics.finished_run_scan)
+        find_runs_in_directory(self._get_default_directory())
+
+    def _start_upload(self, *args, **kwargs):
         """Initiate uploading runs to the server.
 
         This will upload multiple runs simultaneously, one per thread.
@@ -276,8 +311,9 @@ class UploaderAppPanel(wx.Panel):
             event: the button event that initiated the method.
         """
         post_processing_task = read_config_option("completion_cmd")
-        self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
+        logging.debug("Running upload for {}".format(str(self._discovered_runs)))
         pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
+        self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, post_processing_task=post_processing_task)
         # destroy the upload button once it's been clicked.
         self.Freeze()
         self._upload_sizer.Clear(True)
@@ -320,6 +356,7 @@ class UploaderAppPanel(wx.Panel):
 
     def Destroy(self):
         self._upload_thread.join()
+        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         wx.Panel.Destroy(self)
 
 class UploaderAppFrame(wx.Frame):
@@ -350,7 +387,7 @@ class UploaderAppFrame(wx.Frame):
 
         self.SetTitle(self._app_name)
         self.SetSizeHints(400, 600,  # min window size
-                          800, 1200) # max window size
+                          800, 700) # max window size (miseq has 1024x768 display resolution)
         self.Show(True)
 
     def _build_menu(self):

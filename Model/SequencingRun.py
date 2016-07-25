@@ -90,6 +90,10 @@ class SequencingRun(object):
         return self._sample_sheet_name + ".upload_completed"
 
     @property
+    def upload_failed_topic(self):
+        return self._sample_sheet_name + ".upload_failed"
+
+    @property
     def offline_validation_topic(self):
         return self._sample_sheet_name + ".offline_validation"
 

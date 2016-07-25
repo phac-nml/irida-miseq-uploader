@@ -14,7 +14,7 @@ class ProcessingPlaceholderText(wx.StaticText):
         self._current_char = 0
 
         # this is the only font face on windows that actually renders the clock faces correctly.
-        self.SetFont(wx.Font(wx.DEFAULT, wx.DEFAULT, wx.NORMAL, wx.DEFAULT, face="Segoe UI Symbol"))
+        self.SetFont(wx.Font(pointSize=wx.DEFAULT, family=wx.FONTFAMILY_DEFAULT, style=wx.NORMAL, weight=wx.FONTWEIGHT_NORMAL, face="Segoe UI Symbol"))
 
         self.Bind(wx.EVT_TIMER, self._update_progress_text, self._timer)
         self.Restart()

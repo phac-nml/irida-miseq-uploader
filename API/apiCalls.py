@@ -664,8 +664,13 @@ class ApiCalls(object):
         send_message(sample.upload_started_topic)
 
         logging.info("Sending files to [{}]".format(url))
-        response = self.session.post(url, data=_sample_upload_generator(sample),
-                                     headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
+        try:
+            response = self.session.post(url, data=_sample_upload_generator(sample),
+                                         headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
+        except Exception, e:
+            logging.error("The upload failed for unexpected reasons, informing the UI.")
+            send_message(sample.upload_failed_topic, exception = e)
+            raise SequenceFileError("Upload failed for unknown reason.", [])
 
         if self._stop_upload:
             logging.info("Upload was halted on user request, raising exception so that server upload status is set to error state.")
@@ -681,6 +686,7 @@ class ApiCalls(object):
                        err_msg=response.reason)
             logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
             logging.info(response.text)
+            send_message(sample.upload_failed_topic, exception = e)
             raise SequenceFileError(err_msg, [])
 
         return json_res

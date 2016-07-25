@@ -61,6 +61,7 @@ class SamplePanel(wx.Panel):
         if not sample.already_uploaded:
             pub.subscribe(self._validation_results, sample.online_validation_topic)
             pub.subscribe(self._upload_started, sample.upload_started_topic)
+            pub.subscribe(self._upload_failed, sample.upload_failed_topic)
             threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
         else:
             # this sample is already uploaded, so inform the run panel to move
@@ -85,7 +86,7 @@ class SamplePanel(wx.Panel):
         if project:
             self._status_label.SetLabel("{} ({})".format(self._sample.get_project_id(), project.get_name()))
         else:
-            self._status_label.SetLabel("Project with ID {} does not exist.".format(self._sample.get_project_id()))
+            self._status_label.SetLabel(u"✘ Project with ID {} does not exist.".format(self._sample.get_project_id()))
         self.Layout()
         self.Thaw()
 
@@ -105,6 +106,32 @@ class SamplePanel(wx.Panel):
         self.Thaw()
         self._timer.Start(1000)
 
+    def _upload_terminated(self, label, colour, tooltip):
+        """Stop the timer and hide self when the upload is has terminated."""
+
+        self._timer.Stop()
+        self.Freeze()
+        status_label = wx.StaticText(self, label=label)
+        status_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        status_label.SetForegroundColour(colour)
+        status_label.SetToolTipString(tooltip)
+        self._sizer.Add(status_label, flag=wx.EXPAND | wx.RIGHT, border=5)
+        if self._progress is not None:
+            self._progress.Destroy()
+        self.Layout()
+        self.Thaw()
+
+    def _upload_failed(self, exception=None):
+        """Update the display when the upload has failed.
+
+        Args:
+            exception: the exception that caused the failure.
+        """
+        logging.info("Upload failed for sample {}".format(self._sample.get_id()))
+        pub.unsubscribe(self._upload_failed, self._sample.upload_failed_topic)
+        self._upload_terminated(label=u"✘", colour=wx.Colour(255, 0, 0),
+                                tooltip="{} failed to upload.".format(self._sample.get_id()))
+
     def _upload_completed(self, sample=None):
         """Stop the timer and hide self when the upload is complete."""
 
@@ -112,18 +139,8 @@ class SamplePanel(wx.Panel):
 
         pub.unsubscribe(self._upload_completed, self._sample.upload_completed_topic)
         pub.unsubscribe(self._upload_progress, self._sample.upload_progress_topic)
-
-        self._timer.Stop()
-        self.Freeze()
-        complete_label = wx.StaticText(self, label=u"✓")
-        complete_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        complete_label.SetForegroundColour(wx.Colour(51, 204, 51))
-        complete_label.SetToolTipString("{} is completed uploading.".format(self._sample.get_id()))
-        self._sizer.Add(complete_label, flag=wx.EXPAND | wx.RIGHT, border=5)
-        if self._progress is not None:
-            self._progress.Destroy()
-        self.Layout()
-        self.Thaw()
+        self._upload_terminated(label=u"✓", colour=wx.Colour(51, 204, 51),
+                                tooltip="{} is completed uploading.".format(self._sample.get_id()))
 
     def _update_progress_timer(self, event):
         """Update the display when the timer is fired.
