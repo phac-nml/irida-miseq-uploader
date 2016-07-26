@@ -401,6 +401,7 @@ class UploaderAppFrame(wx.Frame):
         file_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, lambda evt: self.Close(), file_menu.Append(wx.ID_EXIT))
         self.Bind(wx.EVT_MENU, self._open_about, help_menu.Append(wx.ID_ABOUT))
+        self.Bind(wx.EVT_MENU, lambda evt: wx.LaunchDefaultBrowser("http://irida-miseq-uploader.readthedocs.io/en/latest/"), help_menu.Append(wx.ID_HELP))
 
         menubar.Append(file_menu, '&File')
         menubar.Append(help_menu, '&Help')
