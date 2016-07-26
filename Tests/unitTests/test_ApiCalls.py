@@ -1048,9 +1048,11 @@ class TestApiCalls(unittest.TestCase):
         api.get_file_size_list = MagicMock()
 
         proj_id = "-1"
-        sample = API.apiCalls.Sample({"sampleProject": proj_id})
+        sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "sample"})
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)
+        sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
 
         with self.assertRaises(API.apiCalls.ProjectError) as err:
             api.send_sequence_files([sample])
@@ -1083,6 +1085,8 @@ class TestApiCalls(unittest.TestCase):
         })
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)
+        sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_sequence_files([sample])
