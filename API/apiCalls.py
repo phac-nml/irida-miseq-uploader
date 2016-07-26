@@ -511,7 +511,7 @@ class ApiCalls(object):
             except Exception, e:
                 logging.error("The upload failed for unexpected reasons, informing the UI.")
                 send_message(sample.upload_failed_topic, exception = e)
-                raise SequenceFileError("Upload failed for unknown reason.", [])
+                raise
         return json_res_list
 
     def _kill_connections(self):
