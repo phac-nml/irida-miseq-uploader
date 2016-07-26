@@ -20,6 +20,35 @@ You may also run the uploader on Linux or Mac, provided you have access to `pip`
 ## Preparing your sample sheet
 Before using the uploader, you must prepare your sequencing run with IRIDA-specific project IDs. You can either enter the project IDs when you're creating your sample sheet using the Illumina Experiment Manager or after creating the sample sheet by editing `SampleSheet.csv` with Microsoft Excel or Windows Notepad.
 
+An example, completed `SampleSheet.csv` with the `Sample_Project` column filled in looks like:
+
+```
+[Header]
+IEMFileVersion,4
+Investigator Name,Investigator 1
+Experiment Name,Experiment
+Date,2015-05-14
+Workflow,GenerateFASTQ
+Application,FASTQ Only
+Assay,Nextera XT
+Description,
+Chemistry,Amplicon
+
+[Reads]
+251
+251
+
+[Settings]
+ReverseComplement,0
+Adapter,ATCGATCGATCG
+
+[Data]
+Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_ID,index2,Sample_Project,Description
+sample1,,plate1,A01,N801,ATCGAAA,S801,ATCGAAA,1,
+sample2,,plate1,A01,N801,ATCGAAA,S801,ATCGAAA,1,
+sample3,,plate1,A01,N801,ATCGAAA,S801,ATCGAAA,1,
+```
+
 ## Running the Uploader
 Once you've installed the uploader and added project IDs to your sample sheet, you can run the uploader by clicking on the entry created in the Start menu:
 
