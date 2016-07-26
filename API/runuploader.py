@@ -5,10 +5,10 @@ from API.pubsub import send_message
 from os import path
 from wx.lib.pubsub import pub
 
+import os
 import json
 import logging
 import threading
-import subprocess
 
 class RunUploaderTopics(object):
     start_online_validation = "start_online_validation"
@@ -18,6 +18,7 @@ class RunUploaderTopics(object):
     finished_uploading_samples = "finished_uploading_samples"
     started_post_processing = "started_post_processing"
     finished_post_processing = "finished_post_processing"
+    failed_post_processing = "failed_post_processing"
 
 class RunUploader(threading.Thread):
     """A convenience thread wrapper for uploading runs to the server."""
@@ -47,9 +48,17 @@ class RunUploader(threading.Thread):
             send_message(RunUploaderTopics.started_post_processing)
             logging.info("About to launch post-processing command: {}".format(self._post_processing_task))
             # blocks until the command is complete
-            subprocess.call(self._post_processing_task, shell=True)
-            logging.info("Post-processing command is complete, informing UI.")
-            send_message(RunUploaderTopics.finished_post_processing)
+            try:
+                exit_code = os.system(self._post_processing_task)
+            except:
+                exit_code = 1
+
+            if not exit_code:
+                logging.info("Post-processing command is complete.")
+                send_message(RunUploaderTopics.finished_post_processing)
+            else:
+                logging.error("The post-processing command is reporting failure")
+                send_message(RunUploaderTopics.failed_post_processing)
 
     def join(self, timeout=None):
         """Kill the thread.

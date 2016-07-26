@@ -34,9 +34,15 @@ class URLEntryPanel(wx.Panel):
         self.SetSizerAndFit(self._sizer)
         self.Layout()
 
+        self.Bind(wx.EVT_CLOSE, self._on_close)
         pub.subscribe(self._status_label.SetError, APIConnectorTopics.connection_error_url_topic)
         pub.subscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
         pub.subscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_valid_url)
+
+    def _on_close(self, evt=None):
+        pub.unsubscribe(self._status_label.SetError, APIConnectorTopics.connection_error_url_topic)
+        pub.unsubscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.unsubscribe(self._status_label.SetSuccess, APIConnectorTopics.connection_success_valid_url)
 
     def _field_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="baseurl", field_value=self._url.GetValue())
@@ -86,6 +92,12 @@ class UserDetailsPanel(wx.Panel):
         pub.subscribe(self._handle_connection_error, APIConnectorTopics.connection_error_user_credentials_topic)
         pub.subscribe(self._status_label_user.SetSuccess, APIConnectorTopics.connection_success_topic)
         pub.subscribe(self._status_label_pass.SetSuccess, APIConnectorTopics.connection_success_topic)
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+    def _on_close(self, evt=None):
+        pub.unsubscribe(self._handle_connection_error, APIConnectorTopics.connection_error_user_credentials_topic)
+        pub.unsubscribe(self._status_label_user.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.unsubscribe(self._status_label_pass.SetSuccess, APIConnectorTopics.connection_success_topic)
 
     def _username_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="username", field_value=self._username.GetValue())
@@ -147,6 +159,16 @@ class ClientDetailsPanel(wx.Panel):
         pub.subscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
         pub.subscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_id)
         pub.subscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_secret)
+
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+    def _on_close(self, evt=None):
+        pub.unsubscribe(self._client_id_status_label.SetError, APIConnectorTopics.connection_error_client_id_topic)
+        pub.unsubscribe(self._client_secret_status_label.SetError, APIConnectorTopics.connection_error_client_secret_topic)
+        pub.unsubscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.unsubscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_topic)
+        pub.unsubscribe(self._client_id_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_id)
+        pub.unsubscribe(self._client_secret_status_label.SetSuccess, APIConnectorTopics.connection_success_valid_client_secret)
 
     def _client_id_changed(self, evt=None):
         send_message(SettingsDialog.field_changed_topic, field_name="client_id", field_value=self._client_id.GetValue())
@@ -231,6 +253,7 @@ class SettingsDialog(wx.Dialog):
         threading.Thread(target=connect_to_irida).start()
 
     def _on_close(self, evt=None):
+        pub.unsubscribe(self._field_changed, SettingsDialog.field_changed_topic)
         # only inform the UI that settings have changed if we're not being invoked
         # to set up the initial configuration settings (i.e., the first run)
         if type(evt) is wx.CommandEvent and not self._first_run:
