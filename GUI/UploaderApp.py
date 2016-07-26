@@ -325,12 +325,13 @@ class UploaderAppPanel(wx.Panel):
         """Show a 'processing' message on the UI while the post processing task is executing."""
         pub.unsubscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
         pub.subscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
+        pub.subscribe(self._post_processing_task_failed, RunUploaderTopics.failed_post_processing)
         logging.info("Post-processing started, updating UI.")
 
         self.Freeze()
         self._post_processing_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._post_processing_placeholder = ProcessingPlaceholderText(self)
-        self._post_processing_placeholder.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self._post_processing_placeholder.SetFont(wx.Font(pointSize=18, family=wx.FONTFAMILY_DEFAULT, style=wx.NORMAL, weight=wx.FONTWEIGHT_BOLD, face="Segoe UI Symbol"))
         self._post_processing_text = wx.StaticText(self, label="Executing post-processing task.")
         self._post_processing_text.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self._post_processing_text.Wrap(350)
@@ -345,12 +346,26 @@ class UploaderAppPanel(wx.Panel):
     def _post_processing_task_completed(self):
         """Show a 'completed' message on the UI when the post processing task is finished."""
         pub.unsubscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
+        pub.unsubscribe(self._post_processing_task_failed, RunUploaderTopics.failed_post_processing)
         logging.info("Post-processing finished, updating UI.")
         self.Freeze()
         self._post_processing_text.SetLabel("Post-processing task complete.")
         self._post_processing_text.SetToolTipString("Successfully executed command `{}`.".format(read_config_option("completion_cmd")))
         self._post_processing_text.Wrap(350)
         self._post_processing_placeholder.SetSuccess()
+        self.Layout()
+        self.Thaw()
+
+    def _post_processing_task_failed(self):
+        """Show a 'failed' message on the UI when the post processing task fails."""
+        pub.unsubscribe(self._post_processing_task_failed, RunUploaderTopics.failed_post_processing)
+        pub.unsubscribe(self._post_processing_task_completed, RunUploaderTopics.finished_post_processing)
+        logging.info("Post-processing failed, updating UI.")
+        self.Freeze()
+        self._post_processing_text.SetLabel("Post-processing task failed.")
+        self._post_processing_text.SetToolTipString("Failed to execute command `{}`.".format(read_config_option("completion_cmd")))
+        self._post_processing_text.Wrap(350)
+        self._post_processing_placeholder.SetError("Failed to execute command `{}`.".format(read_config_option("completion_cmd")))
         self.Layout()
         self.Thaw()
 
