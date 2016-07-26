@@ -1,4 +1,4 @@
-before-script:
+before_script:
     - rm -rf /tmp/irida/*
 
 build-against-irida-master:
