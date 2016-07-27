@@ -22,7 +22,7 @@ Install virtualenv
 
 Build a virtualenv and install the dependencies:
 
-    $ git clone https://irida.corefacility.ca/irida/irida-miseq-uploader.git
+    $ git clone https://github.com/phac-nml/irida-miseq-uploader
     $ cd irida-miseq-uploader
     $ make requirements
     $ source .virtualenv/bin/activate
@@ -46,7 +46,7 @@ You must install several packages to build the Windows installer:
 
 ### Building the Windows installer
 
-From inside the `iridaUploader` directory, you can simply run:
+From inside the `irida-miseq-uploader` directory, you can simply run:
 
     make windows
 

@@ -6,6 +6,7 @@ from os import path
 from Model.Project import Project
 from Model.Sample import Sample
 from Parsers.miseqParser import complete_parse_samples
+from API.directoryscanner import find_runs_in_directory
 
 @pytest.mark.skipif(not pytest.config.getoption("--integration"), reason = "skipped integration tests")
 class TestApiIntegration:
@@ -88,9 +89,9 @@ class TestApiIntegration:
         path_to_module = path.dirname(__file__)
         if len(path_to_module) == 0:
             path_to_module = '.'
-        sample_sheet_file = path.join(path_to_module, "fake_ngs_data",
-                                      "SampleSheet.csv")
-        samples_list = complete_parse_samples(sample_sheet_file)
+
+        run = find_runs_in_directory(path.join(path_to_module, "fake_ngs_data")).pop()
+        samples_list = run.sample_list
 
         # check that the sample with id 99-9999 (from SampleSheet.csv)
         # has no sequence files

@@ -1,12 +1,20 @@
-def project_exists(api, project_id):
+from API.pubsub import send_message
+from requests import ConnectionError
 
-    proj_list = api.get_projects()
-
-    if any([proj.get_id() == project_id for proj in proj_list]):
+def project_exists(api, project_id, message_id=None):
+    try:
+        proj_list = api.get_projects()
+        project = next(proj for proj in proj_list if proj.get_id() == project_id)
+        if message_id:
+            send_message(message_id, project=project)
         return True
-    else:
+    except ConnectionError:
+        if message_id:
+            send_message(message_id, project=None)
+    except StopIteration:
+        if message_id:
+            send_message(message_id, project=None)
         return False
-
 
 def sample_exists(api, sample):
 

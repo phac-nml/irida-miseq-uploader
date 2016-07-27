@@ -16,6 +16,9 @@ class ValidationResult:
     def error_count(self):
         return len(self.error_msgs)
 
+    def error_list(self):
+        return self.error_msgs
+
     def get_errors(self):
         ret_val = ""
         if len(self.error_msgs) > 0:

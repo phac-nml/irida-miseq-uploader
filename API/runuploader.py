@@ -1,18 +1,83 @@
 from Validation.onlineValidation import project_exists, sample_exists
-from wx.lib.pubsub import pub
-import logging
 from Exceptions.ProjectError import ProjectError
 from API.pubsub import send_message
-from os import path
-import json
 
-def upload_run_to_server(api, sequencing_run, progress_callback):
+from os import path
+from wx.lib.pubsub import pub
+
+import os
+import json
+import logging
+import threading
+
+class RunUploaderTopics(object):
+    start_online_validation = "start_online_validation"
+    online_validation_failure = "online_validation_failure"
+    start_checking_samples = "start_checking_samples"
+    start_uploading_samples = "start_uploading_samples"
+    finished_uploading_samples = "finished_uploading_samples"
+    started_post_processing = "started_post_processing"
+    finished_post_processing = "finished_post_processing"
+    failed_post_processing = "failed_post_processing"
+
+class RunUploader(threading.Thread):
+    """A convenience thread wrapper for uploading runs to the server."""
+
+    def __init__(self, api, runs, post_processing_task=None, name='RunUploaderThread'):
+        """Initialize a `RunUploader`.
+
+        Args:
+            api: an initialized connection to IRIDA.
+            runs: a list of runs to upload to the server.
+            post_processing_task: the system command to execute after the runs are uploaded
+            name: the name of the thread.
+        """
+        self._stop_event = threading.Event()
+        self._api = api
+        self._runs = runs
+        self._post_processing_task = post_processing_task
+        threading.Thread.__init__(self, name=name)
+
+    def run(self):
+        """Initiate upload. The upload happens serially, one run at a time."""
+        for run in self._runs:
+            upload_run_to_server(api=self._api, sequencing_run=run)
+        # once the run uploads are complete, we can launch the post-processing
+        # command
+        if self._post_processing_task:
+            send_message(RunUploaderTopics.started_post_processing)
+            logging.info("About to launch post-processing command: {}".format(self._post_processing_task))
+            # blocks until the command is complete
+            try:
+                exit_code = os.system(self._post_processing_task)
+            except:
+                exit_code = 1
+
+            if not exit_code:
+                logging.info("Post-processing command is complete.")
+                send_message(RunUploaderTopics.finished_post_processing)
+            else:
+                logging.error("The post-processing command is reporting failure")
+                send_message(RunUploaderTopics.failed_post_processing)
+
+    def join(self, timeout=None):
+        """Kill the thread.
+
+        This will politely ask the API to terminate connections.
+
+        Args:
+            timeout: the length of time to wait before bailing out.
+        """
+        logging.info("Going to try killing connections on exit.")
+        self._api._kill_connections()
+        threading.Thread.join(self, timeout)
+
+def upload_run_to_server(api, sequencing_run):
     """Upload a single run to the server.
 
     Arguments:
     api -- the API object to use for interacting with the server
     sequencing_run -- the run to upload to the server
-    progress_callback -- the function to call for indicating upload progress
 
     Publishes messages:
     start_online_validation -- when running an online validation (checking project ids) starts
@@ -25,12 +90,12 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
     filename = path.join(sequencing_run.sample_sheet_dir,
                          ".miseqUploaderInfo")
 
-
-    def _handle_upload_sample_complete(sample):
+    def _handle_upload_sample_complete(sample=None):
         """Handle the event that happens when a sample has finished uploading.
 
         """
-
+        if sample is None:
+            raise Exception("sample is required!")
         with open(filename, "rb") as reader:
             uploader_info = json.load(reader)
             logging.info(uploader_info)
@@ -41,19 +106,7 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
         with open(filename, 'wb') as writer:
             json.dump(uploader_info, writer)
         logging.info("Finished updating info file.")
-
-    def _sample_already_uploaded(sample):
-        """Check whether or not a sample was already uploaded
-        """
-        with open(filename, "rb") as reader:
-            uploader_info = json.load(reader)
-            logging.info(uploader_info)
-            try:
-                logging.info("Checking if {} was already uploaded in {}.".format(sample.get_id(), uploader_info['uploaded_samples']))
-                return sample.get_id() in uploader_info['uploaded_samples']
-            except KeyError:
-                logging.info("sample {} was not uploaded.".format(sample.get_id()))
-                return False
+        pub.unsubscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
 
     # do online validation first.
     _online_validation(api, sequencing_run)
@@ -70,29 +123,33 @@ def upload_run_to_server(api, sequencing_run, progress_callback):
             uploader_info = json.load(reader)
             run_id = uploader_info['Upload ID']
 
-    send_message("start_checking_samples")
+    send_message(RunUploaderTopics.start_checking_samples)
     logging.info("Starting to check samples. [{}]".format(len(sequencing_run.sample_list)))
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)
     logging.info("Sending samples to server: [{}].".format(", ".join([str(x) for x in samples_to_create])))
     api.send_samples(samples_to_create)
 
-    pub.subscribe(_handle_upload_sample_complete, 'completed_uploading_sample')
-
-    samples_to_upload = filter(lambda sample: not _sample_already_uploaded(sample), sequencing_run.sample_list)
-    skipped_samples = filter(lambda sample: _sample_already_uploaded(sample), sequencing_run.sample_list)
+    for sample in sequencing_run.samples_to_upload:
+        pub.subscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
 
     send_message("start_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir,
-                                               skipped_sample_ids = [sample.get_id() for sample in skipped_samples],
+                                               skipped_sample_ids = [sample.get_id() for sample in sequencing_run.uploaded_samples],
                                                run_id = run_id)
+    send_message(sequencing_run.upload_started_topic)
 
     logging.info("About to start uploading samples.")
-    api.send_sequence_files(samples_list = samples_to_upload,
-                                 callback = progress_callback, upload_id = run_id)
-    send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
-    api.set_seq_run_complete(run_id)
-    _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
-
+    try:
+        api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
+                                     upload_id = run_id)
+        send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
+        send_message(sequencing_run.upload_completed_topic)
+        api.set_seq_run_complete(run_id)
+        _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
+    except Exception as e:
+        logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
+        api.set_seq_run_error(run_id)
+	raise
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.

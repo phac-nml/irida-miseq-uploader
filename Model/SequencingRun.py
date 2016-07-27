@@ -1,6 +1,7 @@
 import os
+import logging
 
-class SequencingRun:
+class SequencingRun(object):
 
     def __init__(self, metadata = None, sample_list = None, sample_sheet = None):
         self._sample_list = sample_list
@@ -10,6 +11,11 @@ class SequencingRun:
             raise ValueError("Sample sheet cannot be None!")
         self._sample_sheet = sample_sheet
         self._sample_sheet_dir = os.path.dirname(sample_sheet)
+        self._sample_sheet_name = os.path.basename(self._sample_sheet_dir)
+
+        for sample in self._sample_list:
+            logging.info("Setting run.")
+            sample.run = self
 
     @property
     def metadata(self):
@@ -29,6 +35,14 @@ class SequencingRun:
     @sample_list.setter
     def sample_list(self, sample_list):
         self._sample_list = sample_list
+
+    @property
+    def uploaded_samples(self):
+        return filter(lambda sample: sample.already_uploaded, self.sample_list)
+
+    @property
+    def samples_to_upload(self):
+        return filter(lambda sample: not sample.already_uploaded, self.sample_list)
 
     def get_sample(self, sample_id):
         for sample in self._sample_list:
@@ -58,3 +72,31 @@ class SequencingRun:
     @property
     def sample_sheet_dir(self):
         return self._sample_sheet_dir
+
+    @property
+    def sample_sheet_name(self):
+        return self._sample_sheet_name
+
+    @property
+    def upload_started_topic(self):
+        return self._sample_sheet_name + ".upload_started"
+
+    @property
+    def upload_progress_topic(self):
+        return self._sample_sheet_name + ".upload_progress"
+
+    @property
+    def upload_completed_topic(self):
+        return self._sample_sheet_name + ".upload_completed"
+
+    @property
+    def upload_failed_topic(self):
+        return self._sample_sheet_name + ".upload_failed"
+
+    @property
+    def offline_validation_topic(self):
+        return self._sample_sheet_name + ".offline_validation"
+
+    @property
+    def online_validation_topic(self):
+        return self._sample_sheet_name + ".online_validation"

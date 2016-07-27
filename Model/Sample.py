@@ -1,4 +1,5 @@
 import json
+import logging
 """
 A Sample will store (key: value) pairs using a dictionary.
 e.g  {"sequencerSampleId": "01-1111"}
@@ -8,10 +9,12 @@ Keys: 'sampleName','description','sequencerSampleId','sampleProject'
 
 class Sample(object):
 
-    def __init__(self, new_samp_dict, sample_number=None):
+    def __init__(self, new_samp_dict, run=None, sample_number=None):
         self.sample_dict = dict(new_samp_dict)
         self.seq_file = None
+        self._run = run
         self._sample_number = sample_number
+        self._already_uploaded = False
 
     def get_id(self):
         # When pulling sample records from the server, the sample name *is* the
@@ -22,6 +25,14 @@ class Sample(object):
             return self.sample_dict["sequencerSampleId"]
         except KeyError:
             return self.sample_dict["sampleName"]
+
+    @property
+    def already_uploaded(self):
+        return self._already_uploaded
+
+    @already_uploaded.setter
+    def already_uploaded(self, already_uploaded=False):
+        self._already_uploaded = already_uploaded
 
     @property
     def sample_name(self):
@@ -63,6 +74,35 @@ class Sample(object):
 
     def __str__(self):
         return str(self.sample_dict) + str(self.seq_file)
+
+    @property
+    def upload_progress_topic(self):
+        return self._run.upload_progress_topic + "." + self.get_id()
+
+    @property
+    def upload_started_topic(self):
+        return self._run.upload_started_topic + "." + self.get_id()
+
+    @property
+    def upload_completed_topic(self):
+        return self._run.upload_completed_topic + "." + self.get_id()
+
+    @property
+    def upload_failed_topic(self):
+        return self._run.upload_failed_topic + "." + self.get_id()
+
+    @property
+    def online_validation_topic(self):
+        return self._run.online_validation_topic + "." + self.get_id()
+
+    @property
+    def run(self):
+        return self._run
+
+    @run.setter
+    def run(self, run):
+        logging.info("Setting run.")
+        self._run = run
 
     class JsonEncoder(json.JSONEncoder):
 
