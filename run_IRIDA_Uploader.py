@@ -3,30 +3,62 @@
 import wx
 import logging
 import webbrowser
-from github3 import GitHub
+import ConfigParser
+import argparse
 import wx.lib.delayedresult as dr
 import wx.lib.agw.hyperlink as hl
-from distutils.version import LooseVersion
-import ConfigParser
-from os import path
 
-from GUI.MainFrame import MainFrame
+from os import path, makedirs
+from distutils.version import LooseVersion
+from github3 import GitHub
+from GUI import UploaderAppFrame, SettingsDialog
+from appdirs import user_config_dir, user_log_dir
+from wx.lib.pubsub import pub
 
 path_to_module = path.dirname(__file__)
 app_config = path.join(path_to_module, 'irida-uploader.cfg')
+
 if not path.isfile(app_config):
     app_config = path.join(path_to_module, '..', 'irida-uploader.cfg')
 
+if not path.exists(user_log_dir("iridaUploader")):
+    makedirs(user_log_dir("iridaUploader"))
+
+log_format = '%(asctime)s %(levelname)s\t%(filename)s:%(funcName)s:%(lineno)d - %(message)s'
+
+# if any logging gets called before `basicConfig`, our attempts to configure the
+# logging here will be clobbered. This removes any existing handlers that might
+# have been set up when some other log message was printed, so that we can
+# actually configure the logging the way we want.
+logging.getLogger().handlers = []
+logging.basicConfig(level=logging.DEBUG,
+                    filename=path.join(user_log_dir("iridaUploader"), 'irida-uploader.log'),
+                    format=log_format,
+                    filemode='w')
+
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+console.setFormatter(logging.Formatter(log_format))
+logging.getLogger().addHandler(console)
+
 class Uploader(wx.App):
 
-    def __init__(self, redirect=False, filename=None):
+    def __init__(self, show_new_ui=False, redirect=False, filename=None):
         wx.App.__init__(self, redirect, filename)
         self.get_app_info()
         self.check_for_update()
 
-        self.frame = MainFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
-        self.frame.Show()
-        self.frame.mp.api = self.frame.settings_frame.attempt_connect_to_api()
+        user_config_file = path.join(user_config_dir("iridaUploader"), "config.conf")
+
+        if not path.exists(user_config_file):
+            dialog = SettingsDialog(first_run=True)
+            dialog.ShowModal()
+
+        self._show_main_app()
+
+    def _show_main_app(self):
+        frame = UploaderAppFrame(app_name=self.__app_name__, app_version=self.__app_version__, app_url=self.url)
+        frame.Show()
 
     def get_app_info(self):
         config_parser = ConfigParser.ConfigParser()
@@ -95,7 +127,6 @@ class NewVersionMessageDialog(wx.Dialog):
 
         self.SetSizer(sizer)
         sizer.Fit(self)
-
 
 def main():
     app = Uploader()

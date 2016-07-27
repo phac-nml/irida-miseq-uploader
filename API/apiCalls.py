@@ -1,18 +1,17 @@
 import ast
 import json
 import httplib
+import itertools
 from urllib2 import urlopen, URLError
 from urlparse import urljoin
 from time import time
 from copy import deepcopy
-from os import path, system
-from ConfigParser import RawConfigParser
+from os import path
 import logging
+import threading
 
 from rauth import OAuth2Service
 from requests.exceptions import HTTPError as request_HTTPError
-from requests_toolbelt.multipart import encoder
-from appdirs import user_config_dir
 
 from Model.Project import Project
 from Model.Sample import Sample
@@ -22,25 +21,6 @@ from Exceptions.SequenceFileError import SequenceFileError
 from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
-
-def exception_handler(fn):
-    def decorator(*args, **kwargs):
-        """
-        Run the function (fn) and if any errors are raised then
-        the publisher sends a messaage which calls
-        handle_api_thread_error() in iridaUploaderMain.MainPanel
-        """
-        try:
-            return fn(*args, **kwargs)
-        except Exception, e:
-            logging.error("An error occurred while uploading in function {function_name}, publishing message to inform API: [{exception}]".format(function_name=fn.__name__, exception=str(e)))
-            send_message(
-                "handle_api_thread_error",
-                function_name=fn.__name__,
-                exception=e)
-            raise
-
-    return decorator
 
 class ApiCalls(object):
 
@@ -66,14 +46,38 @@ class ApiCalls(object):
         self.password = password
         self.max_wait_time = max_wait_time
 
-        self.conf_parser = RawConfigParser()
-        self.config_file = path.join(user_config_dir("iridaUploader"),
-                                     "config.conf")
-        self.conf_parser.read(self.config_file)
-
+        self._session_lock = threading.Lock()
+        self._session_set_externally = False
         self.create_session()
         self.cached_projects = None
         self.cached_samples = {}
+
+    @property
+    def session(self):
+        if self._session_set_externally:
+            return self._session
+
+        try:
+            self._session_lock.acquire()
+            response = self._session.options(self.base_URL)
+            if response.status_code != httplib.OK:
+                raise Exception
+            else:
+                logging.debug("Existing session still works, going to reuse it.")
+        except:
+            logging.debug("Token is probably expired, going to get a new session.")
+            oauth_service = self.get_oauth_service()
+            access_token = self.get_access_token(oauth_service)
+            self._session = oauth_service.get_session(access_token)
+        finally:
+            self._session_lock.release()
+
+        return self._session
+
+    @session.setter
+    def session(self, session):
+        self._session = session
+        self._session_set_externally = True
 
     def create_session(self):
         """
@@ -88,7 +92,7 @@ class ApiCalls(object):
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self.session = oauth_service.get_session(access_token)
+            self._session = oauth_service.get_session(access_token)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is\
                     False:
@@ -116,7 +120,6 @@ class ApiCalls(object):
 
         return oauth_serv
 
-    @exception_handler
     def get_access_token(self, oauth_service):
         """
         get access token to be used to get session from oauth_service
@@ -247,7 +250,6 @@ class ApiCalls(object):
 
         return retVal
 
-    @exception_handler
     def get_projects(self):
         """
         API call to api/projects to get list of projects
@@ -256,7 +258,7 @@ class ApiCalls(object):
         """
 
         if self.cached_projects is None:
-
+            logging.info("Loading projects from server.")
             url = self.get_link(self.base_URL, "projects")
             response = self.session.get(url)
 
@@ -277,10 +279,11 @@ class ApiCalls(object):
                 raise KeyError(msg_arg + " not found." + " Available keys: " +
                                ", ".join(result[0].keys()))
             self.cached_projects = project_list
+        else:
+            logging.info("Loading projects from cache.")
 
         return self.cached_projects
 
-    @exception_handler
     def get_samples(self, project=None, sample=None):
         """
         API call to api/projects/project_id/samples
@@ -318,7 +321,6 @@ class ApiCalls(object):
 
         return self.cached_samples[project_id]
 
-    @exception_handler
     def get_sequence_files(self, sample):
         """
         API call to api/projects/project_id/sample_id/sequenceFiles
@@ -356,15 +358,13 @@ class ApiCalls(object):
             response = self.session.get(url)
 
         except StopIteration:
-            raise SampleError("The given sample ID: " +
-                              sample_id + " doesn't exist")
+            raise SampleError("The given sample ID: {} doesn't exist".format(sample_id), [])
 
         result = response.json()["resource"]["resources"]
 
         return result
 
-    @exception_handler
-    def send_project(self, project):
+    def send_project(self, project, clear_cache=True):
         """
         post request to send a project to IRIDA via API
         the project being sent requires a name that is at least
@@ -380,7 +380,8 @@ class ApiCalls(object):
         when post fails then an error will be raised so return statement is
             not even reached.
         """
-        self.cached_projects = None
+        if clear_cache:
+            self.cached_projects = None
 
         json_res = {}
         if len(project.get_name()) >= 5:
@@ -409,7 +410,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def send_samples(self, samples_list):
         """
         post request to send sample(s) to the given project
@@ -423,6 +423,7 @@ class ApiCalls(object):
         """
 
         self.cached_samples = {} # reset the cache, we're updating stuff
+        self.cached_projects = None
         json_res_list = []
 
         for sample in samples_list:
@@ -453,14 +454,13 @@ class ApiCalls(object):
                 json_res = json.loads(response.text)
                 json_res_list.append(json_res)
             else:
-                raise SampleError(("Error {status_code}: {err_msg}.\n" +
-                                  "Sample data: {sample_data}").format(
+                logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
+                raise SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(
                                   status_code=str(response.status_code),
                                   err_msg=response.text,
-                                  sample_data=str(sample)))
+                                  sample_data=str(sample)), ["IRIDA rejected the sample."])
         return json_res_list
 
-    @exception_handler
     def get_file_size_list(self, samples_list):
         """
         calculate file size for the files in a sample
@@ -480,9 +480,7 @@ class ApiCalls(object):
 
         return file_size_list
 
-    @exception_handler
-    def send_sequence_files(self, samples_list, callback=None,
-                                 upload_id=1):
+    def send_sequence_files(self, samples_list, upload_id=1):
 
         """
         send sequence files found in each sample in samples_list
@@ -493,10 +491,7 @@ class ApiCalls(object):
 
         arguments:
             samples_list -- list containing Sample object(s)
-            callback -- optional callback argument for use with monitor
-                        callback function accepts a
-                        encoder.MultipartEncoderMonitor object as it's only
-                        parameter
+            upload_id -- the run to send the files to
 
         returns a list containing dictionaries of the result of post request.
         """
@@ -510,22 +505,27 @@ class ApiCalls(object):
         self.start_time = time()
 
         for sample in samples_list:
-
-            json_res = self._send_sequence_files(sample, callback,
-                                                      upload_id)
-            json_res_list.append(json_res)
-
-        if callback is not None:
-            send_message("seq_files_upload_complete")
-            completion_cmd = self.conf_parser.get("Settings", "completion_cmd")
-            if len(completion_cmd) > 0:
-                send_message("display_completion_cmd_msg",
-                                completion_cmd=completion_cmd)
-                system(completion_cmd)
-
+            try:
+                json_res = self._send_sequence_files(sample, upload_id)
+                json_res_list.append(json_res)
+            except Exception, e:
+                logging.error("The upload failed for unexpected reasons, informing the UI.")
+                send_message(sample.upload_failed_topic, exception = e)
+                raise
         return json_res_list
 
-    def _send_sequence_files(self, sample, callback, upload_id):
+    def _kill_connections(self):
+        """Terminate any currently running uploads.
+
+        This method simply sets a flag to instruct any in-progress generators called
+        by `_send_sequence_files` below to stop generating data and raise an exception
+        that will set the run to an error state on the server.
+        """
+
+        self._stop_upload = True
+        self.session.close()
+
+    def _send_sequence_files(self, sample, upload_id):
 
         """
         post request to send sequence files found in given sample argument
@@ -534,15 +534,13 @@ class ApiCalls(object):
 
         arguments:
             sample -- Sample object
-            callback -- optional callback argument for use with monitor
-                        callback function accepts a
-                        encoder.MultipartEncoderMonitor object as it's only
-                        parameter
+            upload_id -- the run to upload the files to
 
         returns result of post request.
         """
 
         json_res = {}
+        self._stop_upload = False
 
         try:
             project_id = sample.get_project_id()
@@ -564,87 +562,134 @@ class ApiCalls(object):
                                         "value": sample_id
                                     })
         except StopIteration:
-            raise SampleError("The given sample ID: " +
-                              sample_id + " doesn't exist")
+            raise SampleError("The given sample ID: {} doesn't exist".format(sample_id),
+                ["No sample with name [{}] exists in project [{}]".format(sample_id, project_id)])
 
-        miseqRunId_key = "miseqRunId"
+        boundary = "B0undary"
+        read_size = 32768
+
+        def _send_file(filename, parameter_name, bytes_read=0):
+            """This function is a generator that yields a multipart form-data
+            entry for the specified file. This function will yield `read_size`
+            bytes of the specified file name at a time as the generator is called.
+            This function will also terminate generating data when the field
+            `self._stop_upload` is set.
+
+            Args:
+                filename: the file to read and yield in `read_size` chunks to
+                          the server.
+                parameter_name: the form field name to send to the server.
+                bytes_read: used for sending messages to the UI layer indicating
+                            the total number of bytes sent when sending the sample
+                            to the server.
+            """
+
+            # Send the boundary header section for the file
+            logging.info("Sending the boundary header section for {}".format(filename))
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"{parameter_name}\"; filename=\"{filename}\"\r\n"
+            "\r\n").format(boundary=boundary, parameter_name=parameter_name, filename=filename.replace("\\", "/"))
+
+            # Send the contents of the file, read_size bytes at a time until
+            # we've either read the entire file, or we've been instructed to
+            # stop the upload by the UI
+            logging.info("Starting to send the file {}".format(filename))
+            with open(filename, "rb", read_size) as fastq_file:
+                data = fastq_file.read(read_size)
+                while data and not self._stop_upload:
+                    bytes_read += len(data)
+                    send_message(sample.upload_progress_topic, progress=bytes_read)
+                    yield data
+                    data = fastq_file.read(read_size)
+                logging.info("Finished sending file {}".format(filename))
+                if self._stop_upload:
+                    logging.info("Halting upload on user request.")
+
+        def _send_parameters(parameter_name, parameters):
+            """This function is a generator that yields a multipart form-data
+            entry with additional file metadata.
+
+            Args:
+                parameter_name: the form field name to use to send to the server.
+                parameters: a JSON encoded object with the metadata for the file.
+            """
+
+            logging.info("Going to send parameters for {}".format(parameter_name))
+            yield ("\r\n--{boundary}\r\n"
+            "Content-Disposition: form-data; name=\"{parameter_name}\"\r\n"
+            "Content-Type: application/json\r\n\r\n"
+            "{parameters}\r\n").format(boundary=boundary, parameter_name=parameter_name, parameters=parameters)
+
+        def _finish_request():
+            """This function is a generator that yields the terminal boundary
+            entry for a multipart form-data upload."""
+
+            yield "--{boundary}--".format(boundary=boundary)
+
+        def _sample_upload_generator(sample):
+            """This function accepts the sample and composes a series of generators
+            that are used to send the file contents and metadata for the sample.
+
+            Args:
+                sample: the sample to send to the server
+            """
+
+            bytes_read = 0
+
+            file_metadata = sample.get_sample_metadata()
+            file_metadata["miseqRunId"] = str(upload_id)
+            file_metadata_json = json.dumps(file_metadata)
+
+            if sample.is_paired_end():
+                # Compose a collection of generators to send both files of a paired-end
+                # file set and the corresponding metadata
+                return itertools.chain(
+                    _send_file(filename=sample.get_files()[0], parameter_name="file1"),
+                    _send_file(filename=sample.get_files()[1], parameter_name="file2", bytes_read=path.getsize(sample.get_files()[0])),
+                    _send_parameters(parameter_name="parameters1", parameters=file_metadata_json),
+                    _send_parameters(parameter_name="parameters2", parameters=file_metadata_json),
+                    _finish_request())
+            else:
+                # Compose a generator to send the single file from a single-end
+                # file set and the corresponding metadata.
+                return itertools.chain(
+                    _send_file(filename=sample.get_files()[0], parameter_name="file"),
+                    _send_parameters(parameter_name="parameters", parameters=file_metadata_json),
+                    _finish_request())
 
         if sample.is_paired_end():
             logging.info("sending paired-end file")
             url = self.get_link(seq_url, "sample/sequenceFiles/pairs")
-            parameters1 = ("\"{key1}\": \"{value1}\"," +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter1", value2="p1")
-            parameters1 = "{" + parameters1 + "}"
-
-            parameters2 = ("\"{key1}\": \"{value1}\", " +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter2", value2="p2")
-            parameters2 = "{" + parameters2 + "}"
-
-            files = ({
-                    "file1": (sample.get_files()[0].replace("\\", "/"),
-                              open(sample.get_files()[0], "rb")),
-                    "parameters1": ("", parameters1, "application/json"),
-                    "file2": (sample.get_files()[1].replace("\\", "/"),
-                              open(sample.get_files()[1], "rb")),
-                    "parameters2": ("", parameters2, "application/json")
-            })
-
         else:
             logging.info("sending single-end file")
             url = seq_url
-            parameters1 = ("\"{key1}\": \"{value1}\"," +
-                           "\"{key2}\": \"{value2}\"").format(
-                            key1=miseqRunId_key, value1=str(upload_id),
-                            key2="parameter1", value2="p1")
-            parameters1 = "{" + parameters1 + "}"
 
-            files = ({
-                    "file": (sample.get_files()[0].replace("\\", "/"),
-                              open(sample.get_files()[0], "rb")),
-                    "parameters": ("", parameters1, "application/json")
-            })
-
-        e = encoder.MultipartEncoder(fields=files)
-
-        monitor = encoder.MultipartEncoderMonitor(e, callback)
-
-        monitor.files = deepcopy(sample.get_files())
-        monitor.total_bytes_read = self.total_bytes_read
-        monitor.size_of_all_seq_files = self.size_of_all_seq_files
-
-        monitor.ov_upload_pct = 0.0
-        monitor.cf_upload_pct = 0.0
-        monitor.prev_cf_pct = 0.0
-        monitor.prev_ov_pct = 0.0
-        monitor.prev_bytes = 0
-
-        monitor.start_time = self.start_time
-
-        headers = {"Content-Type": monitor.content_type}
+        send_message(sample.upload_started_topic)
 
         logging.info("Sending files to [{}]".format(url))
-        response = self.session.post(url, data=monitor, headers=headers)
-        self.total_bytes_read = monitor.total_bytes_read
+
+        response = self.session.post(url, data=_sample_upload_generator(sample),
+                                     headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
+
+        if self._stop_upload:
+            logging.info("Upload was halted on user request, raising exception so that server upload status is set to error state.")
+            raise SequenceFileError("Upload halted on user request.", [])
 
         if response.status_code == httplib.CREATED:
             json_res = json.loads(response.text)
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
-            send_message('completed_uploading_sample', sample = sample)
+            send_message(sample.upload_completed_topic, sample=sample)
         else:
-            err_msg = ("Error {status_code}: {err_msg}\n" +
-                       "Upload data: {ud}").format(
+            err_msg = ("Error {status_code}: {err_msg}\n").format(
                        status_code=str(response.status_code),
-                       err_msg=response.reason,
-                       ud=str(files))
-            raise SequenceFileError(err_msg)
+                       err_msg=response.reason)
+            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
+            logging.info(response.text)
+            send_message(sample.upload_failed_topic, exception = e)
+            raise SequenceFileError(err_msg, [])
 
         return json_res
 
-    @exception_handler
     def create_seq_run(self, metadata_dict):
 
         """
@@ -701,7 +746,6 @@ class ApiCalls(object):
                                    response.reason)
         return json_res
 
-    @exception_handler
     def get_seq_runs(self):
 
         """
@@ -724,7 +768,6 @@ class ApiCalls(object):
 
         return pair_seq_run_list
 
-    @exception_handler
     def set_seq_run_complete(self, identifier):
 
         """
@@ -741,7 +784,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def set_seq_run_uploading(self, identifier):
 
         """
@@ -774,7 +816,6 @@ class ApiCalls(object):
 
         return json_res
 
-    @exception_handler
     def _set_seq_run_upload_status(self, identifier, status):
 
         """

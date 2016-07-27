@@ -5,13 +5,14 @@ from csv import reader
 from collections import OrderedDict
 from copy import deepcopy
 import logging
+import json
 
 from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
 from API.fileutils import find_file_by_name
-
+from API.pubsub import send_message
 
 def parse_metadata(sample_sheet_file):
 
@@ -49,6 +50,8 @@ def parse_metadata(sample_sheet_file):
         'Project Name': 'projectName'
     }
 
+    section = None
+
     for line in csv_reader:
         if "[Header]" in line or "[Settings]" in line:
             section = "header"
@@ -64,7 +67,10 @@ def parse_metadata(sample_sheet_file):
 
         if not line or not line[0]:
             continue
-        if section is "header":
+
+        if not section:
+            raise SampleSheetError("This sample sheet doesn't have any sections.", ["The sample sheet is missing important sections: no sections were found."])
+        elif section is "header":
             try:
                 key_name = metadata_key_translation_dict[line[0]]
                 metadata_dict[key_name] = line[1]
@@ -82,7 +88,7 @@ def parse_metadata(sample_sheet_file):
         metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
     else:
         # this is an exceptional case, you can't have no read lengths!
-        raise SampleSheetError("Sample sheet must have read lenghts!")
+        raise SampleSheetError("Sample sheet must have read lengths!", ["The sample sheet is missing important sections: no [Reads] section found."])
 
     return metadata_dict
 
@@ -107,27 +113,55 @@ def complete_parse_samples(sample_sheet_file):
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
     data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
+    uploader_info_file = path.join(sample_sheet_dir, ".miseqUploaderInfo")
+
+    try:
+        with open(uploader_info_file, "rb") as reader:
+            uploader_info = json.load(reader)
+    except IOError:
+        uploader_info = None
 
     for sample in sample_list:
         properties_dict = parse_out_sequence_file(sample)
         # this is the Illumina-defined pattern for naming fastq files, from:
-        # http://support.illumina.com/content/dam/illumina-support/help/BaseSpaceHelp_v2/Content/Vault/Informatics/Sequencing_Analysis/BS/swSEQ_mBS_FASTQFiles.htm
-        # and also referred to in BaseSpace:
         # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
-        file_pattern = re.escape(sample.get_id()) + "_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+        file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.sample_name),
+                                                                                                 sample_number=sample.sample_number)
+        logging.info("Looking for files with pattern {}".format(file_pattern))
         pf_list = find_file_by_name(directory = data_dir,
                                     name_pattern = file_pattern,
                                     depth = 1)
         if not pf_list:
-            raise SequenceFileError(
-                ("The uploader was unable to find an files with a file name that ends with "
-                 ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
-                 "This usually happens when the Illumina MiSeq Reporter tool "
-                 "does not generate any FastQ data.")
-                 .format(sample.get_id(), data_dir))
+            # OK. So we didn't find any files using the **correct** file name
+            # definition according to Illumina. Let's try again with our deprecated
+            # behaviour, where we didn't actually care about the sample number:
+            file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.get_id()))
+            logging.info("Looking for files with pattern {}".format(file_pattern))
+            pf_list = find_file_by_name(directory = data_dir,
+                                        name_pattern = file_pattern,
+                                        depth = 1)
+
+            if not pf_list:
+                # we **still** didn't find anything. It's pretty likely, then that
+                # there aren't any fastq files in the directory that match what
+                # the sample sheet says...
+                raise SequenceFileError(
+                    ("The uploader was unable to find an files with a file name that ends with "
+                     ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
+                     "This usually happens when the Illumina MiSeq Reporter tool "
+                     "does not generate any FastQ data.")
+                     .format(sample.get_id(), data_dir), ["Sample {}".format(sample.get_id())])
         sq = SequenceFile(properties_dict, pf_list)
 
         sample.set_seq_file(deepcopy(sq))
+
+        if uploader_info is not None:
+            try:
+                sample.already_uploaded = sample.get_id() in uploader_info['uploaded_samples']
+                logging.info("Sample {} was already uploaded.".format(sample.get_id()))
+            except KeyError:
+                logging.info("Sample {} was not already uploaded.".format(sample.get_id()))
+                pass
 
     return sample_list
 
@@ -182,7 +216,7 @@ def parse_samples(sample_sheet_file):
             set_attributes = True
 
     # fill in values for keys. line is currently below the [Data] headers
-    for line in csv_reader:
+    for sample_number, line in enumerate(csv_reader):
 
         if len(sample_dict.keys()) != len(line):
             """
@@ -205,7 +239,9 @@ def parse_samples(sample_sheet_file):
                      "Number of values: {val_len}").format(
                         data_len=len(sample_dict.keys()),
                         val_len=len(line)
-                    )
+                    ), [("Your sample sheet is malformed. I expected to find {} "
+                         "columns the [Data] section, but I only found {} columns "
+                         "for line {}.".format(len(sample_dict.keys()), len(line), line))]
                 )
 
         for index, key in enumerate(sample_dict.keys()):
@@ -214,7 +250,7 @@ def parse_samples(sample_sheet_file):
         if len(sample_dict["sampleName"]) == 0:
             sample_dict["sampleName"] = sample_dict["sequencerSampleId"]
 
-        sample = Sample(deepcopy(sample_dict))
+        sample = Sample(deepcopy(sample_dict), sample_number=sample_number+1)
         sample_list.append(sample)
 
     return sample_list
@@ -274,7 +310,7 @@ def get_csv_reader(sample_sheet_file):
     else:
         msg = sample_sheet_file + " is not a valid SampleSheet file (it's"
         msg += "not a valid CSV file)."
-        raise SampleSheetError(msg)
+        raise SampleSheetError(msg, ["SampleSheet.csv cannot be parsed as a CSV file because it's not a regular file."])
 
     return csv_reader
 
