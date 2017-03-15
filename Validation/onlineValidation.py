@@ -1,5 +1,10 @@
 from API.pubsub import send_message
 from requests import ConnectionError
+from collections import defaultdict
+from Exceptions import SequenceFileError
+import hashlib
+import functools
+
 
 def project_exists(api, project_id, message_id=None):
     try:
@@ -15,6 +20,7 @@ def project_exists(api, project_id, message_id=None):
         if message_id:
             send_message(message_id, project=None)
         return False
+
 
 def sample_exists(api, sample):
 

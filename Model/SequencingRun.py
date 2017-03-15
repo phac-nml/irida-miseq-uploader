@@ -100,3 +100,7 @@ class SequencingRun(object):
     @property
     def online_validation_topic(self):
         return self._sample_sheet_name + ".online_validation"
+
+    @property
+    def checksum_failed_topic(self):
+        return self._sample_sheet_name + ".checksum_failed"

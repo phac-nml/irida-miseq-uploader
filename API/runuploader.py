@@ -1,4 +1,5 @@
 from Validation.onlineValidation import project_exists, sample_exists
+from Validation.postUploadValidation import sample_checksums_match
 from Exceptions.ProjectError import ProjectError
 from API.pubsub import send_message
 
@@ -10,6 +11,7 @@ import json
 import logging
 import threading
 
+
 class RunUploaderTopics(object):
     start_online_validation = "start_online_validation"
     online_validation_failure = "online_validation_failure"
@@ -20,7 +22,9 @@ class RunUploaderTopics(object):
     finished_post_processing = "finished_post_processing"
     failed_post_processing = "failed_post_processing"
 
+
 class RunUploader(threading.Thread):
+
     """A convenience thread wrapper for uploading runs to the server."""
 
     def __init__(self, api, runs, post_processing_task=None, name='RunUploaderThread'):
@@ -72,6 +76,7 @@ class RunUploader(threading.Thread):
         self._api._kill_connections()
         threading.Thread.join(self, timeout)
 
+
 def upload_run_to_server(api, sequencing_run):
     """Upload a single run to the server.
 
@@ -85,6 +90,7 @@ def upload_run_to_server(api, sequencing_run):
     start_checking_samples -- when initially checking to see which samples should be created on the server
     start_uploading_samples (params: sheet_dir) -- when actually initiating upload of the samples in the run
     finished_uploading_samples (params: sheet_dir) -- when uploading the samples has completed
+
     """
 
     filename = path.join(sequencing_run.sample_sheet_dir,
@@ -96,6 +102,7 @@ def upload_run_to_server(api, sequencing_run):
         """
         if sample is None:
             raise Exception("sample is required!")
+
         with open(filename, "rb") as reader:
             uploader_info = json.load(reader)
             logging.info(uploader_info)
@@ -143,13 +150,16 @@ def upload_run_to_server(api, sequencing_run):
         api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
                                      upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
-        send_message(sequencing_run.upload_completed_topic)
-        api.set_seq_run_complete(run_id)
-        _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
+        # verify that the checksums for the uploaded files match the originals
+        if sample_checksums_match(api, sequencing_run):
+            send_message(sequencing_run.upload_completed_topic)
+            api.set_seq_run_complete(run_id)
+            _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
+        else:
+            raise Exception("Upload checksums do not match!")
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
-        api.set_seq_run_error(run_id)
-	raise
+        send_message(sequencing_run.upload_failed_topic)
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.
@@ -162,6 +172,7 @@ def _online_validation(api, sequencing_run):
     start_online_validation -- when running online validation
     online_validation_failure (params: project_id, sample_id) -- when the online validation fails
     """
+
     send_message("start_online_validation")
     for sample in sequencing_run.sample_list:
         if not project_exists(api, sample.get_project_id()):
@@ -169,6 +180,7 @@ def _online_validation(api, sequencing_run):
             raise ProjectError("The Sample_Project: {pid} doesn't exist in IRIDA for Sample_Id: {sid}".format(
                     sid=sample.get_id(),
                     pid=sample.get_project_id()))
+
 
 def _create_miseq_uploader_info_file(sample_sheet_dir, upload_id, upload_status):
 
@@ -200,3 +212,5 @@ def _create_miseq_uploader_info_file(sample_sheet_dir, upload_id, upload_status)
     }
     with open(filename, "wb") as writer:
         json.dump(info, writer)
+
+

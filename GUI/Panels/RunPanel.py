@@ -52,6 +52,7 @@ class RunPanel(ScrolledPanel):
         pub.subscribe(self._handle_progress, run.upload_progress_topic)
         pub.subscribe(self._upload_complete, run.upload_completed_topic)
         pub.subscribe(self._upload_failed, run.upload_failed_topic)
+        pub.subscribe(self._checksum_failed, run.checksum_failed_topic)
 
         for sample in run.sample_list:
             self._sample_panels[sample.get_id()] = SamplePanel(self, sample, run, api)
@@ -132,7 +133,10 @@ class RunPanel(ScrolledPanel):
         error_label = wx.StaticText(self, label=u"✘ Yikes!")
         error_label.SetForegroundColour(wx.Colour(255, 0, 0))
         error_label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        detailed_error_label = wx.StaticText(self, label="The IRIDA server failed to accept the upload. You can try again by clicking the 'Try again' button below. If the problem persists, please contact an IRIDA administrator.".format(str(exception)))
+        detailed_error_label = wx.StaticText(self, label="The IRIDA server failed to accept the upload. You can try "
+                                                         "again by clicking the 'Try again' button below. If the "
+                                                         "problem persists, please contact an IRIDA "
+                                                         "administrator.".format(str(exception)))
         detailed_error_label.Wrap(350)
 
         self._sizer.Insert(0, detailed_error_label, flag=wx.EXPAND | wx.ALL, border=5)
@@ -168,6 +172,37 @@ class RunPanel(ScrolledPanel):
             self._timer.Stop()
             self.Layout()
             self.Thaw()
+
+    def _checksum_failed(self):
+        """Update the display when the upload has failed.
+
+        Args:
+            exception: the exception that caused the failure.
+        """
+
+        pub.unsubscribe(self._upload_failed, self._run.upload_failed_topic)
+        pub.unsubscribe(self._handle_progress, self._run.upload_progress_topic)
+        pub.unsubscribe(self._upload_complete, self._run.upload_completed_topic)
+        pub.unsubscribe(self._checksum_failed, self._run.checksum_failed_topic)
+
+        self.Freeze()
+        self._timer.Stop()
+        self._progress_text.Destroy()
+        self._progress.Destroy()
+        error_label = wx.StaticText(self, label=u"✘ Yikes!")
+        error_label.SetForegroundColour(wx.Colour(255, 0, 0))
+        error_label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        detailed_error_label = wx.StaticText(self, label="Not all uploaded sample checksums match, indicating an "
+                                                         "error while uploading. You can try again by clicking the "
+                                                         "'Try again' button below. If the problem persists, please "
+                                                         "contact an IRIDA administrator.")
+        detailed_error_label.Wrap(350)
+
+        self._sizer.Insert(0, detailed_error_label, flag=wx.EXPAND | wx.ALL, border=5)
+        self._sizer.Insert(0, error_label, flag=wx.EXPAND | wx.ALL, border=5)
+
+        self.Layout()
+        self.Thaw()
 
     def _handle_progress(self, progress):
         """Update the number of bytes sent provided by the API.

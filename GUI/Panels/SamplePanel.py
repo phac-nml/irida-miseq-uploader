@@ -21,6 +21,9 @@ class SamplePanel(wx.Panel):
         sample.upload_progress_topic: Called for progress updates. Takes one
             argument `progress` with the number of bytes that have been sent to
             the server.
+        sample.upload_checksum_mismatch_topic: The sample upload checksum fails.
+             Occurs post-upload when local file checksum does not match the checksum
+             of the uploaded sample file.
     """
 
     def __init__(self, parent, sample, run, api):
@@ -62,6 +65,8 @@ class SamplePanel(wx.Panel):
             pub.subscribe(self._validation_results, sample.online_validation_topic)
             pub.subscribe(self._upload_started, sample.upload_started_topic)
             pub.subscribe(self._upload_failed, sample.upload_failed_topic)
+            pub.subscribe(self._upload_checksum_mismatch, sample.upload_checksum_mismatch_topic)
+
             threading.Thread(target=project_exists, kwargs={"api": api, "project_id": sample.get_project_id(), "message_id": sample.online_validation_topic}).start()
         else:
             # this sample is already uploaded, so inform the run panel to move
@@ -169,3 +174,24 @@ class SamplePanel(wx.Panel):
             progress: the total number of bytes sent by the API for this sample.
         """
         self._progress_value = progress
+    
+    def _upload_checksum_mismatch(self):
+        """Update the display when the upload checksums do not match.
+
+        Args:
+            exception: the exception that caused the failure.
+        """
+        logging.info("Upload checksums do not match for sample {}".format(self._sample.get_id()))
+        pub.unsubscribe(self._upload_checksum_mismatch, self._sample.upload_checksum_mismatch_topic)
+        self._timer.Stop()
+        self.Freeze()
+        logging.info("The children: {}".format(self._sizer.GetChildren()[1]))
+        status_label = wx.StaticText(self, label=u"✘")
+        status_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        status_label.SetForegroundColour(wx.Colour(255,0,0))
+        status_label.SetToolTipString("Upload error: Upload checksums do not match.")
+        self._sizer.Add(status_label, flag=wx.EXPAND | wx.RIGHT, border=5)
+        self.Layout()
+        self.Thaw()
+        #self._upload_terminated(label=u"✘", colour=wx.Colour(255, 0, 0),
+        #                        tooltip="Upload error: Checksums do not match.")

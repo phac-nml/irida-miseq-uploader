@@ -96,6 +96,10 @@ class Sample(object):
         return self._run.online_validation_topic + "." + self.get_id()
 
     @property
+    def upload_checksum_mismatch_topic(self):
+        return self._run.checksum_failed_topic + "." + self.get_id()
+
+    @property
     def run(self):
         return self._run
 
