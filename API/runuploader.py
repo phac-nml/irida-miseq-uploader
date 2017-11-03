@@ -140,16 +140,17 @@ def upload_run_to_server(api, sequencing_run):
 
     logging.info("About to start uploading samples.")
     try:
-        api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
+        api.send_sequence_files(samples_list = samples_to_create,
                                      upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
         send_message(sequencing_run.upload_completed_topic)
+        send_message(RunUploaderTopics.finished_uploading_samples)
         api.set_seq_run_complete(run_id)
         _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
-	raise
+    raise
 
 def _online_validation(api, sequencing_run):
     """Do online validation for the specified sequencing run.
