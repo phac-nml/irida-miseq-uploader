@@ -91,6 +91,3 @@ As each sample completes uploading to the server, it's moved to the bottom of th
 When the run is complete, all samples will have a green checkmark <span style='color: green'>✓</span> beside them, and the overall run progress bar will show 100% progress:
 
 ![Completed upload.](images/completed-upload.png)
-
-
-testadd
