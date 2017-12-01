@@ -142,6 +142,7 @@ def upload_run_to_server(api, sequencing_run):
     try:
         api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
                                      upload_id = run_id)
+        logging.info("finished uploading samples message to send")
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
         send_message(sequencing_run.upload_completed_topic)
         api.set_seq_run_complete(run_id)

@@ -51,7 +51,7 @@ class UploaderAppPanel(wx.Panel):
         self._parent = parent
         self._discovered_runs = []
         self._selected_directory = None
-
+        
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
         # topics to handle from directory scanning
@@ -63,7 +63,7 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._settings_changed, SettingsDialog.settings_closed_topic)
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
-
+        
         self._settings_changed()
         self.SetSizerAndFit(self._sizer)
 
@@ -130,9 +130,10 @@ class UploaderAppPanel(wx.Panel):
         self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
         self._invalid_sheets_panel.Hide()
 
-        should_monitor_directory = read_config_option("monitor_default_dir", expected_type=bool, default_value=False)
+        self._should_monitor_directory = read_config_option("monitor_default_dir", expected_type=bool, default_value=False)
 
-        if should_monitor_directory:
+        if self._should_monitor_directory:
+
             automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
             auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
             auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -144,8 +145,12 @@ class UploaderAppPanel(wx.Panel):
             # topics to handle when monitoring a directory for automatic upload
             pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
             pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-
+            pub.subscribe(self._settings_changed, RunUploaderTopics.finished_uploading_samples)
+            
+            send_message(DirectoryMonitorTopics.start_up_directory_monitor)
             threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+        else:
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
 
        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
@@ -190,8 +195,9 @@ class UploaderAppPanel(wx.Panel):
             logging.info("Failed to connect to IRIDA, handling error.")
             # error handling is done by subscriptions.
         else:
-            # only bother scanning once we've connected to IRIDA
-            wx.CallAfter(self._scan_directories)
+            if not self._should_monitor_directory:
+                # only bother scanning once we've connected to IRIDA
+                wx.CallAfter(self._scan_directories)
 
     def _handle_connection_error(self, error_message=None):
         """Handle connection errors that might be thrown when initially connecting to IRIDA.
