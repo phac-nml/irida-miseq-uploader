@@ -11,7 +11,7 @@ from wx.lib.pubsub import pub
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
-from API.directorymonitor import monitor_directory, DirectoryMonitorTopics
+from API.directorymonitor import RunMonitor, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 from API.APIConnector import connect_to_irida, APIConnectorTopics
@@ -147,9 +147,15 @@ class UploaderAppPanel(wx.Panel):
             pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
             pub.subscribe(self._settings_changed, RunUploaderTopics.finished_uploading_samples)
             
+            logging.info("trying to start new thread")
+            self._monitor_thread = RunMonitor(directory=self._get_default_directory())
+            self._monitor_thread.start()
+            # threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+            logging.info("After starting thread, send message to start up the directory monitor")
             send_message(DirectoryMonitorTopics.start_up_directory_monitor)
-            threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
         else:
+            logging.info("shutting down any existing version of directory monitor")
+            # self._monitor_thread.join()
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
 
        # run connecting in a different thread so we don't freeze up the GUI
@@ -377,6 +383,7 @@ class UploaderAppPanel(wx.Panel):
 
     def Destroy(self):
         self._upload_thread.join()
+        self._monitor_thread.join()
         send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         wx.Panel.Destroy(self)
 

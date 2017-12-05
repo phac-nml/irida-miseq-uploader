@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import threading
 
 from wx.lib.pubsub import pub
 
@@ -17,6 +18,23 @@ class DirectoryMonitorTopics(object):
     finished_discovering_run = "finished_discovering_run"
     shut_down_directory_monitor = "shut_down_directory_monitor"
     start_up_directory_monitor = "start_up_directory_monitor"
+
+class RunMonitor(threading.Thread):
+
+    def __init__(self, directory, name="RunMonitorThread"):
+        self._directory = directory
+        threading.Thread.__init__(self, name=name)
+
+    def run(self):
+        monitor_directory(self._directory)
+
+    def join(self, timeout=None):
+        global toMonitor
+        logging.info("going to kill monitoring")
+        toMonitor = False
+        threading.Thread.join(self, timeout)
+
+
 
 def on_created(directory):
     logging.info("Observed new run in {}, telling the UI to start uploading it.".format(directory))
@@ -41,7 +59,6 @@ def monitor_directory(directory):
     # logging.info("Value of toMonitor {}".format(toMonitor))
     # logging.info("before if statement")
     time.sleep(10)
-    
     # pub.subscribe(stop_monitoring, DirectoryMonitorTopics.new_run_observed)
     # pub.subscribe(stop_monitoring, SettingsDialog.settings_closed_topic)
     pub.subscribe(stop_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
@@ -66,10 +83,12 @@ def search_for_upload(directory):
                 if not os.path.isfile(checkForMiSeq):
                     path_to_upload = checkForCompJob
                     # logging.info("Observed new run in {}".format(path_to_upload))
-                    on_created(path_to_upload)
+                    if toMonitor:
+                        on_created(path_to_upload)
                     logging.info("Returning from search by breaking loops")
                     return
             if not toMonitor:
+                logging.info("should stop monitoring, value of to monitor {}".format(toMonitor))
                 return
     return
 
@@ -82,4 +101,3 @@ def start_monitoring():
     global toMonitor
     logging.info("Restarting monitor on directory")
     toMonitor = True
-
