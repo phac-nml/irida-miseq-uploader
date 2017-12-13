@@ -146,40 +146,26 @@ class UploaderAppPanel(wx.Panel):
             self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
             logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
             # topics to handle when monitoring a directory for automatic upload
-            # try:
-            #     if pub.isSubscribed(self._finished_upload, DirectoryMonitorTopics.finished_uploading_run):
-            #         pub.unsubscribe(self._finished_upload, DirectoryMonitorTopics.finished_uploading_run)
-            #         logging.info("Unsubscribing non-auto subscriptions")
-            # except ValueError:
-            #     logging.info("_finished_upload not yet subscribed to anything")
-            try:    
-                pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-                pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-            except Exception as e:
-                logging.exception("message")
+            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
 
             logging.info("trying to start new thread")
             self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
             self._monitor_thread.start()
-            # threading.Thread(target=monitor_directory, kwargs={"directory": self._get_default_directory()}).start()
+
             logging.info("After starting thread, send message to start up the directory monitor")
             send_message(DirectoryMonitorTopics.start_up_directory_monitor)
         else:
             logging.info("shutting down any existing version of directory monitor")
-            # self._monitor_thread.join()
+
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
             try: 
                 if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
                     pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
                     pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-                    # pub.unsubscribe(self._settings_changed, DirectoryMonitorTopics.finished_uploading_run)
                     logging.info("Unsubscribing auto subscriptions")
             except ValueError:
                 logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
-            # try:
-            #     pub.subscribe(self._finished_upload, DirectoryMonitorTopics.finished_uploading_run)
-            # except Exception as e:
-            #     logging.exception("message")
 
        # run connecting in a different thread so we don't freeze up the GUI
         logging.info("calling connect to irida")
@@ -269,40 +255,41 @@ class UploaderAppPanel(wx.Panel):
         the upload button to the page so that the user can start the upload.
         """
         if not self._invalid_sheets_panel.IsShown():
-            self.Freeze()
             if self._discovered_runs:
+                self.Freeze()
                 upload_button = wx.Button(self, label="Upload")
                 self._upload_sizer.Add(upload_button, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
                 self.Bind(wx.EVT_BUTTON, self._start_upload, id=upload_button.GetId())
+                self.Layout()
+                self.Thaw()
             else:
-                if self._should_monitor_directory:
-                    automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                    auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
-                    auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-                    auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
-                    auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
-                    self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                self._finished_upload()
+                # if self._should_monitor_directory:
+                #     automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                #     auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
+                #     auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+                #     auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
+                #     auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
+                #     self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
 
-                all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                all_uploaded_header = wx.StaticText(self, label=u"✓ All sample sheets uploaded.")
-                all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-                all_uploaded_header.SetForegroundColour(wx.Colour(51, 204, 51))
-                all_uploaded_header.Wrap(350)
-                all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
+                # all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                # all_uploaded_header = wx.StaticText(self, label=u"✓ All sample sheets uploaded.")
+                # all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+                # all_uploaded_header.SetForegroundColour(wx.Colour(51, 204, 51))
+                # all_uploaded_header.Wrap(350)
+                # all_uploaded_sizer.Add(all_uploaded_header, flag=wx.LEFT | wx.RIGHT, border=5)
 
-                self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                # self._sizer.Add(all_uploaded_sizer, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
 
-                all_uploaded_details = wx.StaticText(self, label="I scanned {}, but I didn't find any sample sheets that weren't already uploaded. Click 'Scan again' to try finding new runs.".format(self._get_default_directory()))
-                all_uploaded_details.Wrap(350)
+                # all_uploaded_details = wx.StaticText(self, label="I scanned {}, but I didn't find any sample sheets that weren't already uploaded. Click 'Scan again' to try finding new runs.".format(self._get_default_directory()))
+                # all_uploaded_details.Wrap(350)
 
-                self._sizer.Add(all_uploaded_details, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                # self._sizer.Add(all_uploaded_details, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
 
-                scan_again = wx.Button(self, label="Scan")
-                self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-                self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
+                # scan_again = wx.Button(self, label="Scan")
+                # self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
+                # self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
 
-            self.Layout()
-            self.Thaw()
 
     def _finished_upload(self):
         """Update the display when the upload is finished.
@@ -400,11 +387,9 @@ class UploaderAppPanel(wx.Panel):
             logging.debug("Running upload for {}".format(str(self._discovered_runs)))
             
             pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
-            try: 
-                pub.subscribe(self._finished_upload, RunUploaderTopics.finished_uploading_samples)
-            except Exception as e:
-                logging.exception("message")
-            # pub.subscribe(self._post_processing_task_started, RunUploaderTopics.finished_uploading_samples)
+            
+            pub.subscribe(self._finished_upload, RunUploaderTopics.finished_uploading_samples)
+            
             self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, cond=condition, post_processing_task=post_processing_task)
             # destroy the upload button once it's been clicked.
             self.Freeze()

@@ -50,8 +50,6 @@ def on_created(directory, cond):
     logging.info("looking for runs in directory")
     if toMonitor:
         find_runs_in_directory(directory)
-    # now tell the UI to start
-    # time.sleep(60)
     if toMonitor:
         logging.info("about to send message finished discovering run")
         send_message(DirectoryMonitorTopics.finished_discovering_run)
@@ -78,7 +76,7 @@ def monitor_directory(directory, cond):
         while toMonitor and i < 120:
             time.sleep(1)
             i = i+1
-        # logging.info("After wait: value of toMonitor {}".format(toMonitor))
+       
 
 def search_for_upload(directory, cond):
     global toMonitor
