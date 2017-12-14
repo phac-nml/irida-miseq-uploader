@@ -53,6 +53,7 @@ class UploaderAppPanel(wx.Panel):
         self._parent = parent
         self._discovered_runs = []
         self._selected_directory = None
+
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
         # topics to handle from directory scanning
@@ -64,6 +65,7 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._settings_changed, SettingsDialog.settings_closed_topic)
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
+
         self._settings_changed()
         self.SetSizerAndFit(self._sizer)
 
@@ -163,7 +165,6 @@ class UploaderAppPanel(wx.Panel):
                 logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
 
        # run connecting in a different thread so we don't freeze up the GUI
-        logging.info("calling connect to irida")
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
@@ -199,7 +200,6 @@ class UploaderAppPanel(wx.Panel):
         Returns:
             A configured instance of API.apiCalls.
         """
-        logging.info("in connect to irida")
         pub.subscribe(self._handle_connection_error, APIConnectorTopics.connection_error_topic)
         try:
             self._api = connect_to_irida()
