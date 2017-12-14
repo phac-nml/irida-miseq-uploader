@@ -8,5 +8,4 @@ appdirs==1.4.0
 pynsist==1.7
 pytest
 github3.py==0.9.3
-watchdog
 mkdocs
