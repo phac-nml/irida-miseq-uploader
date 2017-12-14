@@ -259,11 +259,7 @@ class UploaderAppPanel(wx.Panel):
                 self._finished_upload()
 
     def _finished_upload(self):
-        """Update the display when the upload is finished.
-
-        When the `sequencing_run.upload_completed_topic` topic is received, add
-        the upload button to the page so that the user can start the upload.
-        """
+        """Update the display when the upload is finished."""
         self.Freeze()
         self._sizer.Clear(deleteWindows=True)
         if self._should_monitor_directory:
@@ -356,7 +352,7 @@ class UploaderAppPanel(wx.Panel):
             pub.subscribe(self._post_processing_task_started, RunUploaderTopics.started_post_processing)
             
             pub.subscribe(self._finished_upload, RunUploaderTopics.finished_uploading_samples)
-            # pass the lock to the
+            # pass the lock to the RunUploader
             self._upload_thread = RunUploader(api=self._api, runs=self._discovered_runs, cond=condition, post_processing_task=post_processing_task)
             # destroy the upload button once it's been clicked.
             self.Freeze()

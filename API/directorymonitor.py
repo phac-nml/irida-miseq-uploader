@@ -7,8 +7,6 @@ from wx.lib.pubsub import pub
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory
-from GUI.SettingsDialog import SettingsDialog
-from API.runuploader import RunUploaderTopics
 
 toMonitor = True
 
@@ -21,6 +19,7 @@ class DirectoryMonitorTopics(object):
     finished_uploading_run = "finished_uploading_run"
 
 class RunMonitor(threading.Thread):
+    """A convenience thread wrapper for monitoring a directory for runs"""
 
     def __init__(self, directory, cond, name="RunMonitorThread"):
         """Initialize a `RunMonitor`"""
@@ -29,10 +28,10 @@ class RunMonitor(threading.Thread):
         threading.Thread.__init__(self, name=name)
 
     def run(self):
-        """Initiate directory monitor. The monitor checks the default 
+        """Initiate directory monitor. The monitor checks the default
         directory every 2 minutes
         """
-        monitor_directory(self._directory,self._condition)
+        monitor_directory(self._directory, self._condition)
 
     def join(self, timeout=None):
         """Kill the thread"""
@@ -51,7 +50,6 @@ def on_created(directory, cond):
     directory = os.path.dirname(directory)
     # tell the UI to clean itself up before observing new runs
     send_message(DirectoryMonitorTopics.new_run_observed)
-    logging.info("looking for runs in directory")
     if toMonitor:
         find_runs_in_directory(directory)
     if toMonitor:
@@ -73,15 +71,13 @@ def monitor_directory(directory, cond):
     time.sleep(10)
     pub.subscribe(stop_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
     pub.subscribe(start_monitoring, DirectoryMonitorTopics.start_up_directory_monitor)
-    logging.info("Value of toMonitor {}".format(toMonitor))
     while toMonitor:
         search_for_upload(directory, cond)
         i = 0
-        logging.info("Wait 2 minutes between monitoring unless monitoring shut down")        
+        logging.info("Wait 2 minutes between monitoring unless monitoring shut down")
         while toMonitor and i < 120:
             time.sleep(1)
             i = i+1
-       
 
 def search_for_upload(directory, cond):
     """loop through subdirectories of the default directory looking for CompletedJobInfo.xml without
@@ -104,7 +100,7 @@ def search_for_upload(directory, cond):
                 return
     return
 
-def stop_monitoring(*args, **kwargs):
+def stop_monitoring():
     """Stop directory monitoring by setting toMonitor to False"""
     global toMonitor
     logging.info("Halting monitoring on directory.")
