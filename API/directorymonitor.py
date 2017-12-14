@@ -23,14 +23,19 @@ class DirectoryMonitorTopics(object):
 class RunMonitor(threading.Thread):
 
     def __init__(self, directory, cond, name="RunMonitorThread"):
+        """Initialize a `RunMonitor`"""
         self._directory = directory
         self._condition = cond
         threading.Thread.__init__(self, name=name)
 
     def run(self):
+        """Initiate directory monitor. The monitor checks the default 
+        directory every 2 minutes
+        """
         monitor_directory(self._directory,self._condition)
 
     def join(self, timeout=None):
+        """Kill the thread"""
         global toMonitor
         logging.info("going to kill monitoring")
         toMonitor = False
@@ -39,30 +44,30 @@ class RunMonitor(threading.Thread):
 
 
 def on_created(directory, cond):
+    """When a CompletedJobInfo.xml file is found without a .miseqUploaderInfo file,
+    an automatic upload is triggered
+    """
     logging.info("Observed new run in {}, telling the UI to start uploading it.".format(directory))
     directory = os.path.dirname(directory)
     # tell the UI to clean itself up before observing new runs
     send_message(DirectoryMonitorTopics.new_run_observed)
-    # this will send a bunch of events that the UI is listening for, but
-    # unlike the UI (which runs this in a separate thread), we're going to do this
-    # in our own thread and block on it so we can tell the UI to start
-    # uploading once we've finished discovering the run
     logging.info("looking for runs in directory")
     if toMonitor:
         find_runs_in_directory(directory)
     if toMonitor:
-        logging.info("about to send message finished discovering run")
         send_message(DirectoryMonitorTopics.finished_discovering_run)
-        logging.info("Starting consumer thread")
+        # using locks to prevent the monitor from running while an upload is happening.
         cond.acquire()
         cond.wait()
         cond.release()
-        logging.info("Resource is available to consumer")
         send_message(DirectoryMonitorTopics.finished_uploading_run)
 
 
 
 def monitor_directory(directory, cond):
+    """Calls the function searches the default directory every 2 minutes unless
+    monitoring is no longer required
+    """
     global toMonitor
     logging.info("Getting ready to monitor directory {}".format(directory))
     time.sleep(10)
@@ -79,10 +84,12 @@ def monitor_directory(directory, cond):
        
 
 def search_for_upload(directory, cond):
+    """loop through subdirectories of the default directory looking for CompletedJobInfo.xml without
+    .miseqUploaderInfo files.
+    """
     global toMonitor
     for root, dirs, files in os.walk(directory, topdown=True):
         for name in dirs:
-            logging.info("dir searching {}".format(os.path.join(root, name)))
             checkForCompJob = os.path.join(root, name, "CompletedJobInfo.xml")
             checkForMiSeq = os.path.join(root, name, ".miseqUploaderInfo")
             if os.path.isfile(checkForCompJob):
@@ -92,17 +99,19 @@ def search_for_upload(directory, cond):
                         on_created(path_to_upload, cond)
                     # After upload, start back at the start of directories
                     return
+            # Check each step of loop if monitoring is still required
             if not toMonitor:
-                logging.info("Stop monitoring, value of to monitor {}".format(toMonitor))
                 return
     return
 
 def stop_monitoring(*args, **kwargs):
+    """Stop directory monitoring by setting toMonitor to False"""
     global toMonitor
     logging.info("Halting monitoring on directory.")
     toMonitor = False
 
 def start_monitoring():
+    """Restart directory monitoring by setting toMonitor to True"""
     global toMonitor
     logging.info("Restarting monitor on directory")
     toMonitor = True
