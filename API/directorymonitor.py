@@ -9,6 +9,7 @@ from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory
 
 toMonitor = True
+TIMEBETWEENMONITOR = 120
 
 class DirectoryMonitorTopics(object):
     """Topics for monitoring directories for new runs."""
@@ -52,6 +53,7 @@ def on_created(directory, cond):
     send_message(DirectoryMonitorTopics.new_run_observed)
     if toMonitor:
         find_runs_in_directory(directory)
+    # check if monitoring is still "on" after returning from find_runs_in_directory()
     if toMonitor:
         send_message(DirectoryMonitorTopics.finished_discovering_run)
         # using locks to prevent the monitor from running while an upload is happening.
@@ -74,8 +76,8 @@ def monitor_directory(directory, cond):
     while toMonitor:
         search_for_upload(directory, cond)
         i = 0
-        logging.info("Wait 2 minutes between monitoring unless monitoring shut down")
-        while toMonitor and i < 120:
+        logging.info("Wait {} seconds between monitoring unless monitoring shut down".format(TIMEBETWEENMONITOR))
+        while toMonitor and i < TIMEBETWEENMONITOR:
             time.sleep(1)
             i = i+1
 
@@ -103,11 +105,13 @@ def search_for_upload(directory, cond):
 def stop_monitoring():
     """Stop directory monitoring by setting toMonitor to False"""
     global toMonitor
-    logging.info("Halting monitoring on directory.")
+    if toMonitor:
+        logging.info("Halting monitoring on directory.")
     toMonitor = False
 
 def start_monitoring():
     """Restart directory monitoring by setting toMonitor to True"""
     global toMonitor
-    logging.info("Restarting monitor on directory")
+    if not toMonitor:
+        logging.info("Restarting monitor on directory")
     toMonitor = True

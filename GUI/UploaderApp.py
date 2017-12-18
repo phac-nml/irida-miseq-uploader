@@ -135,20 +135,16 @@ class UploaderAppPanel(wx.Panel):
         self._should_monitor_directory = read_config_option("monitor_default_dir", expected_type=bool, default_value=False)
 
         if self._should_monitor_directory:
-            automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
-            auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-            auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
-            auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
-
-            self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+            self._display_auto()
             logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
             # topics to handle when monitoring a directory for automatic upload
             pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
             pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-
+            
             self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
-            self._monitor_thread.start()
+            if not self._monitor_thread.is_alive():
+                logging.info("only start thread if the other one isn't running.")
+                self._monitor_thread.start()
 
             logging.info("After starting thread, send message to start up the directory monitor")
             send_message(DirectoryMonitorTopics.start_up_directory_monitor)
@@ -263,12 +259,7 @@ class UploaderAppPanel(wx.Panel):
         self.Freeze()
         self._sizer.Clear(deleteWindows=True)
         if self._should_monitor_directory:
-            automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
-            auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-            auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
-            auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
-            self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+            self._display_auto()
     
         all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
         all_uploaded_header = wx.StaticText(self, label=u"✓ Sample sheet was uploaded.")
@@ -290,6 +281,14 @@ class UploaderAppPanel(wx.Panel):
 
         self.Layout()
         self.Thaw()
+
+    def _display_auto(self):
+        automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
+        auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
+        auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
+        self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.

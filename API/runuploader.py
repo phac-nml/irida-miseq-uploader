@@ -146,6 +146,7 @@ def upload_run_to_server(api, sequencing_run, condition):
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
         send_message(RunUploaderTopics.finished_uploading_samples)
         send_message(sequencing_run.upload_completed_topic)
+        # acquring lock so it can be released so that directory monitoring can resume if it was running
         condition.acquire()
         condition.notify()
         condition.release()
