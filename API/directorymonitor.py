@@ -108,6 +108,7 @@ def stop_monitoring():
     if toMonitor:
         logging.info("Halting monitoring on directory.")
     toMonitor = False
+    self.join()
 
 def start_monitoring():
     """Restart directory monitoring by setting toMonitor to True"""
