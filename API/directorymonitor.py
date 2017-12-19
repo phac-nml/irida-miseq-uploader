@@ -78,8 +78,8 @@ def monitor_directory(directory, cond):
         i = 0
         logging.debug("Wait {} seconds between monitoring unless monitoring shut down".format(TIMEBETWEENMONITOR))
         while toMonitor and i < TIMEBETWEENMONITOR:
-            time.sleep(1)
-            i = i+1
+            time.sleep(10)
+            i = i+10
 
 def search_for_upload(directory, cond):
     """loop through subdirectories of the default directory looking for CompletedJobInfo.xml without
