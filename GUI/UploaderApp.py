@@ -53,6 +53,7 @@ class UploaderAppPanel(wx.Panel):
         self._parent = parent
         self._discovered_runs = []
         self._selected_directory = None
+        self._monitor_thread = None
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -136,27 +137,26 @@ class UploaderAppPanel(wx.Panel):
 
         if self._should_monitor_directory:
             self._display_auto()
-            logging.info("Going to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
-            # topics to handle when monitoring a directory for automatic upload
-            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-            
-            self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
-            if not self._monitor_thread.is_alive():
-                logging.info("only start thread if the other one isn't running.")
+            if self._monitor_thread is None:
+  
+                logging.info("Going to start monitoring default directory [{}] for new runs.".format(self._get_default_directory()))
+                pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+                pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+                
+                self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
                 self._monitor_thread.start()
-
-            logging.info("After starting thread, send message to start up the directory monitor")
-            send_message(DirectoryMonitorTopics.start_up_directory_monitor)
+                send_message(DirectoryMonitorTopics.start_up_directory_monitor)
+            else:
+                logging.info("Continuing to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
         else:
             logging.info("shutting down any existing version of directory monitor")
-
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
             try: 
                 if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
                     logging.info("Unsubscribing auto subscriptions")
                     pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
                     pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+                    self._monitor_thread = None
             except ValueError:
                 logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
 
@@ -416,8 +416,9 @@ class UploaderAppPanel(wx.Panel):
 
     def Destroy(self):
         self._upload_thread.join()
-        self._monitor_thread.join()
-        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
+        if self._monitor_thread is not None:
+            self._monitor_thread.join()
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         wx.Panel.Destroy(self)
 
 class UploaderAppFrame(wx.Frame):

@@ -26,7 +26,7 @@ class RunMonitor(threading.Thread):
         """Initialize a `RunMonitor`"""
         self._directory = directory
         self._condition = cond
-        threading.Thread.__init__(self, name=name)
+        super(RunMonitor, self).__init__(name=name)
 
     def run(self):
         """Initiate directory monitor. The monitor checks the default
@@ -76,7 +76,7 @@ def monitor_directory(directory, cond):
     while toMonitor:
         search_for_upload(directory, cond)
         i = 0
-        logging.info("Wait {} seconds between monitoring unless monitoring shut down".format(TIMEBETWEENMONITOR))
+        logging.debug("Wait {} seconds between monitoring unless monitoring shut down".format(TIMEBETWEENMONITOR))
         while toMonitor and i < TIMEBETWEENMONITOR:
             time.sleep(1)
             i = i+1
@@ -108,7 +108,6 @@ def stop_monitoring():
     if toMonitor:
         logging.info("Halting monitoring on directory.")
     toMonitor = False
-    self.join()
 
 def start_monitoring():
     """Restart directory monitoring by setting toMonitor to True"""
