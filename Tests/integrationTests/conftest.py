@@ -6,7 +6,7 @@ from apiCalls_integration_data_setup import SetupIridaData
 
 base_URL = "http://localhost:8080/api"
 username = "admin"
-password = "password1"
+password = "Password1!"
 client_id = ""
 client_secret = ""
 
