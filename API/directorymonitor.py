@@ -76,7 +76,6 @@ def monitor_directory(directory, cond):
     while toMonitor:
         search_for_upload(directory, cond)
         i = 0
-        logging.debug("Wait {} seconds between monitoring unless monitoring shut down".format(TIMEBETWEENMONITOR))
         while toMonitor and i < TIMEBETWEENMONITOR:
             time.sleep(10)
             i = i+10

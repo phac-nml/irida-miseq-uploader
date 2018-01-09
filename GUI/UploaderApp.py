@@ -259,6 +259,7 @@ class UploaderAppPanel(wx.Panel):
         self.Freeze()
         self._sizer.Clear(deleteWindows=True)
         if self._should_monitor_directory:
+            # displays the "automatic upload enabled" message
             self._display_auto()
     
         all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -283,6 +284,8 @@ class UploaderAppPanel(wx.Panel):
         self.Thaw()
 
     def _display_auto(self):
+        """Displays that automatic upload enabled message.
+        """
         automatic_upload_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
         auto_upload_enabled_text = wx.StaticText(self, label=u"⇌ Automatic upload enabled.")
         auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
