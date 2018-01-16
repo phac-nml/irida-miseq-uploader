@@ -125,6 +125,7 @@ class UploaderAppPanel(wx.Panel):
         global condition
         # before doing anything, clear all of the children from the sizer and
         # also delete any windows attached (Buttons and stuff extend from Window!)
+        self.Freeze()
         self._sizer.Clear(deleteWindows=True)
         # and clear out the list of discovered runs that we might be uploading to the server.
         self._discovered_runs = []
@@ -134,9 +135,12 @@ class UploaderAppPanel(wx.Panel):
         self._invalid_sheets_panel = InvalidSampleSheetsPanel(self, self._get_default_directory())
         self._invalid_sheets_panel.Hide()
         self._should_monitor_directory = read_config_option("monitor_default_dir", expected_type=bool, default_value=False)
-
+        self.Layout()
+        self.Thaw()
         if self._should_monitor_directory:
+            self.Freeze()
             self._display_auto()
+            self._display_samplesheet_upload()
             if self._monitor_thread is None:
   
                 logging.info("Going to start monitoring default directory [{}] for new runs.".format(self._get_default_directory()))
@@ -148,6 +152,8 @@ class UploaderAppPanel(wx.Panel):
                 send_message(DirectoryMonitorTopics.start_up_directory_monitor)
             else:
                 logging.info("Continuing to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
+            self.Layout()
+            self.Thaw()
         else:
             logging.info("shutting down any existing version of directory monitor")
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
@@ -160,7 +166,7 @@ class UploaderAppPanel(wx.Panel):
             except ValueError:
                 logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
 
-       # run connecting in a different thread so we don't freeze up the GUI
+        # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
     def _get_default_directory(self):
@@ -261,7 +267,17 @@ class UploaderAppPanel(wx.Panel):
         if self._should_monitor_directory:
             # displays the "automatic upload enabled" message
             self._display_auto()
-    
+
+        #displays notice that there is nothing to upload
+        # self._display_samplesheet_upload
+        self._display_samplesheet_upload()
+        self.Layout()
+        self.Thaw()
+
+    def _display_samplesheet_upload(self):
+        """Displays a message that a sample sheet has been uploaded 
+        and nothing else needs to be uploaded
+        """
         all_uploaded_sizer = wx.BoxSizer(wx.HORIZONTAL)
         all_uploaded_header = wx.StaticText(self, label=u"✓ Sample sheet was uploaded.")
         all_uploaded_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -280,9 +296,6 @@ class UploaderAppPanel(wx.Panel):
         self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
         self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
 
-        self.Layout()
-        self.Thaw()
-
     def _display_auto(self):
         """Displays that automatic upload enabled message.
         """
@@ -291,7 +304,8 @@ class UploaderAppPanel(wx.Panel):
         auto_upload_enabled_text.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         auto_upload_enabled_text.SetForegroundColour(wx.Colour(51, 102, 255))
         auto_upload_enabled_text.SetToolTipString("Monitoring {} for CompletedJobInfo.xml".format(self._get_default_directory()))
-        self._sizer.Add(auto_upload_enabled_text, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+        automatic_upload_status_sizer.Add(auto_upload_enabled_text, flag=wx.LEFT | wx.RIGHT, border=5)
+        self._sizer.Add(automatic_upload_status_sizer, flag=wx.ALIGN_CENTER | wx.ALL, border=5)
 
     def _add_run(self, run):
         """Update the display to add a new `RunPanel`.
