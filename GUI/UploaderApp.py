@@ -221,9 +221,14 @@ class UploaderAppPanel(wx.Panel):
         """
 
         logging.error("Handling connection error.")
-
+        # stop monitoring directory until connection error is solved
+        if self._should_monitor_directory:
+            logging.info("shutting down any existing version of directory monitor")
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
+            self._monitor_thread = None
         self.Freeze()
-
+        # clear out the other panels that might already be added
+        self._sizer.Clear(deleteWindows=True)
         connection_error_sizer = wx.BoxSizer(wx.HORIZONTAL)
         connection_error_header = wx.StaticText(self, label=u"✘ Uh-oh. I couldn't to connect to IRIDA.")
         connection_error_header.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))

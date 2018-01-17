@@ -70,9 +70,10 @@ def monitor_directory(directory, cond):
     """
     global toMonitor
     logging.info("Getting ready to monitor directory {}".format(directory))
-    time.sleep(10)
+    
     pub.subscribe(stop_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
     pub.subscribe(start_monitoring, DirectoryMonitorTopics.start_up_directory_monitor)
+    time.sleep(10)
     while toMonitor:
         search_for_upload(directory, cond)
         i = 0
