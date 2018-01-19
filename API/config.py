@@ -48,7 +48,10 @@ def read_config_option(key, expected_type=None, default_value=None):
     try:
         if not expected_type:
             value = conf_parser.get("Settings", key)
-            logging.info("Got configuration for key {}: {}".format(key, value))
+            if key is "password":
+                logging.info("Got configuration for key {}: ****".format(key))
+            else:
+                logging.info("Got configuration for key {}: {}".format(key, value))
             return conf_parser.get("Settings", key)
         elif expected_type is bool:
             return conf_parser.getboolean("Settings", key)

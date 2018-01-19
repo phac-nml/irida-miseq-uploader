@@ -1,5 +1,6 @@
 import pytest
 import logging
+import threading
 
 from os import path, remove
 from wx.lib.pubsub import pub
@@ -34,8 +35,8 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
-
-        upload_run_to_server(api, run_to_upload)
+        condition = threading.Condition()
+        upload_run_to_server(api, run_to_upload, condition)
 
         assert 2 == self.sample_count
 
@@ -56,8 +57,8 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
-
-        upload_run_to_server(api, run_to_upload)
+        condition = threading.Condition()
+        upload_run_to_server(api, run_to_upload, condition)
 
         assert 2 == self.sample_count
 
@@ -82,8 +83,8 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
-
-        upload_run_to_server(api, run_to_upload)
+        condition = threading.Condition()
+        upload_run_to_server(api, run_to_upload, condition)
 
         assert 2 == self.sample_count
 
@@ -107,8 +108,8 @@ class TestRunUploader:
         for sample in run_to_upload.sample_list:
             sample.get_project_id = lambda: project_id
             pub.subscribe(self.update_samples_counter, sample.upload_completed_topic)
-
-        upload_run_to_server(api, run_to_upload)
+        condition = threading.Condition()
+        upload_run_to_server(api, run_to_upload, condition)
 
         assert 1 == self.sample_count
 
@@ -138,12 +139,14 @@ class TestRunUploader:
         run_to_upload.sample_list[1].get_files = lambda: (_ for _ in ()).throw(Exception('foobar'))
 
         try:
-            upload_run_to_server(api, run_to_upload)
+            condition = threading.Condition()
+            upload_run_to_server(api, run_to_upload, condition)
         except:
             logging.info("Succeeded in failing to upload files.")
             run_to_upload.sample_list[1].get_files = original_files_method
 
         pub.subscribe(self.update_samples_counter, run_to_upload.sample_list[1].upload_completed_topic)
-        upload_run_to_server(api, run_to_upload)
+        condition = threading.Condition()
+        upload_run_to_server(api, run_to_upload, condition)
 
         assert 1 == self.sample_count

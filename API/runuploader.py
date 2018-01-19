@@ -23,7 +23,7 @@ class RunUploaderTopics(object):
 class RunUploader(threading.Thread):
     """A convenience thread wrapper for uploading runs to the server."""
 
-    def __init__(self, api, runs, post_processing_task=None, name='RunUploaderThread'):
+    def __init__(self, api, runs, cond, post_processing_task=None, name='RunUploaderThread'):
         """Initialize a `RunUploader`.
 
         Args:
@@ -36,12 +36,13 @@ class RunUploader(threading.Thread):
         self._api = api
         self._runs = runs
         self._post_processing_task = post_processing_task
+        self._condition = cond
         threading.Thread.__init__(self, name=name)
 
     def run(self):
         """Initiate upload. The upload happens serially, one run at a time."""
         for run in self._runs:
-            upload_run_to_server(api=self._api, sequencing_run=run)
+            upload_run_to_server(api=self._api, sequencing_run=run, condition=self._condition)
         # once the run uploads are complete, we can launch the post-processing
         # command
         if self._post_processing_task:
@@ -72,7 +73,7 @@ class RunUploader(threading.Thread):
         self._api._kill_connections()
         threading.Thread.join(self, timeout)
 
-def upload_run_to_server(api, sequencing_run):
+def upload_run_to_server(api, sequencing_run, condition):
     """Upload a single run to the server.
 
     Arguments:
@@ -143,7 +144,12 @@ def upload_run_to_server(api, sequencing_run):
         api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
                                      upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
+        send_message(RunUploaderTopics.finished_uploading_samples)
         send_message(sequencing_run.upload_completed_topic)
+        # acquring lock so it can be released so that directory monitoring can resume if it was running
+        condition.acquire()
+        condition.notify()
+        condition.release()
         api.set_seq_run_complete(run_id)
         _create_miseq_uploader_info_file(sequencing_run.sample_sheet_dir, run_id, "Complete")
     except Exception as e:
