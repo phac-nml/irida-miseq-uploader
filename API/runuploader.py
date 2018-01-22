@@ -43,6 +43,7 @@ class RunUploader(threading.Thread):
         """Initiate upload. The upload happens serially, one run at a time."""
         for run in self._runs:
             upload_run_to_server(api=self._api, sequencing_run=run, condition=self._condition)
+        logging.info("returned from upload attempts")
         # once the run uploads are complete, we can launch the post-processing
         # command
         if self._post_processing_task:
@@ -132,9 +133,13 @@ def upload_run_to_server(api, sequencing_run, condition):
     try:
         api.send_samples(samples_to_create)
     except Exception as e:
+        condition.acquire()
+        condition.notify()
+        condition.release()
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
 	raise
+    logging.info("past the exception")
 
     for sample in sequencing_run.samples_to_upload:
         pub.subscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
@@ -160,6 +165,9 @@ def upload_run_to_server(api, sequencing_run, condition):
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
+        condition.acquire()
+        condition.notify()
+        condition.release()
 	raise
 
 def _online_validation(api, sequencing_run):
