@@ -950,7 +950,7 @@ class TestApiCalls(unittest.TestCase):
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
         setattr(session_response, "text",
-                "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
+                "An entity already exists with that identifier")
 
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
