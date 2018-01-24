@@ -947,6 +947,13 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
+        metadata_dict = {
+            "workflow": "test_workflow",
+            "readLengths": "1",
+            "layoutType": "PAIRED_END"
+        }
+        run_on_server = api.create_seq_run(metadata_dict)
+
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
         setattr(session_response, "text",
@@ -958,8 +965,7 @@ class TestApiCalls(unittest.TestCase):
 
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
-
-        sample = API.apiCalls.Sample({"sampleProject": "1", "run": "1", "sampleName": "123"})
+        sample = API.apiCalls.Sample({"sampleProject": "1", "run": run_on_server, "sampleName": "123"})
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
