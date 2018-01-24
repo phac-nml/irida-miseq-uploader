@@ -139,7 +139,6 @@ def upload_run_to_server(api, sequencing_run, condition):
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
 	raise
-    logging.info("past the exception")
 
     for sample in sequencing_run.samples_to_upload:
         pub.subscribe(_handle_upload_sample_complete, sample.upload_completed_topic)
