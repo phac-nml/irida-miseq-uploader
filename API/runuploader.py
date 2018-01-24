@@ -43,7 +43,6 @@ class RunUploader(threading.Thread):
         """Initiate upload. The upload happens serially, one run at a time."""
         for run in self._runs:
             upload_run_to_server(api=self._api, sequencing_run=run, condition=self._condition)
-        logging.info("returned from upload attempts")
         # once the run uploads are complete, we can launch the post-processing
         # command
         if self._post_processing_task:
