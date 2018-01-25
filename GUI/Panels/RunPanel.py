@@ -42,7 +42,9 @@ class RunPanel(ScrolledPanel):
         self._last_timer_progress = 0
         self._sample_panels = {}
         self._progress = wx.Gauge(self, id=wx.ID_ANY, range=100, size=(250, 20))
+        self._progress.Hide()
         self._progress_text = wx.StaticText(self, label="  0%")
+        self._progress_text.Hide()
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
         self._progress_max = sum(sample.get_files_size() for sample in run.samples_to_upload)
@@ -103,8 +105,9 @@ class RunPanel(ScrolledPanel):
         pub.unsubscribe(self._upload_started, self._run.upload_started_topic)
         self.Freeze()
         progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
+        self._progress.Show()
         progress_sizer.Add(self._progress, proportion=1)
+        self._progress_text.Show()
         progress_sizer.Add(self._progress_text, proportion=0)
 
         self._sizer.Insert(0, progress_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
