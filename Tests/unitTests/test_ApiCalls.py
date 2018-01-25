@@ -7,8 +7,10 @@ from mock import patch, MagicMock
 from requests.exceptions import HTTPError as request_HTTPError
 from Model.SequenceFile import SequenceFile
 from Model.SequencingRun import SequencingRun
+from Model.Sample import Sample
 
 import API
+
 
 
 class Foo(object):
@@ -965,7 +967,7 @@ class TestApiCalls(unittest.TestCase):
         session = Foo()
         setattr(session, "post", session_post)
 
-        Model.Sample.Sample.upload_failed_topic = MagicMock()
+        Sample.upload_failed_topic = MagicMock()
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
 
