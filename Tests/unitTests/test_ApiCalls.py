@@ -946,20 +946,17 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        # json_dict = {
-        #     "resource": {
-        #         "sequencerSampleId": "03-3333",
-        #         "description": "The 53rd sample",
-        #         "sampleName": "03-3333",
-        #         "sampleProject": "1"
-        #     }
-        # }
+        json_dict = {
+            "resource": {
+                "sampleProject": "1"
+            }
+        }
 
-        # json_obj = json.dumps(json_dict)
+        json_obj = json.dumps(json_dict)
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CREATED)
-        setattr(session_response, "text", "Sample name must be at least 3 characters long.")
+        setattr(session_response, "text", json_obj)
 
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
