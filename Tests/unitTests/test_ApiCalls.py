@@ -965,6 +965,7 @@ class TestApiCalls(unittest.TestCase):
         session = Foo()
         setattr(session, "post", session_post)
 
+        Model.Sample.Sample.upload_failed_topic = MagicMock()
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
 
