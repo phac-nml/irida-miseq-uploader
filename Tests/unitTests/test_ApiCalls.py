@@ -973,7 +973,7 @@ class TestApiCalls(unittest.TestCase):
         }
 
        
-        api.get_link = MagicMock(side_effect=[None])
+        api.get_link = MagicMock(side_effect=[StopIteration,None])
 
         proj_id = "1"
         sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "1"})
