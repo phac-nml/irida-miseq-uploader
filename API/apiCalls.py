@@ -461,7 +461,7 @@ class ApiCalls(object):
                 #                   status_code=str(response.status_code),
                 #                   err_msg=response.text,
                 #                   sample_data=str(sample)), ["IRIDA rejected the sample."])
-                raise
+                raise e
         return json_res_list
 
     def get_file_size_list(self, samples_list):
