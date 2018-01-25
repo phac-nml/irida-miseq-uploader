@@ -946,36 +946,10 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        json_dict = {
-            "resource": {
-                "sequencerSampleId": "03",
-                "description": "The 53rd sample",
-                "sampleName": "03",
-                "sampleProject": "1"
-            }
-        }
+        api.get_link = MagicMock(side_effect=[session_response])
 
-        json_obj = json.dumps(json_dict)
-
-        session_response = Foo()
-        setattr(session_response, "status_code", httplib.CREATED)
-        setattr(session_response, "text", json_obj)
-
-        session_post = MagicMock(side_effect=[SampleError])
-        session = Foo()
-        setattr(session, "post", session_post)
-
-        api.get_link = lambda x, y, targ_dict="": None
-        api.session = session
-
-        sample_dict = {
-            "sequencerSampleId": "03",
-            "description": "The 53rd sample",
-            "sampleName": "03",
-            "sampleProject": "1"
-        }
-
-        sample = API.apiCalls.Sample(sample_dict)
+        proj_id = "1"
+        sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "1"})
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
