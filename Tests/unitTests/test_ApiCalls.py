@@ -959,7 +959,7 @@ class TestApiCalls(unittest.TestCase):
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CREATED)
-        setattr(session_response, "text", "Sample name must be at least 3 characters long."")
+        setattr(session_response, "text", "Sample name must be at least 3 characters long.")
 
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
