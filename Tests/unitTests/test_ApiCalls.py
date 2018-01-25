@@ -936,7 +936,7 @@ class TestApiCalls(unittest.TestCase):
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_sample_name(self, mock_cs):
-                mock_cs.side_effect = [None]
+        mock_cs.side_effect = [None]
 
         api = API.apiCalls.ApiCalls(
             client_id="",
