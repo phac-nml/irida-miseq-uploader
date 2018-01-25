@@ -998,9 +998,7 @@ class TestApiCalls(unittest.TestCase):
 
     #     session_response = Foo()
     #     setattr(session_response, "status_code", httplib.CONFLICT)
-    #     setattr(session_response, "text",
-    #             "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
-
+    #     setattr(session_response, "text", "An entity already exists with that identifier")
     #     session_post = MagicMock(side_effect=[session_response])
     #     session = Foo()
     #     setattr(session, "post", session_post)
@@ -1008,40 +1006,7 @@ class TestApiCalls(unittest.TestCase):
     #     api.session = session
     #     api.get_link = lambda x, y, targ_dict="": None
 
-    #     sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})
-
-    #     with self.assertRaises(API.apiCalls.SampleError) as err:
-    #         api.send_samples([sample])
-
-    #     self.assertTrue(str(session_response.status_code) + ": " +
-    #                     session_response.text in str(err.exception))
-
-    # @patch("API.apiCalls.ApiCalls.create_session")
-    # def test_send_samples_invalid_server_res(self, mock_cs):
-
-    #     mock_cs.side_effect = [None]
-
-    #     api = API.apiCalls.ApiCalls(
-    #         client_id="",
-    #         client_secret="",
-    #         base_URL="",
-    #         username="",
-    #         password=""
-    #     )
-
-    #     session_response = Foo()
-    #     setattr(session_response, "status_code", httplib.CONFLICT)
-    #     setattr(session_response, "text",
-    #             "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
-
-    #     session_post = MagicMock(side_effect=[session_response])
-    #     session = Foo()
-    #     setattr(session, "post", session_post)
-
-    #     api.session = session
-    #     api.get_link = lambda x, y, targ_dict="": None
-
-    #     sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})
+    #     sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "1"})
 
     #     with self.assertRaises(API.apiCalls.SampleError) as err:
     #         api.send_samples([sample])

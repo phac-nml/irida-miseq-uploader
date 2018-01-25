@@ -457,11 +457,11 @@ class ApiCalls(object):
                 logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
                 e = SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(status_code=str(response.status_code), err_msg=response.text, sample_data=str(sample)), ["IRIDA rejected the sample."])
                 send_message(sample.upload_failed_topic, exception = e)
-                # raise SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(
-                #                   status_code=str(response.status_code),
-                #                   err_msg=response.text,
-                #                   sample_data=str(sample)), ["IRIDA rejected the sample."])
-                raise e
+                raise SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(
+                                  status_code=str(response.status_code),
+                                  err_msg=response.text,
+                                  sample_data=str(sample)), ["IRIDA rejected the sample."])
+                # raise 
         return json_res_list
 
     def get_file_size_list(self, samples_list):
