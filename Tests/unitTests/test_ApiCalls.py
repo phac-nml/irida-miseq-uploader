@@ -936,7 +936,7 @@ class TestApiCalls(unittest.TestCase):
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_sample_name(self, mock_cs):
-        mock_cs.side_effect = [None]
+                mock_cs.side_effect = [None]
 
         api = API.apiCalls.ApiCalls(
             client_id="",
@@ -946,6 +946,36 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
+        # json_dict = {
+        #     "resource": {
+        #         "sequencerSampleId": "03-3333",
+        #         "description": "The 53rd sample",
+        #         "sampleName": "03-3333",
+        #         "sampleProject": "1"
+        #     }
+        # }
+
+        # json_obj = json.dumps(json_dict)
+
+        session_response = Foo()
+        setattr(session_response, "status_code", httplib.CREATED)
+        setattr(session_response, "text", "Sample name must be at least 3 characters long."")
+
+        session_post = MagicMock(side_effect=[session_response])
+        session = Foo()
+        setattr(session, "post", session_post)
+
+        api.get_link = lambda x, y, targ_dict="": None
+        api.session = session
+
+        sample_dict = {
+            "sequencerSampleId": "03-3333",
+            "description": "The 53rd sample",
+            "sampleName": "03-3333",
+            "sampleProject": "1"
+        }
+
+       
         api.get_link = MagicMock(side_effect=[None])
 
         proj_id = "1"
@@ -972,7 +1002,7 @@ class TestApiCalls(unittest.TestCase):
 
     #     session_response = Foo()
     #     setattr(session_response, "status_code", httplib.CONFLICT)
-    #     setattr(session_response, "text", "An entity already exists with that identifier")
+    #     setattr(session_response, "text", "did you An entity already exists with that identifier")
     #     session_post = MagicMock(side_effect=[session_response])
     #     session = Foo()
     #     setattr(session, "post", session_post)
