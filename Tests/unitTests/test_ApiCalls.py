@@ -948,9 +948,9 @@ class TestApiCalls(unittest.TestCase):
 
         json_dict = {
             "resource": {
-                "sequencerSampleId": "33",
+                "sequencerSampleId": "03",
                 "description": "The 53rd sample",
-                "sampleName": "33",
+                "sampleName": "03",
                 "sampleProject": "1"
             }
         }
@@ -961,7 +961,7 @@ class TestApiCalls(unittest.TestCase):
         setattr(session_response, "status_code", httplib.CREATED)
         setattr(session_response, "text", json_obj)
 
-        session_post = MagicMock(side_effect=[session_response])
+        session_post = MagicMock(side_effect=[SampleError])
         session = Foo()
         setattr(session, "post", session_post)
 
@@ -969,9 +969,9 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
 
         sample_dict = {
-            "sequencerSampleId": "33",
+            "sequencerSampleId": "03",
             "description": "The 53rd sample",
-            "sampleName": "33",
+            "sampleName": "03",
             "sampleProject": "1"
         }
 
