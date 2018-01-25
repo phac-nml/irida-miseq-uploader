@@ -946,7 +946,7 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        api.get_link = MagicMock(side_effect=[session_response])
+        api.get_link = MagicMock(side_effect=[None])
 
         proj_id = "1"
         sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "1"})
