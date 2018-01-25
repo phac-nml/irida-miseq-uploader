@@ -952,7 +952,7 @@ class TestApiCalls(unittest.TestCase):
             "sampleName": "03",
             "sampleProject": "1"
         }
-        proj = API.apiCalls.Project("project1", "projectDescription", "1")
+        # proj = API.apiCalls.Project("project1", "projectDescription", "1")
         sample = API.apiCalls.Sample(sample_dict)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
