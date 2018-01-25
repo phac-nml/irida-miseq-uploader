@@ -977,7 +977,7 @@ class TestApiCalls(unittest.TestCase):
 
         sample = API.apiCalls.Sample(sample_dict)
 
-        with self.assertRaises(API.apiCalls.ProjectError) as err:
+        with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
 
         self.assertTrue("Sample name must be at least 3 characters long."
