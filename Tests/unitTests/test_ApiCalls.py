@@ -936,7 +936,6 @@ class TestApiCalls(unittest.TestCase):
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_sample_name(self, mock_cs):
-       
         mock_cs.side_effect = [None]
 
         api = API.apiCalls.ApiCalls(
@@ -946,68 +945,43 @@ class TestApiCalls(unittest.TestCase):
             username="",
             password=""
         )
+
+        json_dict = {
+            "resource": {
+                "sequencerSampleId": "33",
+                "description": "The 53rd sample",
+                "sampleName": "33",
+                "sampleProject": "1"
+            }
+        }
+
+        json_obj = json.dumps(json_dict)
+
+        session_response = Foo()
+        setattr(session_response, "status_code", httplib.BAD_REQUEST)
+        setattr(session_response, "text", "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
+
+        session_post = MagicMock(side_effect=[session_response])
+        session = Foo()
+        setattr(session, "post", session_post)
+
+        api.get_link = lambda x, y, targ_dict="": None
+        api.session = session
+
         sample_dict = {
-            "sequencerSampleId": "03",
+            "sequencerSampleId": "33",
             "description": "The 53rd sample",
-            "sampleName": "03",
+            "sampleName": "33",
             "sampleProject": "1"
         }
-        # proj = API.apiCalls.Project("project1", "projectDescription", "1")
+
         sample = API.apiCalls.Sample(sample_dict)
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
-            api.send_samples(sample)
+            api.send_samples([sample])
 
-        self.assertTrue("Sample name must be at least 3 characters long."
+        self.assertTrue("Sample name must be at least 3 characters long."                        in str(err.exception))
                         in str(err.exception))
-
-        # mock_cs.side_effect = [None]
-
-        # api = API.apiCalls.ApiCalls(
-        #     client_id="",
-        #     client_secret="",
-        #     base_URL="",
-        #     username="",
-        #     password=""
-        # )
-
-        # json_dict = {
-        #     "resource": {
-        #         "sampleProject": "1"
-        #     }
-        # }
-
-        # json_obj = json.dumps(json_dict)
-
-        # session_response = Foo()
-        # setattr(session_response, "status_code", httplib.CREATED)
-        # setattr(session_response, "text", json_obj)
-
-        # session_post = MagicMock(side_effect=[session_response])
-        # session = Foo()
-        # setattr(session, "post", session_post)
-
-        # api.get_link = lambda x, y, targ_dict="": None
-        # api.session = session
-
-        # sample_dict = {
-        #     "sequencerSampleId": "03-3333",
-        #     "description": "The 53rd sample",
-        #     "sampleName": "03-3333",
-        #     "sampleProject": "1"
-        # }
-
-       
-        # api.get_link = MagicMock(side_effect=[StopIteration,None])
-
-        # proj_id = "1"
-        # sample = API.apiCalls.Sample({"sampleProject": proj_id, "sampleName": "1"})
-
-        # with self.assertRaises(API.apiCalls.SampleError) as err:
-        #     api.send_samples([sample])
-
-        # self.assertTrue("Sample name must be at least 3 characters long."
-        #                 in str(err.exception))
 
     # @patch("API.apiCalls.ApiCalls.create_session")
     # def test_send_samples_invalid_server_res(self, mock_cs):
