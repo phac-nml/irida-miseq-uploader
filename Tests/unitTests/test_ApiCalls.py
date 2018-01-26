@@ -7,10 +7,8 @@ from mock import patch, MagicMock
 from requests.exceptions import HTTPError as request_HTTPError
 from Model.SequenceFile import SequenceFile
 from Model.SequencingRun import SequencingRun
-from Model.Sample import Sample
 
 import API
-
 
 
 class Foo(object):
@@ -956,7 +954,6 @@ class TestApiCalls(unittest.TestCase):
         session = Foo()
         setattr(session, "post", session_post)
 
-        # Sample.upload_failed_topic = MagicMock()
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
 
@@ -993,7 +990,8 @@ class TestApiCalls(unittest.TestCase):
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
-        setattr(session_response, "text", "An entity already exists with that identifier")
+        setattr(session_response, "text", 
+                "An entity already exists with that identifier")
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
         setattr(session, "post", session_post)

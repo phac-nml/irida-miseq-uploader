@@ -127,6 +127,7 @@ class RunPanel(ScrolledPanel):
         pub.unsubscribe(self._upload_failed, self._run.upload_failed_topic)
         pub.unsubscribe(self._handle_progress, self._run.upload_progress_topic)
         pub.unsubscribe(self._upload_complete, self._run.upload_completed_topic)
+        
         self.Freeze()
         if self._timer.IsRunning():
             self._timer.Stop()
