@@ -993,7 +993,7 @@ class TestApiCalls(unittest.TestCase):
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
-        setattr(session_response, "text", "did you An entity already exists with that identifier")
+        setattr(session_response, "text", "An entity already exists with that identifier")
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
         setattr(session, "post", session_post)
