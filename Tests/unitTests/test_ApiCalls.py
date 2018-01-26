@@ -948,17 +948,6 @@ class TestApiCalls(unittest.TestCase):
             password=""
         )
 
-        json_dict = {
-            "resource": {
-                "sequencerSampleId": "33",
-                "description": "The 53rd sample",
-                "sampleName": "33",
-                "sampleProject": "1"
-            }
-        }
-
-        json_obj = json.dumps(json_dict)
-
         session_response = Foo()
         setattr(session_response, "status_code", httplib.BAD_REQUEST)
         setattr(session_response, "text", "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
@@ -967,7 +956,7 @@ class TestApiCalls(unittest.TestCase):
         session = Foo()
         setattr(session, "post", session_post)
 
-        Sample.upload_failed_topic = MagicMock()
+        # Sample.upload_failed_topic = MagicMock()
         api.get_link = lambda x, y, targ_dict="": None
         api.session = session
 
@@ -979,6 +968,10 @@ class TestApiCalls(unittest.TestCase):
         }
 
         sample = API.apiCalls.Sample(sample_dict)
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
+        sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
 
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
