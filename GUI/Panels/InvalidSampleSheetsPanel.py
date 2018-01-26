@@ -79,7 +79,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
         sheet_errors_type = None
 
         if isinstance(error, SampleError):
-            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing Project ID")
+            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Error with Sample Data")
         elif isinstance(error, SequenceFileError):
             sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing FASTQ files")
         elif isinstance(error, SampleSheetError):

@@ -446,18 +446,22 @@ class ApiCalls(object):
                     "Content-Type": "application/json"
                 }
             }
+            if len(sample.get_name()) >= 3:
+                json_obj = json.dumps(sample, cls=Sample.JsonEncoder)
+                response = self.session.post(url, json_obj, **headers)
 
-            json_obj = json.dumps(sample, cls=Sample.JsonEncoder)
-            response = self.session.post(url, json_obj, **headers)
-
-            if response.status_code == httplib.CREATED:  # 201
-                json_res = json.loads(response.text)
-                json_res_list.append(json_res)
-            else:
-                logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
-                e = SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(status_code=str(response.status_code), err_msg=response.text, sample_data=str(sample)), ["IRIDA rejected the sample."])
+                if response.status_code == httplib.CREATED:  # 201
+                    json_res = json.loads(response.text)
+                    json_res_list.append(json_res)
+                else:
+                    logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
+                    e = SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(status_code=str(response.status_code), err_msg=response.text, sample_data=str(sample)), ["IRIDA rejected the sample."])
+                    send_message(sample.upload_failed_topic, exception = e)
+                    raise e 
+            else: 
+                e = SampleError("Invalid Sample name: {}. A sample requires a name that must be 3 or more characters.".format(sample.get_name()), [])
                 send_message(sample.upload_failed_topic, exception = e)
-                raise e 
+                raise e
         return json_res_list
 
     def get_file_size_list(self, samples_list):
