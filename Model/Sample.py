@@ -41,9 +41,6 @@ class Sample(object):
     @property
     def sample_number(self):
         return self._sample_number
-    
-    def get_name(self):
-        return self.sample_dict["sampleName"]
 
     def get_project_id(self):
         return self.get("sampleProject")
