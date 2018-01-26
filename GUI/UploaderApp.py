@@ -11,7 +11,7 @@ from wx.lib.pubsub import pub
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
-from API.directorymonitor import RunMonitor, DirectoryMonitorTopics
+from API.directorymonitor import RunMonitor, DirectoryMonitorTopics, on_created
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 from API.APIConnector import connect_to_irida, APIConnectorTopics
@@ -184,7 +184,7 @@ class UploaderAppPanel(wx.Panel):
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
-
+        logging.info("scan button clicked")
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
         self.Freeze()
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -299,7 +299,11 @@ class UploaderAppPanel(wx.Panel):
 
         scan_again = wx.Button(self, label="Scan")
         self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
+        if self._should_monitor_directory:
+            logging.info("setting button for monitor directory")
+            self.Bind(wx.EVT_BUTTON, self._scan_directories, id=scan_again.GetId())
+        else:
+            self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
 
     def _display_auto(self):
         """Displays that automatic upload enabled message.
