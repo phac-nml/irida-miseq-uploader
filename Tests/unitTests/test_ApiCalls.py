@@ -973,7 +973,7 @@ class TestApiCalls(unittest.TestCase):
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
 
-        self.assertTrue("Sample name must be at least 3 characters long." in str(err.exception))
+        self.assertTrue("A sample requires a name that must be 3 or more characters" in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_server_res(self, mock_cs):
