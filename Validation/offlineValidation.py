@@ -106,7 +106,7 @@ def validate_sample_list(sample_list):
             if len(missing) > 0:
                 valid = False
                 v_res.add_error_msg(
-                    ("\t{sid} missing {required_val}").format(
+                    ("\t{sid} has an error with {required_val}").format(
                         sid=sample.get_id(),
                         required_val=",".join(missing)))
 
