@@ -132,9 +132,6 @@ def upload_run_to_server(api, sequencing_run, condition):
     try:
         api.send_samples(samples_to_create)
     except Exception as e:
-        # condition.acquire()
-        # condition.notify()
-        # condition.release()
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
 	raise
@@ -163,9 +160,6 @@ def upload_run_to_server(api, sequencing_run, condition):
     except Exception as e:
         logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
         api.set_seq_run_error(run_id)
-        # condition.acquire()
-        # condition.notify()
-        # condition.release()
 	raise
 
 def _online_validation(api, sequencing_run):
