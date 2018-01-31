@@ -11,7 +11,7 @@ from wx.lib.pubsub import pub
 
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory, DirectoryScannerTopics
-from API.directorymonitor import RunMonitor, DirectoryMonitorTopics, on_created
+from API.directorymonitor import RunMonitor, DirectoryMonitorTopics
 from API.runuploader import RunUploader, RunUploaderTopics
 from API.apiCalls import ApiCalls
 from API.APIConnector import connect_to_irida, APIConnectorTopics
@@ -206,6 +206,7 @@ class UploaderAppPanel(wx.Panel):
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
+        
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
         self.Freeze()
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
