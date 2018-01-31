@@ -64,6 +64,8 @@ class UploaderAppPanel(wx.Panel):
         pub.subscribe(self._sample_sheet_error, DirectoryScannerTopics.missing_files)
         # topics to handle when settings have changed in the settings frame
         pub.subscribe(self._settings_changed, SettingsDialog.settings_closed_topic)
+        pub.subscribe(self._shutdown_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
+        pub.subscribe(self._restart_monitorting, DirectoryMonitorTopics.start_up_directory_monitor)
         # topics to handle when a directory is selected by File > Open
         pub.subscribe(self._directory_selected, UploaderAppFrame.directory_selected_topic)
 
@@ -142,13 +144,6 @@ class UploaderAppPanel(wx.Panel):
             self._display_auto()
             self._display_samplesheet_upload()
             if self._monitor_thread is None:
-  
-                logging.info("Going to start monitoring default directory [{}] for new runs.".format(self._get_default_directory()))
-                pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-                pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-                
-                self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
-                self._monitor_thread.start()
                 send_message(DirectoryMonitorTopics.start_up_directory_monitor)
             else:
                 logging.info("Continuing to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
@@ -157,17 +152,29 @@ class UploaderAppPanel(wx.Panel):
         else:
             logging.info("shutting down any existing version of directory monitor")
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
-            try: 
-                if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
-                    logging.info("Unsubscribing auto subscriptions")
-                    pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-                    pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-                    self._monitor_thread = None
-            except ValueError:
-                logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
 
         # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
+
+    def _shutdown_monitoring(self):
+        """tasks to be compled when monitoring is turned off"""
+        try: 
+            if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
+                logging.info("Unsubscribing auto subscriptions")
+                pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+                pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+                self._monitor_thread = None
+        except ValueError:
+            logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
+        
+    def _restart_monitorting(self):
+        """tasks to be compled when monitoring is turned on"""
+        if self._monitor_thread is None:
+            logging.info("Going to start monitoring default directory [{}] for new runs.".format(self._get_default_directory()))
+            pub.subscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+            pub.subscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+            self._monitor_thread = RunMonitor(directory=self._get_default_directory(), cond=condition)
+            self._monitor_thread.start()
 
     def _get_default_directory(self):
         """Read the default directory from the configuration file, or, if the user
@@ -345,7 +352,11 @@ class UploaderAppPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self._retry_upload, id=try_again.GetId())
         self.Layout()
         self.Thaw()
-
+        if self._should_monitor_directory:
+            # turn off monitoring 
+            logging.info("shutting down any existing version of directory monitor")
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
+ 
     def _retry_upload(self, evt=None):
         """Retry the upload after a failure is encountered.
 
