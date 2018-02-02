@@ -321,10 +321,6 @@ class UploaderAppPanel(wx.Panel):
 
         scan_again = wx.Button(self, label="Scan")
         self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        # if self._should_monitor_directory:
-        #     scan_again.Bind(wx.EVT_BUTTON, self._scan_during_auto)
-        # else:
-        #     self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
         self.Bind(wx.EVT_BUTTON, self._scan_button, id=scan_again.GetId())
 
     def _display_auto(self):
