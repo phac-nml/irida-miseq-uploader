@@ -129,7 +129,12 @@ def upload_run_to_server(api, sequencing_run, condition):
     # only send samples that aren't already on the server
     samples_to_create = filter(lambda sample: not sample_exists(api, sample), sequencing_run.sample_list)
     logging.info("Sending samples to server: [{}].".format(", ".join([str(x) for x in samples_to_create])))
-    api.send_samples(samples_to_create)
+    try:
+        api.send_samples(samples_to_create)
+    except Exception as e:
+        logging.exception("Encountered error while uploading files to server, updating status of run to error state.")
+        api.set_seq_run_error(run_id)
+	raise
 
     for sample in sequencing_run.samples_to_upload:
         pub.subscribe(_handle_upload_sample_complete, sample.upload_completed_topic)

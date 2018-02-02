@@ -41,6 +41,10 @@ class RunPanel(ScrolledPanel):
         self._last_progress = 0
         self._last_timer_progress = 0
         self._sample_panels = {}
+        self._progress = wx.Gauge(self, id=wx.ID_ANY, range=100, size=(250, 20))
+        self._progress.Hide()
+        self._progress_text = wx.StaticText(self, label="  0%")
+        self._progress_text.Hide()
         # the current overall progress for the run is calculated as a percentage
         # of the total file size of all samples in the run.
         self._progress_max = sum(sample.get_files_size() for sample in run.samples_to_upload)
@@ -100,11 +104,10 @@ class RunPanel(ScrolledPanel):
         logging.info("Upload started for {} with max size {}".format(self._run.upload_started_topic, self._progress_max))
         pub.unsubscribe(self._upload_started, self._run.upload_started_topic)
         self.Freeze()
-        self._progress = wx.Gauge(self, id=wx.ID_ANY, range=100, size=(250, 20))
-        self._progress_text = wx.StaticText(self, label="  0%")
         progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
+        self._progress.Show()
         progress_sizer.Add(self._progress, proportion=1)
+        self._progress_text.Show()
         progress_sizer.Add(self._progress_text, proportion=0)
 
         self._sizer.Insert(0, progress_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
@@ -124,11 +127,12 @@ class RunPanel(ScrolledPanel):
         pub.unsubscribe(self._upload_failed, self._run.upload_failed_topic)
         pub.unsubscribe(self._handle_progress, self._run.upload_progress_topic)
         pub.unsubscribe(self._upload_complete, self._run.upload_completed_topic)
-
+        
         self.Freeze()
-        self._timer.Stop()
-        self._progress_text.Destroy()
-        self._progress.Destroy()
+        if self._timer.IsRunning():
+            self._timer.Stop()
+        self._progress_text.Hide()
+        self._progress.Hide()
         error_label = wx.StaticText(self, label=u"✘ Yikes!")
         error_label.SetForegroundColour(wx.Colour(255, 0, 0))
         error_label.SetFont(wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD))
