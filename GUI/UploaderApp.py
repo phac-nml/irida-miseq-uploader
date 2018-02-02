@@ -169,7 +169,7 @@ class UploaderAppPanel(wx.Panel):
         # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
-    def _scan_during_auto(self, api=None):
+    def _scan_button(self, api=None):
         """Turns off auto upload monitor when the "Scan" button is pressed. Must turn off
         auto upload to prevent collision of the scan and the auto both finding
         the same data at the same time and to prevent auto from kicking in during the scan.
@@ -179,16 +179,17 @@ class UploaderAppPanel(wx.Panel):
         self._sizer.Clear(deleteWindows=True)
         self.Layout()
         self.Thaw()
-        logging.info("shutting down any existing version of directory monitor")
-        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
-        try: 
-            if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
-                logging.info("Unsubscribing auto subscriptions")
-                pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
-                pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
-                self._monitor_thread = None
-        except ValueError:
-            logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
+        if self._should_monitor_directory:
+            logging.info("shutting down any existing version of directory monitor")
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
+            try: 
+                if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
+                    logging.info("Unsubscribing auto subscriptions")
+                    pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+                    pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+                    self._monitor_thread = None
+            except ValueError:
+                logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
         self._scan_directories()
      
     def _get_default_directory(self):
@@ -320,10 +321,11 @@ class UploaderAppPanel(wx.Panel):
 
         scan_again = wx.Button(self, label="Scan")
         self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        if self._should_monitor_directory:
-            scan_again.Bind(wx.EVT_BUTTON, self._scan_during_auto)
-        else:
-            self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
+        # if self._should_monitor_directory:
+        #     scan_again.Bind(wx.EVT_BUTTON, self._scan_during_auto)
+        # else:
+        #     self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
+        self.Bind(wx.EVT_BUTTON, self._scan_button, id=scan_again.GetId())
 
     def _display_auto(self):
         """Displays that automatic upload enabled message.
