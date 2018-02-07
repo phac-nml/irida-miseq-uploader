@@ -43,6 +43,7 @@ class RunUploader(threading.Thread):
         """Initiate upload. The upload happens serially, one run at a time."""
         for run in self._runs:
             upload_run_to_server(api=self._api, sequencing_run=run, condition=self._condition)
+        send_message(RunUploaderTopics.finished_uploading_samples)
         # once the run uploads are complete, we can launch the post-processing
         # command
         if self._post_processing_task:
@@ -149,7 +150,6 @@ def upload_run_to_server(api, sequencing_run, condition):
         api.send_sequence_files(samples_list = sequencing_run.samples_to_upload,
                                      upload_id = run_id)
         send_message("finished_uploading_samples", sheet_dir = sequencing_run.sample_sheet_dir)
-        send_message(RunUploaderTopics.finished_uploading_samples)
         send_message(sequencing_run.upload_completed_topic)
         # acquring lock so it can be released so that directory monitoring can resume if it was running
         condition.acquire()
