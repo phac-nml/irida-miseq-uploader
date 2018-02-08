@@ -141,6 +141,8 @@ class UploaderAppPanel(wx.Panel):
             self.Freeze()
             self._display_auto()
             self._display_samplesheet_upload()
+            self.Layout()
+            self.Thaw()
             if self._monitor_thread is None:
   
                 logging.info("Going to start monitoring default directory [{}] for new runs.".format(self._get_default_directory()))
@@ -152,8 +154,6 @@ class UploaderAppPanel(wx.Panel):
                 send_message(DirectoryMonitorTopics.start_up_directory_monitor)
             else:
                 logging.info("Continuing to monitor default directory [{}] for new runs.".format(self._get_default_directory()))
-            self.Layout()
-            self.Thaw()
         else:
             logging.info("shutting down any existing version of directory monitor")
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
@@ -169,6 +169,29 @@ class UploaderAppPanel(wx.Panel):
         # run connecting in a different thread so we don't freeze up the GUI
         threading.Thread(target=self._connect_to_irida).start()
 
+    def _scan_button(self, api=None):
+        """Turns off auto upload monitor when the "Scan" button is pressed. Must turn off
+        auto upload to prevent collision of the scan and the auto both finding
+        the same data at the same time and to prevent auto from kicking in during the scan.
+        Once this is turned off, _scan_directories is called. In _finished_upload, auto is resumed
+        """
+        self.Freeze()
+        self._sizer.Clear(deleteWindows=True)
+        self.Layout()
+        self.Thaw()
+        if self._should_monitor_directory:
+            logging.info("shutting down any existing version of directory monitor")
+            send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
+            try: 
+                if pub.isSubscribed(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed):
+                    logging.info("Unsubscribing auto subscriptions")
+                    pub.unsubscribe(self._prepare_for_automatic_upload, DirectoryMonitorTopics.new_run_observed)
+                    pub.unsubscribe(self._start_upload, DirectoryMonitorTopics.finished_discovering_run)
+                    self._monitor_thread = None
+            except ValueError:
+                logging.info("_prepare_for_automatic_upload not yet subscribed to anything")
+        self._scan_directories()
+     
     def _get_default_directory(self):
         """Read the default directory from the configuration file, or, if the user
         has selected a directory manually, return the manually selected directory.
@@ -184,7 +207,7 @@ class UploaderAppPanel(wx.Panel):
 
     def _scan_directories(self):
         """Begin scanning directories for the default directory."""
-
+        
         logging.info("Starting to scan [{}] for sequencing runs.".format(self._get_default_directory()))
         self.Freeze()
         self._run_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -266,18 +289,17 @@ class UploaderAppPanel(wx.Panel):
                 self._finished_upload()
 
     def _finished_upload(self):
-        """Update the display when the upload is finished."""
-        self.Freeze()
-        self._sizer.Clear(deleteWindows=True)
+        """Update the display and resume auto upload if necessary 
+        when the upload is finished.
+        """
         if self._should_monitor_directory:
-            # displays the "automatic upload enabled" message
-            self._display_auto()
-
-        #displays notice that there is nothing to upload
-        # self._display_samplesheet_upload
-        self._display_samplesheet_upload()
-        self.Layout()
-        self.Thaw()
+            self._settings_changed()
+        else:
+            self.Freeze()
+            self._sizer.Clear(deleteWindows=True)
+            self._display_samplesheet_upload()
+            self.Layout()
+            self.Thaw()
 
     def _display_samplesheet_upload(self):
         """Displays a message that a sample sheet has been uploaded 
@@ -299,7 +321,7 @@ class UploaderAppPanel(wx.Panel):
 
         scan_again = wx.Button(self, label="Scan")
         self._sizer.Add(scan_again, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=5)
-        self.Bind(wx.EVT_BUTTON, self._settings_changed, id=scan_again.GetId())
+        self.Bind(wx.EVT_BUTTON, self._scan_button, id=scan_again.GetId())
 
     def _display_auto(self):
         """Displays that automatic upload enabled message.
