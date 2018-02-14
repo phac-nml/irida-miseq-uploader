@@ -300,6 +300,9 @@ class UploaderAppPanel(wx.Panel):
             self._display_samplesheet_upload()
             self.Layout()
             self.Thaw()
+        pub.subscribe(self._finished_loading, DirectoryScannerTopics.finished_run_scan)
+        pub.unsubscribe(self._start_upload, DirectoryScannerTopics.finished_run_scan)
+
 
     def _display_samplesheet_upload(self):
         """Displays a message that a sample sheet has been uploaded 
