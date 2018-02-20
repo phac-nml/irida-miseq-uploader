@@ -367,7 +367,10 @@ class UploaderAppPanel(wx.Panel):
         self.Layout()
         self.Thaw()
         if self._should_monitor_directory:
-            # turn off monitoring 
+            # turn off monitoring to prevent the monitoring while an error is being dealt with
+            # by the user. If monitoring was to continue, the GUI would refresh. As there is a 
+            # .miseqinfo file created, the erroring run would not appear again and thus the 
+            # error wouldn't be displayed to the user again. 
             logging.info("shutting down any existing version of directory monitor")
             send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
  
