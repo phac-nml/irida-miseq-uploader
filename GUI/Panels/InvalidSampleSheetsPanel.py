@@ -9,6 +9,7 @@ from wx.lib.wordwrap import wordwrap
 
 from Exceptions import SampleError, SampleSheetError, SequenceFileError
 from API.directoryscanner import DirectoryScannerTopics
+from API.directorymonitor import DirectoryMonitorTopics
 from API.pubsub import send_message
 from GUI.SettingsDialog import SettingsDialog
 
@@ -71,6 +72,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
             sample_sheet: the sample sheet that failed to be parsed.
             error: the error that was raised during validation.
         """
+        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         sheet_name = basename(dirname(sample_sheet)) + separator + "SampleSheet.csv"
         logging.info("Handling sample sheet error for {}".format(sheet_name))
         self.Freeze()
