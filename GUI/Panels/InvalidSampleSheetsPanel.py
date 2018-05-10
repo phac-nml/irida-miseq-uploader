@@ -9,6 +9,7 @@ from wx.lib.wordwrap import wordwrap
 
 from Exceptions import SampleError, SampleSheetError, SequenceFileError
 from API.directoryscanner import DirectoryScannerTopics
+from API.directorymonitor import DirectoryMonitorTopics
 from API.pubsub import send_message
 from GUI.SettingsDialog import SettingsDialog
 
@@ -71,6 +72,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
             sample_sheet: the sample sheet that failed to be parsed.
             error: the error that was raised during validation.
         """
+        send_message(DirectoryMonitorTopics.shut_down_directory_monitor)
         sheet_name = basename(dirname(sample_sheet)) + separator + "SampleSheet.csv"
         logging.info("Handling sample sheet error for {}".format(sheet_name))
         self.Freeze()
@@ -79,7 +81,7 @@ class InvalidSampleSheetsPanel(wx.Panel):
         sheet_errors_type = None
 
         if isinstance(error, SampleError):
-            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing Project ID")
+            sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Error with Sample Data")
         elif isinstance(error, SequenceFileError):
             sheet_errors_type = self._errors_tree.AppendItem(sheet_errors_root, "Missing FASTQ files")
         elif isinstance(error, SampleSheetError):
