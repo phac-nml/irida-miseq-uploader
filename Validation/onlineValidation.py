@@ -20,7 +20,7 @@ def sample_exists(api, sample):
 
     sample_list = api.get_samples(sample=sample)
 
-    if any([s.get_id() == sample.get_id() for s in sample_list]):
+    if any([s.get_id().lower() == sample.get_id().lower() for s in sample_list]):
         return True
     else:
         return False
