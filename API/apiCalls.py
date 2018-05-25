@@ -221,8 +221,8 @@ class ApiCalls(object):
                 resources_list = response.json()["resource"]["resources"]
                 try:
                     links_list = next(r["links"] for r in resources_list
-                                      if r[targ_dict["key"]] ==
-                                      targ_dict["value"])
+                                      if r[targ_dict["key"]].lower() ==
+                                      targ_dict["value"].lower())
 
                 except KeyError:
                     raise KeyError(targ_dict["key"] + " not found." +
