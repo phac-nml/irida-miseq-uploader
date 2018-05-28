@@ -66,6 +66,7 @@ def find_runs_in_directory(directory):
                     Directory can not be read, permissions issue
         """
 
+        # Checks if we can write to the directory, return false and log a warning if we cannot.
         if not os.access(sample_dir, os.W_OK):
             logging.warning("Could not access directory while looking for samples {}".format(sample_dir))
             return False
