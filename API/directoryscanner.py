@@ -28,6 +28,10 @@ def find_runs_in_directory(directory):
     Arguments:
     directory -- the directory to find sequencing runs
 
+    Usage:
+    Can be used on the directory containing the SampleSheet.csv file (a single run)
+    Can be used on the directory containing directories with SampleSheet.csv files in them (a group of runs)
+
     Returns: a list of populated sequencing run objects found
     in the directory, ready to be uploaded.
     """
