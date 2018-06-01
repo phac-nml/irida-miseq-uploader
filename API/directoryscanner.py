@@ -45,6 +45,11 @@ def find_runs_in_directory(directory):
         Returns: a list of directories including current directory
         """
 
+        # Checks if we can access to the given directory, return empty and log a warning if we cannot.
+        if not os.access(run_dir, os.W_OK):
+            logging.warning("Could not access directory while looking for samples {}".format(run_dir))
+            return []
+
         dir_list = next(os.walk(run_dir))[1]  # Gets the list of directories in the directory
         dir_list.append(run_dir)  # Add the current directory to the list too
         return dir_list
