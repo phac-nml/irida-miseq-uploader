@@ -685,7 +685,7 @@ class ApiCalls(object):
                        err_msg=response.reason)
             logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
             logging.info(response.text)
-            send_message(sample.upload_failed_topic, exception = e)
+            send_message(sample.upload_failed_topic, exception = err_msg)
             raise SequenceFileError(err_msg, [])
 
         return json_res

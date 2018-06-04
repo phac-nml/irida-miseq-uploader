@@ -111,6 +111,36 @@ def complete_parse_samples(sample_sheet_file):
     returns list containing complete Sample objects
     """
 
+    def validate_pf_list(file_list):
+        """
+        Checks if list of files is valid:
+
+        arguments:
+                file_list -- list of file names that are grouped together
+
+        returns:
+                True: 1 file in list
+                True: 2 files in list, where one contains `R1` incorrect position and the other contains `R2`
+                False: Number of files <1 or >2, or 2 files do not contain `R1`/`R2` correctly
+        """
+
+        if len(file_list) > 2:  # We should never expect more than 2 files, a forward & backwards read
+            return False
+        elif len(file_list) == 1:  # single read, valid
+            return True
+        else:
+            # check if one file is R1 and other is R2
+            regex_filter = ".*_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+            n1 = int(re.search(regex_filter, file_list[0]).group(1))
+            n2 = int(re.search(regex_filter, file_list[1]).group(1))
+            if n1 == 1:
+                if n2 == 2:
+                    return True
+            elif n1 == 2:
+                if n2 == 1:
+                    return True
+            return False
+
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
     data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
@@ -153,6 +183,13 @@ def complete_parse_samples(sample_sheet_file):
                      "This usually happens when the Illumina MiSeq Reporter tool "
                      "does not generate any FastQ data.").format(
                         sample.get_id(), data_dir), ["Sample {}".format(sample.get_id())])
+
+        # List of files may be invalid if directory searching in has been modified by user
+        if not validate_pf_list(pf_list):
+            raise SequenceFileError(
+                ("The following file list {} found in the directory {} is invalid. "
+                 "Please verify the folder containing the sequence files matches the SampleSheet file").format(
+                    pf_list, data_dir), ["Sample {}".format(sample.get_id())])
 
         # Add the dir to each file to create the full path
         for i in xrange(len(pf_list)):
