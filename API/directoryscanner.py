@@ -99,7 +99,23 @@ def find_runs_in_directory(directory):
             sample_sheets.append(os.path.join(current_directory, 'SampleSheet.csv'))
 
     logging.info("found sample sheets (filtered): {}".format(", ".join(sample_sheets)))
-    sequencing_runs = [process_sample_sheet(sheet) for sheet in sample_sheets]
+
+    # Only appending sheets to the list that do not have errors
+    # The errors are collected to create a list to show the user
+    sequencing_runs = []
+    for sheet in sample_sheets:
+        try:
+            sequencing_runs.append(process_sample_sheet(sheet))
+        except SampleSheetError, e:
+            logging.exception("Failed to parse sample sheet.")
+            send_message(DirectoryScannerTopics.garbled_sample_sheet, sample_sheet=sheet, error=e)
+        except SampleError, e:
+            logging.exception("Failed to parse sample.")
+            send_message(DirectoryScannerTopics.garbled_sample_sheet, sample_sheet=sheet, error=e)
+        except SequenceFileError as e:
+            logging.exception("Failed to find files for sample sheet.")
+            send_message(DirectoryScannerTopics.missing_files, sample_sheet=sheet, error=e)
+
     send_message(DirectoryScannerTopics.finished_run_scan)
 
     return sequencing_runs
@@ -115,33 +131,22 @@ def process_sample_sheet(sample_sheet):
     Returns: an individual SequencingRun object for the sample sheet,
     ready to be uploaded.
     """
-    try:
-        logging.info("going to parse metadata")
-        run_metadata = parse_metadata(sample_sheet)
 
-        logging.info("going to parse samples")
-        samples = complete_parse_samples(sample_sheet)
+    logging.info("going to parse metadata")
+    run_metadata = parse_metadata(sample_sheet)
 
-        logging.info("going to build sequencing run")
-        sequencing_run = SequencingRun(run_metadata, samples, sample_sheet)
+    logging.info("going to parse samples")
+    samples = complete_parse_samples(sample_sheet)
 
-        logging.info("going to validate sequencing run")
-        validate_run(sequencing_run)
+    logging.info("going to build sequencing run")
+    sequencing_run = SequencingRun(run_metadata, samples, sample_sheet)
 
-        send_message(DirectoryScannerTopics.run_discovered, run=sequencing_run)
+    logging.info("going to validate sequencing run")
+    validate_run(sequencing_run)
 
-        return sequencing_run
-    except SampleSheetError, e:
-        logging.exception("Failed to parse sample sheet.")
-        send_message(DirectoryScannerTopics.garbled_sample_sheet, sample_sheet=sample_sheet, error=e)
-    except SampleError, e:
-        logging.exception("Failed to parse sample.")
-        send_message(DirectoryScannerTopics.garbled_sample_sheet, sample_sheet=sample_sheet, error=e)
-    except SequenceFileError as e:
-        logging.exception("Failed to find files for sample sheet.")
-        send_message(DirectoryScannerTopics.missing_files, sample_sheet=sample_sheet, error=e)
+    send_message(DirectoryScannerTopics.run_discovered, run=sequencing_run)
 
-    return None
+    return sequencing_run
 
 
 def validate_run(sequencing_run):
