@@ -16,9 +16,15 @@ Install pip and wxpython:
 
 ### virtualenv usage  
 
-Install virtualenv
+Install virtualenv and setuptools
 
     $ pip install virtualenv
+    $ pip install setuptools
+
+If you already have these packages installed, ensure they are up to date
+
+    $ pip install virtualenv -U
+    $ pip install setuptools -U
 
 Build a virtualenv and install the dependencies:
 
