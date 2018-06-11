@@ -86,20 +86,33 @@ def search_for_upload(directory, cond):
     .miseqUploaderInfo files.
     """
     global toMonitor
-    for root, dirs, files in os.walk(directory, topdown=True):
-        for name in dirs:
-            checkForCompJob = os.path.join(root, name, "CompletedJobInfo.xml")
-            checkForMiSeq = os.path.join(root, name, ".miseqUploaderInfo")
-            if os.path.isfile(checkForCompJob):
-                if not os.path.isfile(checkForMiSeq):
-                    path_to_upload = checkForCompJob
-                    if toMonitor:
-                        on_created(path_to_upload, cond)
-                    # After upload, start back at the start of directories
-                    return
-            # Check each step of loop if monitoring is still required
-            if not toMonitor:
+
+    if not os.access(directory, os.W_OK):
+        logging.warning("Could not access directory while monitoring for samples {}".format(directory))
+        return
+
+    root = next(os.walk(directory))[0]
+    dirs = next(os.walk(directory))[1]
+    for name in dirs:
+        checkForCompJob = os.path.join(root, name, "CompletedJobInfo.xml")
+        checkForMiSeq = os.path.join(root, name, ".miseqUploaderInfo")
+        if not os.access(checkForCompJob, os.W_OK):
+            logging.warning("Could not access directory while monitoring for samples {}".format(checkForCompJob))
+            continue
+        if not os.access(checkForMiSeq, os.W_OK):
+            logging.warning("Could not access directory while monitoring for samples {}".format(checkForMiSeq))
+            continue
+
+        if os.path.isfile(checkForCompJob):
+            if not os.path.isfile(checkForMiSeq):
+                path_to_upload = checkForCompJob
+                if toMonitor:
+                    on_created(path_to_upload, cond)
+                # After upload, start back at the start of directories
                 return
+        # Check each step of loop if monitoring is still required
+        if not toMonitor:
+            return
     return
 
 def stop_monitoring():
