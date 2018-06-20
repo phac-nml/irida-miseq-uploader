@@ -99,7 +99,7 @@ def search_for_upload(directory, cond):
 
         if os.path.isfile(check_for_comp_job):
             if not os.path.isfile(check_for_miseq):
-                path_to_upload = checkForCompJob
+                path_to_upload = check_for_comp_job
                 if toMonitor:
                     on_created(path_to_upload, cond)
                 # After upload, start back at the start of directories
