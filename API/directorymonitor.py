@@ -94,17 +94,11 @@ def search_for_upload(directory, cond):
     root = next(os.walk(directory))[0]
     dirs = next(os.walk(directory))[1]
     for name in dirs:
-        checkForCompJob = os.path.join(root, name, "CompletedJobInfo.xml")
-        checkForMiSeq = os.path.join(root, name, ".miseqUploaderInfo")
-        if not os.access(checkForCompJob, os.W_OK):
-            logging.warning("Could not access directory while monitoring for samples {}".format(checkForCompJob))
-            continue
-        if not os.access(checkForMiSeq, os.W_OK):
-            logging.warning("Could not access directory while monitoring for samples {}".format(checkForMiSeq))
-            continue
+        check_for_comp_job = os.path.join(root, name, "CompletedJobInfo.xml")
+        check_for_miseq = os.path.join(root, name, ".miseqUploaderInfo")
 
-        if os.path.isfile(checkForCompJob):
-            if not os.path.isfile(checkForMiSeq):
+        if os.path.isfile(check_for_comp_job):
+            if not os.path.isfile(check_for_miseq):
                 path_to_upload = checkForCompJob
                 if toMonitor:
                     on_created(path_to_upload, cond)
