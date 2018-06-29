@@ -120,7 +120,7 @@ def complete_parse_samples(sample_sheet_file):
 
         returns:
                 True: 1 file in list
-                True: 2 files in list, where one contains `R1` incorrect position and the other contains `R2`
+                True: 2 files in list, where one contains `R1` in the correct position and the other contains `R2`
                 False: Number of files <1 or >2, or 2 files do not contain `R1`/`R2` correctly
         """
 
@@ -133,13 +133,7 @@ def complete_parse_samples(sample_sheet_file):
             regex_filter = ".*_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
             n1 = int(re.search(regex_filter, file_list[0]).group(1))
             n2 = int(re.search(regex_filter, file_list[1]).group(1))
-            if n1 == 1:
-                if n2 == 2:
-                    return True
-            elif n1 == 2:
-                if n2 == 1:
-                    return True
-            return False
+            return (n1 != n2) and (n1 == 1 or n1 == 2) and (n2 == 1 or n2 == 2)
 
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
