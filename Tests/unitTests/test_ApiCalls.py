@@ -38,7 +38,7 @@ class TestApiCalls(unittest.TestCase):
         mock_cs.side_effect = [None]
 
         api = API.apiCalls.ApiCalls("", "", "", "", "")
-        validate_URL = api.validate_URL_existence
+        validate_URL = api.Instance.validate_URL_existence
 
         url = "http://google.com"
         valid = True
