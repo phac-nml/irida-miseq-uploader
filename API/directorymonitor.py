@@ -88,7 +88,7 @@ def search_for_upload(directory, cond):
     global toMonitor
 
     if not os.access(directory, os.W_OK):
-        logging.warning("Could not access directory while monitoring for samples {}".format(directory))
+        logging.warning("Could not access directory while monitoring for samples, directory is not writeable {}".format(directory))
         return
 
     root = next(os.walk(directory))[0]
