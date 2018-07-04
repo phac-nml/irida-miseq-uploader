@@ -47,7 +47,8 @@ def find_runs_in_directory(directory):
 
         # Checks if we can access to the given directory, return empty and log a warning if we cannot.
         if not os.access(run_dir, os.W_OK):
-            logging.warning("Could not access directory while looking for samples {}".format(run_dir))
+            logging.warning("The following directory is not writeable, "
+                            "can not upload any samples from this directory {}".format(run_dir))
             return []
 
         dir_list = next(os.walk(run_dir))[1]  # Gets the list of directories in the directory
@@ -73,7 +74,8 @@ def find_runs_in_directory(directory):
 
         # Checks if we can write to the directory, return false and log a warning if we cannot.
         if not os.access(sample_dir, os.W_OK):
-            logging.warning("Could not access directory while looking for samples {}".format(sample_dir))
+            logging.warning("The following directory is not writeable, "
+                            "can not upload any samples from this directory {}".format(sample_dir))
             return False
 
         file_list = next(os.walk(sample_dir))[2]  # Gets the list of files in the directory
