@@ -733,13 +733,13 @@ class ApiCalls(object):
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
             send_message(sample.upload_completed_topic, sample=sample)
         else:
-            err_msg = ("Error {status_code}: {err_msg}\n").format(
+            e = SequenceFileError("Error {status_code}: {err_msg}\n".format(
                        status_code=str(response.status_code),
-                       err_msg=response.reason)
+                       err_msg=response.reason))
             logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
             logging.info(response.text)
-            send_message(sample.upload_failed_topic, exception = e)
-            raise SequenceFileError(err_msg, [])
+            send_message(sample.upload_failed_topic, exception=e)
+            raise e
 
         return json_res
 

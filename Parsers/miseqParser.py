@@ -1,5 +1,5 @@
 import re
-from os import path, listdir
+from os import path, listdir, walk
 from fnmatch import translate as fn_translate
 from csv import reader
 from collections import OrderedDict
@@ -11,8 +11,7 @@ from Model.Sample import Sample
 from Model.SequenceFile import SequenceFile
 from Exceptions.SampleSheetError import SampleSheetError
 from Exceptions.SequenceFileError import SequenceFileError
-from API.fileutils import find_file_by_name
-from API.pubsub import send_message
+
 
 def parse_metadata(sample_sheet_file):
 
@@ -69,7 +68,8 @@ def parse_metadata(sample_sheet_file):
             continue
 
         if not section:
-            raise SampleSheetError("This sample sheet doesn't have any sections.", ["The sample sheet is missing important sections: no sections were found."])
+            raise SampleSheetError("This sample sheet doesn't have any sections.",
+                                   ["The sample sheet is missing important sections: no sections were found."])
         elif section is "header":
             try:
                 key_name = metadata_key_translation_dict[line[0]]
@@ -88,7 +88,8 @@ def parse_metadata(sample_sheet_file):
         metadata_dict["readLengths"] = max(metadata_dict["readLengths"])
     else:
         # this is an exceptional case, you can't have no read lengths!
-        raise SampleSheetError("Sample sheet must have read lengths!", ["The sample sheet is missing important sections: no [Reads] section found."])
+        raise SampleSheetError("Sample sheet must have read lengths!",
+                               ["The sample sheet is missing important sections: no [Reads] section found."])
 
     return metadata_dict
 
@@ -110,14 +111,39 @@ def complete_parse_samples(sample_sheet_file):
     returns list containing complete Sample objects
     """
 
+    def validate_pf_list(file_list):
+        """
+        Checks if list of files is valid:
+
+        arguments:
+                file_list -- list of file names that are grouped together
+
+        returns:
+                True: 1 file in list
+                True: 2 files in list, where one contains `R1` in the correct position and the other contains `R2`
+                False: Number of files <1 or >2, or 2 files do not contain `R1`/`R2` correctly
+        """
+
+        if len(file_list) > 2:  # We should never expect more than 2 files, a forward & backwards read
+            return False
+        elif len(file_list) == 1:  # single read, valid
+            return True
+        else:
+            # check if one file is R1 and other is R2
+            regex_filter = ".*_S\\d+_L\\d{3}_R(\\d+)_\\S+\\.fastq.*$"
+            n1 = int(re.search(regex_filter, file_list[0]).group(1))
+            n2 = int(re.search(regex_filter, file_list[1]).group(1))
+            return (n1 != n2) and (n1 == 1 or n1 == 2) and (n2 == 1 or n2 == 2)
+
     sample_list = parse_samples(sample_sheet_file)
     sample_sheet_dir = path.dirname(sample_sheet_file)
     data_dir = path.join(sample_sheet_dir, "Data", "Intensities", "BaseCalls")
+    data_dir_file_list = next(walk(data_dir))[2]  # Create a file list of the data directory, only hit the os once
     uploader_info_file = path.join(sample_sheet_dir, ".miseqUploaderInfo")
 
     try:
-        with open(uploader_info_file, "rb") as reader:
-            uploader_info = json.load(reader)
+        with open(uploader_info_file, "rb") as info_reader:
+            uploader_info = json.load(info_reader)
     except IOError:
         uploader_info = None
 
@@ -125,21 +151,21 @@ def complete_parse_samples(sample_sheet_file):
         properties_dict = parse_out_sequence_file(sample)
         # this is the Illumina-defined pattern for naming fastq files, from:
         # http://blog.basespace.illumina.com/2014/08/18/fastq-upload-in-now-available-in-basespace/
-        file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.sample_name),
-                                                                                                 sample_number=sample.sample_number)
+        file_pattern = "{sample_name}_S{sample_number}_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(
+            sample_name=re.escape(sample.sample_name), sample_number=sample.sample_number)
         logging.info("Looking for files with pattern {}".format(file_pattern))
-        pf_list = find_file_by_name(directory = data_dir,
-                                    name_pattern = file_pattern,
-                                    depth = 1)
+        regex = re.compile(file_pattern)
+        pf_list = filter(regex.search, data_dir_file_list)
         if not pf_list:
             # OK. So we didn't find any files using the **correct** file name
             # definition according to Illumina. Let's try again with our deprecated
             # behaviour, where we didn't actually care about the sample number:
-            file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(sample_name=re.escape(sample.get_id()))
+            file_pattern = "{sample_name}_S\\d+_L\\d{{3}}_R(\\d+)_\\S+\\.fastq.*$".format(
+                sample_name=re.escape(sample.get_id()))
             logging.info("Looking for files with pattern {}".format(file_pattern))
-            pf_list = find_file_by_name(directory = data_dir,
-                                        name_pattern = file_pattern,
-                                        depth = 1)
+
+            regex = re.compile(file_pattern)
+            pf_list = filter(regex.search, data_dir_file_list)
 
             if not pf_list:
                 # we **still** didn't find anything. It's pretty likely, then that
@@ -149,10 +175,21 @@ def complete_parse_samples(sample_sheet_file):
                     ("The uploader was unable to find an files with a file name that ends with "
                      ".fastq.gz for the sample in your sample sheet with name {} in the directory {}. "
                      "This usually happens when the Illumina MiSeq Reporter tool "
-                     "does not generate any FastQ data.")
-                     .format(sample.get_id(), data_dir), ["Sample {}".format(sample.get_id())])
-        sq = SequenceFile(properties_dict, pf_list)
+                     "does not generate any FastQ data.").format(
+                        sample.get_id(), data_dir), ["Sample {}".format(sample.get_id())])
 
+        # List of files may be invalid if directory searching in has been modified by user
+        if not validate_pf_list(pf_list):
+            raise SequenceFileError(
+                ("The following file list {} found in the directory {} is invalid. "
+                 "Please verify the folder containing the sequence files matches the SampleSheet file").format(
+                    pf_list, data_dir), ["Sample {}".format(sample.get_id())])
+
+        # Add the dir to each file to create the full path
+        for i in xrange(len(pf_list)):
+            pf_list[i] = path.join(data_dir, pf_list[i])
+
+        sq = SequenceFile(properties_dict, pf_list)
         sample.set_seq_file(deepcopy(sq))
 
         if uploader_info is not None:
@@ -330,8 +367,8 @@ def get_all_fastq_files(data_dir):
 
     try:
         file_list = listdir(fastq_files_path)
-        fastq_file_list = [path.join(fastq_files_path, file)
-                           for file in file_list if re.match(pattern, file)]
+        fastq_file_list = [path.join(fastq_files_path, f)
+                           for f in file_list if re.match(pattern, f)]
         fastq_file_list.sort()
 
     except OSError:
