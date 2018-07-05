@@ -169,7 +169,7 @@ class TestApiCalls(unittest.TestCase):
             mock_validate_url_existence):
         oauth_service = Foo()
         access_token = Foo()
-        setattr(oauth_service, "get_session", lambda x: "newSession2")
+        setattr(oauth_service, "get_session", lambda x: "newSession3")
 
         mock_validate_url_form.side_effect = [True]
         mock_get_oauth_service.side_effect = [oauth_service]
