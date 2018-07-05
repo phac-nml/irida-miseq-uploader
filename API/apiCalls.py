@@ -23,48 +23,20 @@ from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
 
 
-# class ApiSingletonDecorator:
-#     def __init__(self, klass):
-#         self.klass = klass
-#         self.instance = None
-#
-#     def __call__(self, client_id, client_secret, base_URL, username, password, max_wait_time=20):
-#         print("__call__")
-#         if not self.instance or self._parameters_are_different(
-#                 client_id, client_secret, base_URL,username, password, max_wait_time):
-#             print("__new vars needed__")
-#             self.instance = self.klass(client_id, client_secret, base_URL,username, password, max_wait_time)
-#         return self.instance
-#
-#     def _parameters_are_different(self, client_id, client_secret, base_URL, username, password, max_wait_time):
-#         if (self.instance.client_id != client_id or
-#             self.instance.client_secret != client_secret or
-#             self.instance.base_URL != base_URL or
-#             self.instance.username != username or
-#             self.instance.password != password or
-#             self.instance.max_wait_time != max_wait_time):
-#             return True
-#         return False
-
-    # def create_session(self):
-    #     return self.instance.create_session()
-
-
-# @ApiSingletonDecorator
 class ApiCalls(object):
 
     _instance = None
 
-    # Overriding __new__ to impliment a singleton so that mocking still works for class.
+    # Overriding __new__ to implement a singleton so that mocking still works for class.
     # This may be a rare case where the hammer is actually a good tool.
     def __new__(cls, client_id, client_secret, base_URL, username, password, max_wait_time=20):
-        print("__call__")
         if not ApiCalls._instance or ApiCalls._instance.parameters_are_different(
                 client_id, client_secret, base_URL,username, password, max_wait_time):
-            print("__new vars needed__")
+
+            # Create a new instance of the API
             ApiCalls._instance = object.__new__(cls)
 
-            print("__INIT ApiCalls")
+            # initialize API
             ApiCalls._instance.client_id = client_id
             ApiCalls._instance.client_secret = client_secret
             ApiCalls._instance.base_URL = base_URL
@@ -80,42 +52,13 @@ class ApiCalls(object):
 
         return ApiCalls._instance
 
-    # def __init__(self, client_id, client_secret, base_URL, username, password, max_wait_time=20):
-    #     """
-    #     Create OAuth2Session and store it
-    #
-    #     arguments:
-    #         client_id -- client_id for creating access token.
-    #         client_secret -- client_secret for creating access token.
-    #         base_URL -- url of the IRIDA server
-    #         username -- username for server
-    #         password -- password for given username
-    #
-    #     return ApiCalls object
-    #     """
-    #     print("__INIT ApiCalls")
-    #     self.client_id = client_id
-    #     self.client_secret = client_secret
-    #     self.base_URL = base_URL
-    #     self.username = username
-    #     self.password = password
-    #     self.max_wait_time = max_wait_time
-    #
-    #     self._session_lock = threading.Lock()
-    #     self._session_set_externally = False
-    #     self.create_session()
-    #     self.cached_projects = None
-    #     self.cached_samples = {}
-
     def parameters_are_different(self, client_id, client_secret, base_URL, username, password, max_wait_time):
-        if (self._instance.client_id != client_id or
-            self._instance.client_secret != client_secret or
-            self._instance.base_URL != base_URL or
-            self._instance.username != username or
-            self._instance.password != password or
-            self._instance.max_wait_time != max_wait_time):
-            return True
-        return False
+        return (self.client_id != client_id or
+                self.client_secret != client_secret or
+                self.base_URL != base_URL or
+                self.username != username or
+                self.password != password or
+                self.max_wait_time != max_wait_time)
 
     @property
     def session(self):
