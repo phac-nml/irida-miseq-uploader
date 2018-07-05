@@ -38,7 +38,7 @@ class TestApiCalls(unittest.TestCase):
         mock_cs.side_effect = [None]
 
         api = API.apiCalls.ApiCalls("", "", "", "", "")
-        validate_URL = api.Instance.validate_URL_existence
+        validate_URL = api.validate_URL_existence
 
         url = "http://google.com"
         valid = True
@@ -990,7 +990,7 @@ class TestApiCalls(unittest.TestCase):
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
-        setattr(session_response, "text", 
+        setattr(session_response, "text",
                 "An entity already exists with that identifier")
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
@@ -999,7 +999,7 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})        
+        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)
         sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
