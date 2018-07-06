@@ -27,16 +27,22 @@ class ApiCalls(object):
 
     _instance = None
 
-    # Overriding __new__ to implement a singleton so that mocking still works for class.
-    # This may be a rare case where the hammer is actually a good tool.
     def __new__(cls, client_id, client_secret, base_URL, username, password, max_wait_time=20):
+        """
+            Overriding __new__ to implement a singleton
+            This is done instead of a decorator so that mocking still works for class.
+            If the instance has not been created yet, or the passed in arguments are different, create a new instance,
+                and drop the old (if existing) instance
+            If the instance already exists and is valid, return the instance
+        """
+
         if not ApiCalls._instance or ApiCalls._instance.parameters_are_different(
                 client_id, client_secret, base_URL,username, password, max_wait_time):
 
             # Create a new instance of the API
             ApiCalls._instance = object.__new__(cls)
 
-            # initialize API
+            # initialize API instance variables
             ApiCalls._instance.client_id = client_id
             ApiCalls._instance.client_secret = client_secret
             ApiCalls._instance.base_URL = base_URL
@@ -44,6 +50,7 @@ class ApiCalls(object):
             ApiCalls._instance.password = password
             ApiCalls._instance.max_wait_time = max_wait_time
 
+            # initialize API object
             ApiCalls._instance._session_lock = threading.Lock()
             ApiCalls._instance._session_set_externally = False
             ApiCalls._instance.create_session()
@@ -53,6 +60,10 @@ class ApiCalls(object):
         return ApiCalls._instance
 
     def parameters_are_different(self, client_id, client_secret, base_URL, username, password, max_wait_time):
+        """
+        Compare the current instance variables with a new set of variables
+        """
+
         return (self.client_id != client_id or
                 self.client_secret != client_secret or
                 self.base_URL != base_URL or
