@@ -64,12 +64,18 @@ class ApiCalls(object):
         Compare the current instance variables with a new set of variables
         """
 
-        return (self.client_id != client_id or
-                self.client_secret != client_secret or
-                self.base_URL != base_URL or
-                self.username != username or
-                self.password != password or
-                self.max_wait_time != max_wait_time)
+        result = (self.client_id != client_id or
+                 self.client_secret != client_secret or
+                 self.base_URL != base_URL or
+                 self.username != username or
+                 self.password != password or
+                 self.max_wait_time != max_wait_time)
+
+        if result:
+            logging.warning("ApiCalls session instance parameters are different, "
+                            "a new session instance will be created")
+
+        return result
 
     @property
     def session(self):
