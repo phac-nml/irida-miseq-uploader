@@ -26,6 +26,10 @@ class TestApiCalls(unittest.TestCase):
     def setUp(self):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
+        print "\nResetting api"
+        # Sets api params to "reset" so a new instance is created when the test
+        # initializes the api with the parameters it needs for the test
+        api = API.apiCalls("reset", "reset", "reset", "reset", "reset")
 
     @patch("API.apiCalls.urlopen")
     @patch("API.apiCalls.ApiCalls.create_session")
