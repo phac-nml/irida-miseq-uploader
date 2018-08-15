@@ -34,6 +34,15 @@ class ApiCalls(object):
             If the instance has not been created yet, or the passed in arguments are different, create a new instance,
                 and drop the old (if existing) instance
             If the instance already exists and is valid, return the instance
+
+            arguments:
+                client_id -- client_id for creating access token.
+                client_secret -- client_secret for creating access  token.
+                base_URL -- url of the IRIDA server
+                username -- username for server
+                password -- password for given username
+                max_wait_time -- timeout (seconds), default=20
+
         """
 
         if not ApiCalls._instance or ApiCalls._instance.parameters_are_different(
