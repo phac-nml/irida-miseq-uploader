@@ -69,7 +69,7 @@ class ApiCalls(object):
         return ApiCalls._instance
 
     @classmethod
-    def close():
+    def close(cls):
         """
         Close the current session by setting the current instance to None so
         the next call with re-initialize the session
