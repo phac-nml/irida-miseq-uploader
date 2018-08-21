@@ -68,6 +68,14 @@ class ApiCalls(object):
 
         return ApiCalls._instance
 
+    @classmethod
+    def close():
+        """
+        Close the current session by setting the current instance to None so
+        the next call with re-initialize the session
+        """
+        ApiCalls._instance = None
+
     def parameters_are_different(self, client_id, client_secret, base_URL, username, password, max_wait_time):
         """
         Compare the current instance variables with a new set of variables
