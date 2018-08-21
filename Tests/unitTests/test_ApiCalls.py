@@ -29,7 +29,7 @@ class TestApiCalls(unittest.TestCase):
         print "\nResetting api"
         # Sets api params to "reset" so a new instance is created when the test
         # initializes the api with the parameters it needs for the test
-        API.apiCalls.ApiCalls.close()
+        API.apiCalls.ApiCalls().close()
 
     @patch("API.apiCalls.urlopen")
     @patch("API.apiCalls.ApiCalls.create_session")
