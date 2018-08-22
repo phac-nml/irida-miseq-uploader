@@ -26,6 +26,10 @@ class TestApiCalls(unittest.TestCase):
     def setUp(self):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
+        print "\nResetting api"
+        # Sets api params to "reset" so a new instance is created when the test
+        # initializes the api with the parameters it needs for the test
+        API.apiCalls.ApiCalls.close()
 
     @patch("API.apiCalls.urlopen")
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -116,7 +120,7 @@ class TestApiCalls(unittest.TestCase):
         mock_get_access_token.side_effect = [access_token]
         mock_validate_url_existence.side_effect = [True]
 
-        base_URL1 = "http://localhost:8080"
+        base_URL1 = "http://localhost:8082"
         api1 = API.apiCalls.ApiCalls(
             client_id="",
             client_secret="",
@@ -157,6 +161,51 @@ class TestApiCalls(unittest.TestCase):
 
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
+
+    # This test validates that the api is a singleton, and does not make extra requests when re-init with same params
+    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("API.apiCalls.ApiCalls.get_access_token")
+    @patch("API.apiCalls.ApiCalls.get_oauth_service")
+    @patch("API.apiCalls.validate_URL_form")
+    def test_create_session_back_to_back(
+            self, mock_validate_url_form,
+            mock_get_oauth_service, mock_get_access_token,
+            mock_validate_url_existence):
+        oauth_service = Foo()
+        access_token = Foo()
+        setattr(oauth_service, "get_session", lambda x: "newSession3")
+
+        mock_validate_url_form.side_effect = [True]
+        mock_get_oauth_service.side_effect = [oauth_service]
+        mock_get_access_token.side_effect = [access_token]
+        mock_validate_url_existence.side_effect = [True]
+
+        base_URL3 = "http://localhost:8083/"
+        api3 = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL=base_URL3,
+            username="",
+            password=""
+        )
+
+        mock_validate_url_existence.assert_called_with(
+            base_URL3, use_session=True)
+
+        api4 = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL=base_URL3,
+            username="",
+            password=""
+        )
+
+        # Should only call the server once, when having the same parameters
+        mock_validate_url_existence.assert_called_once_with(
+            base_URL3, use_session=True)
+
+        # Should have the same API
+        self.assertTrue(api3 is api4)
 
     @patch("API.apiCalls.validate_URL_form")
     def test_create_session_invalid_form(self, mock_validate_url_form):
@@ -990,7 +1039,7 @@ class TestApiCalls(unittest.TestCase):
 
         session_response = Foo()
         setattr(session_response, "status_code", httplib.CONFLICT)
-        setattr(session_response, "text", 
+        setattr(session_response, "text",
                 "An entity already exists with that identifier")
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
@@ -999,7 +1048,7 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})        
+        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})
         seq_file = SequenceFile({}, [])
         sample.set_seq_file(seq_file)
         sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
