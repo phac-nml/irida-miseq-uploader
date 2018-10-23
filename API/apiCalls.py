@@ -11,6 +11,7 @@ import logging
 import threading
 
 from rauth import OAuth2Service
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError as request_HTTPError
 
 from Model.Project import Project
@@ -110,7 +111,9 @@ class ApiCalls(object):
             logging.debug("Token is probably expired, going to get a new session.")
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
+
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_408_backoff(new_session)
         finally:
             self._session_lock.release()
 
@@ -134,12 +137,34 @@ class ApiCalls(object):
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
+
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_408_backoff(new_session)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is False:
                 raise Exception("Cannot create session. Verify your credentials are correct.")
         else:
             raise URLError(self.base_URL + " is not a valid URL")
+
+    def add_408_backoff(self, new_session):
+        # method stolen from https://www.programcreek.com/python/example/102997/requests.adapters example 3
+        # Adds a retry counter and backoff to requests that timeout
+        try:
+            # Some older versions of requests to not have the urllib3
+            # vendorized package
+            from requests.packages.urllib3.util.retry import Retry
+        except ImportError:
+            retries = 5
+        else:
+            # use a requests session to reuse connections between requests
+            retries = Retry(
+                total=5,
+                backoff_factor=.4,
+                status_forcelist=[408]
+            )
+        new_session.mount('https://', HTTPAdapter(max_retries=retries))
+        new_session.mount('http://', HTTPAdapter(max_retries=retries))
+        return new_session
 
     def get_oauth_service(self):
         """
