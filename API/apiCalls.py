@@ -113,7 +113,7 @@ class ApiCalls(object):
             access_token = self.get_access_token(oauth_service)
 
             new_session = oauth_service.get_session(access_token)
-            self._session = self.add_408_backoff(new_session)
+            self._session = self.add_timeout_backoff(new_session)
         finally:
             self._session_lock.release()
 
@@ -139,14 +139,14 @@ class ApiCalls(object):
             access_token = self.get_access_token(oauth_service)
 
             new_session = oauth_service.get_session(access_token)
-            self._session = self.add_408_backoff(new_session)
+            self._session = self.add_timeout_backoff(new_session)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is False:
                 raise Exception("Cannot create session. Verify your credentials are correct.")
         else:
             raise URLError(self.base_URL + " is not a valid URL")
 
-    def add_408_backoff(self, new_session):
+    def add_timeout_backoff(self, new_session):
         # method stolen from https://www.programcreek.com/python/example/102997/requests.adapters example 3
         # Adds a retry counter and backoff to requests that timeout
         try:
@@ -160,7 +160,7 @@ class ApiCalls(object):
             retries = Retry(
                 total=5,
                 backoff_factor=1,
-                status_forcelist=[408]
+                status_forcelist=[408, 504, 522, 524]
             )
         new_session.mount('https://', HTTPAdapter(max_retries=retries))
         new_session.mount('http://', HTTPAdapter(max_retries=retries))
