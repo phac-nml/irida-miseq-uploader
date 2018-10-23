@@ -159,7 +159,7 @@ class ApiCalls(object):
             # use a requests session to reuse connections between requests
             retries = Retry(
                 total=5,
-                backoff_factor=.4,
+                backoff_factor=1,
                 status_forcelist=[408]
             )
         new_session.mount('https://', HTTPAdapter(max_retries=retries))
