@@ -159,6 +159,7 @@ class ApiCalls(object):
             # use a requests session to reuse connections between requests
             retries = Retry(
                 total=5,
+                read=5,
                 backoff_factor=1,
                 status_forcelist=[408, 504, 522, 524]
             )
