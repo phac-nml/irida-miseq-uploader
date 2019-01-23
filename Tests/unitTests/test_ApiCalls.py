@@ -102,6 +102,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(is_valid, valid)
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -109,7 +110,7 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_valid_base_url_no_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
-            mock_validate_url_existence):
+            mock_validate_url_existence, mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -132,6 +133,7 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL1 + "/", use_session=True)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -139,7 +141,7 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_valid_base_url_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
-            mock_validate_url_existence):
+            mock_validate_url_existence, mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -163,6 +165,7 @@ class TestApiCalls(unittest.TestCase):
             base_URL2, use_session=True)
 
     # This test validates that the api is a singleton, and does not make extra requests when re-init with same params
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -170,7 +173,8 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_back_to_back(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
-            mock_validate_url_existence):
+            mock_validate_url_existence,
+            mock_add_timeout_backoff):
         oauth_service = Foo()
         access_token = Foo()
         setattr(oauth_service, "get_session", lambda x: "newSession3")
@@ -225,6 +229,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("not a valid URL" in str(err.exception))
         mock_validate_url_form.assert_called_with(base_URL)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -232,7 +237,8 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_invalid_session(self, mock_validate_url_form,
                                             mock_get_oauth_service,
                                             mock_get_access_token,
-                                            mock_validate_url_existence):
+                                            mock_validate_url_existence,
+                                            mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()

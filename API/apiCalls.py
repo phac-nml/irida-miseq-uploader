@@ -11,6 +11,7 @@ import logging
 import threading
 
 from rauth import OAuth2Service
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError as request_HTTPError
 
 from Model.Project import Project
@@ -22,6 +23,9 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
 
+
+HTTP_MAX_RETRIES = 5
+HTTP_BACKOFF_FACTOR = 1
 
 class ApiCalls(object):
 
@@ -110,7 +114,9 @@ class ApiCalls(object):
             logging.debug("Token is probably expired, going to get a new session.")
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
+
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_timeout_backoff(new_session)
         finally:
             self._session_lock.release()
 
@@ -128,18 +134,46 @@ class ApiCalls(object):
         returns session (OAuth2Session object)
         """
 
+        self.cached_projects = None
+        # set http backoff option
+        self.http_max_retries = HTTP_MAX_RETRIES
+        self.http_backoff_factor = HTTP_BACKOFF_FACTOR
+
         if self.base_URL[-1:] != "/":
             self.base_URL = self.base_URL + "/"
 
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
+
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_timeout_backoff(new_session)
 
             if self.validate_URL_existence(self.base_URL, use_session=True) is False:
                 raise Exception("Cannot create session. Verify your credentials are correct.")
         else:
             raise URLError(self.base_URL + " is not a valid URL")
+
+    def add_timeout_backoff(self, new_session):
+        # method stolen from https://www.programcreek.com/python/example/102997/requests.adapters example 3
+        # Adds a retry counter and backoff to requests that timeout
+        try:
+            # Some older versions of requests to not have the urllib3
+            # vendorized package
+            from requests.packages.urllib3.util.retry import Retry
+        except ImportError:
+            retries = self.http_max_retries
+        else:
+            # use a requests session to reuse connections between requests
+            retries = Retry(
+                total=self.http_max_retries,
+                read=self.http_max_retries,
+                backoff_factor=self.http_backoff_factor,
+                status_forcelist=[408, 504, 522, 524]
+            )
+        new_session.mount('https://', HTTPAdapter(max_retries=retries))
+        new_session.mount('http://', HTTPAdapter(max_retries=retries))
+        return new_session
 
     def get_oauth_service(self):
         """
@@ -713,7 +747,7 @@ class ApiCalls(object):
             e = SequenceFileError("Error {status_code}: {err_msg}\n".format(
                        status_code=str(response.status_code),
                        err_msg=response.reason))
-            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
+            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), e))
             logging.info(response.text)
             send_message(sample.upload_failed_topic, exception=e)
             raise e
