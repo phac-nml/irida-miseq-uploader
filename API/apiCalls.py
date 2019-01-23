@@ -24,6 +24,9 @@ from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
 
 
+HTTP_MAX_RETRIES = 5
+HTTP_BACKOFF_FACTOR = 1
+
 class ApiCalls(object):
 
     _instance = None
@@ -131,6 +134,11 @@ class ApiCalls(object):
         returns session (OAuth2Session object)
         """
 
+        self.cached_projects = None
+        # set http backoff option
+        self.http_max_retries = HTTP_MAX_RETRIES
+        self.http_backoff_factor = HTTP_BACKOFF_FACTOR
+
         if self.base_URL[-1:] != "/":
             self.base_URL = self.base_URL + "/"
 
@@ -154,13 +162,13 @@ class ApiCalls(object):
             # vendorized package
             from requests.packages.urllib3.util.retry import Retry
         except ImportError:
-            retries = 5
+            retries = self.http_max_retries
         else:
             # use a requests session to reuse connections between requests
             retries = Retry(
-                total=5,
-                read=5,
-                backoff_factor=1,
+                total=self.http_max_retries,
+                read=self.http_max_retries,
+                backoff_factor=self.http_backoff_factor,
                 status_forcelist=[408, 504, 522, 524]
             )
         new_session.mount('https://', HTTPAdapter(max_retries=retries))
@@ -739,7 +747,7 @@ class ApiCalls(object):
             e = SequenceFileError("Error {status_code}: {err_msg}\n".format(
                        status_code=str(response.status_code),
                        err_msg=response.reason))
-            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
+            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), e))
             logging.info(response.text)
             send_message(sample.upload_failed_topic, exception=e)
             raise e
