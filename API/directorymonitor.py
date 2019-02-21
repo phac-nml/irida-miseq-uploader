@@ -1,69 +1,124 @@
 import os
 import logging
+import time
+import threading
 
 from wx.lib.pubsub import pub
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileCreatedEvent
-
 from API.pubsub import send_message
 from API.directoryscanner import find_runs_in_directory
-from GUI.SettingsDialog import SettingsDialog
+
+toMonitor = True
+TIMEBETWEENMONITOR = 120
 
 class DirectoryMonitorTopics(object):
     """Topics for monitoring directories for new runs."""
     new_run_observed = "new_run_observed"
     finished_discovering_run = "finished_discovering_run"
     shut_down_directory_monitor = "shut_down_directory_monitor"
+    start_up_directory_monitor = "start_up_directory_monitor"
+    finished_uploading_run = "finished_uploading_run"
 
-class CompletedJobInfoEventHandler(FileSystemEventHandler):
-    """A subclass of watchdog.events.FileSystemEventHandler that will run
-    a directory scan on the monitored directory. This will filter explicitly on
-    a file creation event for a file with the name `CompletedJobInfo.xml`."""
+class RunMonitor(threading.Thread):
+    """A convenience thread wrapper for monitoring a directory for runs"""
 
-    def on_created(self, event):
-        """Overrides `on_created` in `FileSystemEventHandler` to filter on
-        file creation events for `CompletedJobInfo.xml`."""
+    def __init__(self, directory, cond, name="RunMonitorThread"):
+        """Initialize a `RunMonitor`"""
+        self._directory = directory
+        self._condition = cond
+        super(RunMonitor, self).__init__(name=name)
 
-        if isinstance(event, FileCreatedEvent) and event.src_path.endswith('CompletedJobInfo.xml'):
-            logging.info("Observed new run in {}, telling the UI to start uploading it.".format(event.src_path))
-            directory = os.path.dirname(event.src_path)
-            # tell the UI to clean itself up before observing new runs
-            send_message(DirectoryMonitorTopics.new_run_observed)
+    def run(self):
+        """Initiate directory monitor. The monitor checks the default
+        directory every 2 minutes
+        """
+        monitor_directory(self._directory, self._condition)
 
-            # this will send a bunch of events that the UI is listening for, but
-            # unlike the UI (which runs this in a separate thread), we're going to do this
-            # in our own thread and block on it so we can tell the UI to start
-            # uploading once we've finished discovering the run
-            find_runs_in_directory(directory)
+    def join(self, timeout=None):
+        """Kill the thread"""
+        global toMonitor
+        logging.info("going to kill monitoring")
+        toMonitor = False
+        threading.Thread.join(self, timeout)
 
-            # now tell the UI to start
-            send_message(DirectoryMonitorTopics.finished_discovering_run)
-        else:
-            logging.debug("Ignoring file event [{}] with path [{}]".format(str(event), event.src_path))
 
-def monitor_directory(directory):
-    """Starts monitoring the specified directory in a background thread. File events
-    will be passed to the `CompletedJobInfoEventHandler`.
 
-    Arguments:
-        directory: the directory to monitor.
+def on_created(directory, cond):
+    """When a CompletedJobInfo.xml file is found without a .miseqUploaderInfo file,
+    an automatic upload is triggered
     """
-    observer = Observer()
+    logging.info("Observed new run in {}, telling the UI to start uploading it.".format(directory))
+    directory = os.path.dirname(directory)
+    # tell the UI to clean itself up before observing new runs
+    send_message(DirectoryMonitorTopics.new_run_observed)
+    if toMonitor:
+        find_runs_in_directory(directory)
+    # check if monitoring is still "on" after returning from find_runs_in_directory()
+    if toMonitor:
+        send_message(DirectoryMonitorTopics.finished_discovering_run)
+        # using locks to prevent the monitor from running while an upload is happening.
+        cond.acquire()
+        cond.wait()
+        cond.release()
+        send_message(DirectoryMonitorTopics.finished_uploading_run)
 
+
+
+def monitor_directory(directory, cond):
+    """Calls the function searches the default directory every 2 minutes unless
+    monitoring is no longer required
+    """
+    global toMonitor
     logging.info("Getting ready to monitor directory {}".format(directory))
-    event_handler = CompletedJobInfoEventHandler()
-    observer.schedule(event_handler, directory, recursive=True)
-
-    def stop_monitoring(*args, **kwargs):
-        """Tells watchdog to stop watching the directory when the newly processed run
-        was discovered."""
-        logging.info("Halting monitoring on directory because run was discovered.")
-        observer.stop()
-        observer.join()
-
-    pub.subscribe(stop_monitoring, SettingsDialog.settings_closed_topic)
-    pub.subscribe(stop_monitoring, DirectoryMonitorTopics.new_run_observed)
+    
     pub.subscribe(stop_monitoring, DirectoryMonitorTopics.shut_down_directory_monitor)
+    pub.subscribe(start_monitoring, DirectoryMonitorTopics.start_up_directory_monitor)
+    time.sleep(10)
+    while toMonitor:
+        search_for_upload(directory, cond)
+        i = 0
+        while toMonitor and i < TIMEBETWEENMONITOR:
+            time.sleep(10)
+            i = i+10
 
-    observer.start()
+def search_for_upload(directory, cond):
+    """loop through subdirectories of the default directory looking for CompletedJobInfo.xml without
+    .miseqUploaderInfo files.
+    """
+    global toMonitor
+
+    if not os.access(directory, os.W_OK):
+        logging.warning("Could not access directory while monitoring for samples, directory is not writeable {}".format(directory))
+        return
+
+    root = next(os.walk(directory))[0]
+    dirs = next(os.walk(directory))[1]
+    for name in dirs:
+        check_for_comp_job = os.path.join(root, name, "CompletedJobInfo.xml")
+        check_for_miseq = os.path.join(root, name, ".miseqUploaderInfo")
+
+        if os.path.isfile(check_for_comp_job):
+            if not os.path.isfile(check_for_miseq):
+                path_to_upload = check_for_comp_job
+                if toMonitor:
+                    on_created(path_to_upload, cond)
+                # After upload, start back at the start of directories
+                return
+        # Check each step of loop if monitoring is still required
+        if not toMonitor:
+            return
+    return
+
+def stop_monitoring():
+    """Stop directory monitoring by setting toMonitor to False"""
+    global toMonitor
+    if toMonitor:
+        logging.info("Halting monitoring on directory.")
+    toMonitor = False
+
+def start_monitoring():
+    """Restart directory monitoring by setting toMonitor to True"""
+    global toMonitor
+    if not toMonitor:
+        logging.info("Restarting monitor on directory")
+    toMonitor = True

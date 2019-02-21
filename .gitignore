@@ -12,3 +12,6 @@ pynsist_pkgs
 wxPython*
 .virtualenv
 .cache
+.idea/
+.python-version
+.pytest_cache/

@@ -3,10 +3,9 @@ rauth==0.7.1
 selenium==2.46.0
 autopep8==1.1.1
 pep8==1.6.2
-requests==2.5.1
+requests>=2.20.0
 appdirs==1.4.0
 pynsist==1.7
 pytest
 github3.py==0.9.3
-watchdog
 mkdocs

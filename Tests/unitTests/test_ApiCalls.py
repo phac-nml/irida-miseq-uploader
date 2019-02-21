@@ -26,6 +26,10 @@ class TestApiCalls(unittest.TestCase):
     def setUp(self):
 
         print "\nStarting " + self.__module__ + ": " + self._testMethodName
+        print "\nResetting api"
+        # Sets api params to "reset" so a new instance is created when the test
+        # initializes the api with the parameters it needs for the test
+        API.apiCalls.ApiCalls.close()
 
     @patch("API.apiCalls.urlopen")
     @patch("API.apiCalls.ApiCalls.create_session")
@@ -98,6 +102,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertEqual(is_valid, valid)
         API.apiCalls.urlopen.assert_called_with(url, timeout=api.max_wait_time)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -105,7 +110,7 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_valid_base_url_no_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
-            mock_validate_url_existence):
+            mock_validate_url_existence, mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -116,7 +121,7 @@ class TestApiCalls(unittest.TestCase):
         mock_get_access_token.side_effect = [access_token]
         mock_validate_url_existence.side_effect = [True]
 
-        base_URL1 = "http://localhost:8080"
+        base_URL1 = "http://localhost:8082"
         api1 = API.apiCalls.ApiCalls(
             client_id="",
             client_secret="",
@@ -128,6 +133,7 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL1 + "/", use_session=True)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -135,7 +141,7 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_valid_base_url_slash(
             self, mock_validate_url_form,
             mock_get_oauth_service, mock_get_access_token,
-            mock_validate_url_existence):
+            mock_validate_url_existence, mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -158,6 +164,53 @@ class TestApiCalls(unittest.TestCase):
         mock_validate_url_existence.assert_called_with(
             base_URL2, use_session=True)
 
+    # This test validates that the api is a singleton, and does not make extra requests when re-init with same params
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
+    @patch("API.apiCalls.ApiCalls.validate_URL_existence")
+    @patch("API.apiCalls.ApiCalls.get_access_token")
+    @patch("API.apiCalls.ApiCalls.get_oauth_service")
+    @patch("API.apiCalls.validate_URL_form")
+    def test_create_session_back_to_back(
+            self, mock_validate_url_form,
+            mock_get_oauth_service, mock_get_access_token,
+            mock_validate_url_existence,
+            mock_add_timeout_backoff):
+        oauth_service = Foo()
+        access_token = Foo()
+        setattr(oauth_service, "get_session", lambda x: "newSession3")
+
+        mock_validate_url_form.side_effect = [True]
+        mock_get_oauth_service.side_effect = [oauth_service]
+        mock_get_access_token.side_effect = [access_token]
+        mock_validate_url_existence.side_effect = [True]
+
+        base_URL3 = "http://localhost:8083/"
+        api3 = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL=base_URL3,
+            username="",
+            password=""
+        )
+
+        mock_validate_url_existence.assert_called_with(
+            base_URL3, use_session=True)
+
+        api4 = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL=base_URL3,
+            username="",
+            password=""
+        )
+
+        # Should only call the server once, when having the same parameters
+        mock_validate_url_existence.assert_called_once_with(
+            base_URL3, use_session=True)
+
+        # Should have the same API
+        self.assertTrue(api3 is api4)
+
     @patch("API.apiCalls.validate_URL_form")
     def test_create_session_invalid_form(self, mock_validate_url_form):
 
@@ -176,6 +229,7 @@ class TestApiCalls(unittest.TestCase):
         self.assertTrue("not a valid URL" in str(err.exception))
         mock_validate_url_form.assert_called_with(base_URL)
 
+    @patch("API.apiCalls.ApiCalls.add_timeout_backoff")
     @patch("API.apiCalls.ApiCalls.validate_URL_existence")
     @patch("API.apiCalls.ApiCalls.get_access_token")
     @patch("API.apiCalls.ApiCalls.get_oauth_service")
@@ -183,7 +237,8 @@ class TestApiCalls(unittest.TestCase):
     def test_create_session_invalid_session(self, mock_validate_url_form,
                                             mock_get_oauth_service,
                                             mock_get_access_token,
-                                            mock_validate_url_existence):
+                                            mock_validate_url_existence,
+                                            mock_add_timeout_backoff):
 
         oauth_service = Foo()
         access_token = Foo()
@@ -935,6 +990,47 @@ class TestApiCalls(unittest.TestCase):
                         in str(err.exception))
 
     @patch("API.apiCalls.ApiCalls.create_session")
+    def test_send_samples_invalid_sample_name(self, mock_cs):
+        mock_cs.side_effect = [None]
+
+        api = API.apiCalls.ApiCalls(
+            client_id="",
+            client_secret="",
+            base_URL="",
+            username="",
+            password=""
+        )
+
+        session_response = Foo()
+        setattr(session_response, "status_code", httplib.BAD_REQUEST)
+        setattr(session_response, "text", "\"sampleName\":[\"Sample name must be at least 3 characters long.\"]")
+
+        session_post = MagicMock(side_effect=[session_response])
+        session = Foo()
+        setattr(session, "post", session_post)
+
+        api.get_link = lambda x, y, targ_dict="": None
+        api.session = session
+
+        sample_dict = {
+            "sequencerSampleId": "33",
+            "description": "The 53rd sample",
+            "sampleName": "33",
+            "sampleProject": "1"
+        }
+
+        sample = API.apiCalls.Sample(sample_dict)
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
+        sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
+
+        with self.assertRaises(API.apiCalls.SampleError) as err:
+            api.send_samples([sample])
+
+        self.assertTrue("Sample name must be at least 3 characters long." in str(err.exception))
+
+    @patch("API.apiCalls.ApiCalls.create_session")
     def test_send_samples_invalid_server_res(self, mock_cs):
 
         mock_cs.side_effect = [None]
@@ -951,7 +1047,6 @@ class TestApiCalls(unittest.TestCase):
         setattr(session_response, "status_code", httplib.CONFLICT)
         setattr(session_response, "text",
                 "An entity already exists with that identifier")
-
         session_post = MagicMock(side_effect=[session_response])
         session = Foo()
         setattr(session, "post", session_post)
@@ -959,8 +1054,11 @@ class TestApiCalls(unittest.TestCase):
         api.session = session
         api.get_link = lambda x, y, targ_dict="": None
 
-        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "1"})
-
+        sample = API.apiCalls.Sample({"sampleProject": "1", "sampleName": "123"})
+        seq_file = SequenceFile({}, [])
+        sample.set_seq_file(seq_file)
+        sample.run = SequencingRun(sample_sheet="sheet", sample_list=[sample])
+    	sample.run._sample_sheet_name = "sheet"
         with self.assertRaises(API.apiCalls.SampleError) as err:
             api.send_samples([sample])
 

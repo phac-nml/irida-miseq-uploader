@@ -23,7 +23,7 @@ class SetupIridaData:
         self.IRIDA_PASSWORD_ID = 'password_client'
         self.IRIDA_AUTH_CODE_ID = 'auth_code_client'
         self.IRIDA_USER = "admin"
-        self.IRIDA_PASSWORD = "Password1"  # new password
+        self.IRIDA_PASSWORD = "Password1!"  # new password
 
         self.TIMEOUT = 600  # seconds
 

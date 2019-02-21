@@ -11,7 +11,7 @@ fi
 pushd repos
 
 echo "Downloading IRIDA..."
-if ! git clone http://irida.corefacility.ca/gitlab/irida/irida.git
+if ! git clone https://github.com/phac-nml/irida.git
 then
     echo >&2 "Failed to clone"
     exit 1

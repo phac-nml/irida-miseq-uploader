@@ -169,12 +169,12 @@ class TestOfflineValidation(unittest.TestCase):
         self.assertEqual(v_res.error_count(), 2)
 
         expected_err_msg1 = (
-            "{sid} missing Project ID").format(
+            "{sid} has an error with Project ID").format(
                 sid=sample1.get_id())
         self.assertIn(expected_err_msg1, v_res.get_errors())
 
         expected_err_msg2 = (
-            "{sid} missing Sample Name").format(
+            "{sid} has an error with Sample Name").format(
                 sid=sample2.get_id())
         self.assertIn(expected_err_msg2, v_res.get_errors())
 

@@ -1,3 +1,12 @@
+2.0.0 to 2.1.4
+==============
+* Internal Changes to how threads are started and killed
+* Added a timeout + retry to calls to IRIDA, so dropped conections will be retried.
+* Updated the `requests` library for security patch
+* Changed the api layer to use a singleton so multiple instances of the api are not spun off.
+* Small bug fixes for GUI
+* Fixed UI hanging when recursive directories are searched for runs.
+
 1.7.0 to 2.0.0
 ==============
 * The UI is completely rewritten to better show what's happened with samples as they're uploaded, and to facilitate quality control implementation later.

@@ -11,6 +11,7 @@ import logging
 import threading
 
 from rauth import OAuth2Service
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError as request_HTTPError
 
 from Model.Project import Project
@@ -22,35 +23,80 @@ from Exceptions.SampleSheetError import SampleSheetError
 from Validation.offlineValidation import validate_URL_form
 from API.pubsub import send_message
 
+
+HTTP_MAX_RETRIES = 5
+HTTP_BACKOFF_FACTOR = 1
+
 class ApiCalls(object):
 
-    def __init__(self, client_id, client_secret,
-                 base_URL, username, password, max_wait_time=20):
+    _instance = None
+
+    def __new__(cls, client_id, client_secret, base_URL, username, password, max_wait_time=20):
         """
-        Create OAuth2Session and store it
+            Overriding __new__ to implement a singleton
+            This is done instead of a decorator so that mocking still works for class.
+            If the instance has not been created yet, or the passed in arguments are different, create a new instance,
+                and drop the old (if existing) instance
+            If the instance already exists and is valid, return the instance
 
-        arguments:
-            client_id -- client_id for creating access token.
-            client_secret -- client_secret for creating access token.
-            base_URL -- url of the IRIDA server
-            username -- username for server
-            password -- password for given username
+            arguments:
+                client_id -- client_id for creating access token.
+                client_secret -- client_secret for creating access  token.
+                base_URL -- url of the IRIDA server
+                username -- username for server
+                password -- password for given username
+                max_wait_time -- timeout (seconds), default=20
 
-        return ApiCalls object
         """
 
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.base_URL = base_URL
-        self.username = username
-        self.password = password
-        self.max_wait_time = max_wait_time
+        if not ApiCalls._instance or ApiCalls._instance.parameters_are_different(
+                client_id, client_secret, base_URL,username, password, max_wait_time):
 
-        self._session_lock = threading.Lock()
-        self._session_set_externally = False
-        self.create_session()
-        self.cached_projects = None
-        self.cached_samples = {}
+            # Create a new instance of the API
+            ApiCalls._instance = object.__new__(cls)
+
+            # initialize API instance variables
+            ApiCalls._instance.client_id = client_id
+            ApiCalls._instance.client_secret = client_secret
+            ApiCalls._instance.base_URL = base_URL
+            ApiCalls._instance.username = username
+            ApiCalls._instance.password = password
+            ApiCalls._instance.max_wait_time = max_wait_time
+
+            # initialize API object
+            ApiCalls._instance._session_lock = threading.Lock()
+            ApiCalls._instance._session_set_externally = False
+            ApiCalls._instance.create_session()
+            ApiCalls._instance.cached_projects = None
+            ApiCalls._instance.cached_samples = {}
+
+        return ApiCalls._instance
+
+    @classmethod
+    def close(cls):
+        """
+        Close the current session by setting the current instance to None so
+        the next call with re-initialize the session
+        """
+        ApiCalls._instance = None
+
+    def parameters_are_different(self, client_id, client_secret, base_URL, username, password, max_wait_time):
+        """
+        Compare the current instance variables with a new set of variables
+        """
+
+        result = (self.client_id != client_id or
+                 self.client_secret != client_secret or
+                 self.base_URL != base_URL or
+                 self.username != username or
+                 self.password != password or
+                 self.max_wait_time != max_wait_time)
+
+        if result:
+            logging.warning("ApiCalls session instance parameters are different, "
+                            "a new session instance will be created")
+
+        return result
 
     @property
     def session(self):
@@ -68,7 +114,9 @@ class ApiCalls(object):
             logging.debug("Token is probably expired, going to get a new session.")
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
+
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_timeout_backoff(new_session)
         finally:
             self._session_lock.release()
 
@@ -86,21 +134,46 @@ class ApiCalls(object):
         returns session (OAuth2Session object)
         """
 
+        self.cached_projects = None
+        # set http backoff option
+        self.http_max_retries = HTTP_MAX_RETRIES
+        self.http_backoff_factor = HTTP_BACKOFF_FACTOR
+
         if self.base_URL[-1:] != "/":
             self.base_URL = self.base_URL + "/"
 
         if validate_URL_form(self.base_URL):
             oauth_service = self.get_oauth_service()
             access_token = self.get_access_token(oauth_service)
-            self._session = oauth_service.get_session(access_token)
 
-            if self.validate_URL_existence(self.base_URL, use_session=True) is\
-                    False:
-                raise Exception("Cannot create session. " +
-                                "Verify your credentials are correct.")
+            new_session = oauth_service.get_session(access_token)
+            self._session = self.add_timeout_backoff(new_session)
 
+            if self.validate_URL_existence(self.base_URL, use_session=True) is False:
+                raise Exception("Cannot create session. Verify your credentials are correct.")
         else:
             raise URLError(self.base_URL + " is not a valid URL")
+
+    def add_timeout_backoff(self, new_session):
+        # method stolen from https://www.programcreek.com/python/example/102997/requests.adapters example 3
+        # Adds a retry counter and backoff to requests that timeout
+        try:
+            # Some older versions of requests to not have the urllib3
+            # vendorized package
+            from requests.packages.urllib3.util.retry import Retry
+        except ImportError:
+            retries = self.http_max_retries
+        else:
+            # use a requests session to reuse connections between requests
+            retries = Retry(
+                total=self.http_max_retries,
+                read=self.http_max_retries,
+                backoff_factor=self.http_backoff_factor,
+                status_forcelist=[408, 504, 522, 524]
+            )
+        new_session.mount('https://', HTTPAdapter(max_retries=retries))
+        new_session.mount('http://', HTTPAdapter(max_retries=retries))
+        return new_session
 
     def get_oauth_service(self):
         """
@@ -139,10 +212,8 @@ class ApiCalls(object):
                 "password": self.password
             }
         }
-
         access_token = oauth_service.get_access_token(
             decoder=self.decoder, **params)
-
         return access_token
 
     def decoder(self, return_dict):
@@ -212,8 +283,6 @@ class ApiCalls(object):
         returns link if it exists
         """
 
-        retVal = None
-
         if self.validate_URL_existence(targ_url, use_session=True):
             response = self.session.get(targ_url)
 
@@ -221,8 +290,8 @@ class ApiCalls(object):
                 resources_list = response.json()["resource"]["resources"]
                 try:
                     links_list = next(r["links"] for r in resources_list
-                                      if r[targ_dict["key"]] ==
-                                      targ_dict["value"])
+                                      if r[targ_dict["key"]].lower() ==
+                                      targ_dict["value"].lower())
 
                 except KeyError:
                     raise KeyError(targ_dict["key"] + " not found." +
@@ -235,7 +304,7 @@ class ApiCalls(object):
             else:
                 links_list = response.json()["resource"]["links"]
             try:
-                retVal = next(link["href"] for link in links_list
+                ret_val = next(link["href"] for link in links_list
                               if link["rel"] == target_key)
 
             except StopIteration:
@@ -248,7 +317,7 @@ class ApiCalls(object):
             raise request_HTTPError("Error: " +
                                     targ_url + " is not a valid URL")
 
-        return retVal
+        return ret_val
 
     def get_projects(self):
         """
@@ -312,8 +381,7 @@ class ApiCalls(object):
                                     })
 
             except StopIteration:
-                raise ProjectError("The given project ID: " +
-                                   project_id + " doesn't exist")
+                raise ProjectError("The given project ID: " + project_id + " doesn't exist")
 
             response = self.session.get(url)
             result = response.json()["resource"]["resources"]
@@ -328,7 +396,6 @@ class ApiCalls(object):
         arguments:
 
             sample -- a Sample object used to get sample_id
-
 
         returns list of sequencefile dictionary for given sample_id
         """
@@ -394,7 +461,6 @@ class ApiCalls(object):
             }
 
             response = self.session.post(url, json_obj, **headers)
-
             if response.status_code == httplib.CREATED:  # 201
                 json_res = json.loads(response.text)
             else:
@@ -455,10 +521,10 @@ class ApiCalls(object):
                 json_res_list.append(json_res)
             else:
                 logging.error("Didn't create sample on server, response code is [{}] and error message is [{}]".format(response.status_code, response.text))
-                raise SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(
-                                  status_code=str(response.status_code),
-                                  err_msg=response.text,
-                                  sample_data=str(sample)), ["IRIDA rejected the sample."])
+                e = SampleError("Error {status_code}: {err_msg}.\nSample data: {sample_data}".format(status_code=str(response.status_code), err_msg=response.text, sample_data=str(sample)), ["IRIDA rejected the sample."])
+                send_message(sample.upload_failed_topic, exception = e)
+                raise e
+
         return json_res_list
 
     def get_file_size_list(self, samples_list):
@@ -551,8 +617,7 @@ class ApiCalls(object):
                                             "value": project_id
                                         })
         except StopIteration:
-            raise ProjectError("The given project ID: " +
-                               project_id + " doesn't exist")
+            raise ProjectError("The given project ID: " + project_id + " doesn't exist")
 
         try:
             sample_id = sample.get_id()
@@ -667,7 +732,6 @@ class ApiCalls(object):
         send_message(sample.upload_started_topic)
 
         logging.info("Sending files to [{}]".format(url))
-
         response = self.session.post(url, data=_sample_upload_generator(sample),
                                      headers={"Content-Type": "multipart/form-data; boundary={}".format(boundary)})
 
@@ -680,13 +744,13 @@ class ApiCalls(object):
             logging.info("Finished uploading sequence files for sample [{}]".format(sample.get_id()))
             send_message(sample.upload_completed_topic, sample=sample)
         else:
-            err_msg = ("Error {status_code}: {err_msg}\n").format(
+            e = SequenceFileError("Error {status_code}: {err_msg}\n".format(
                        status_code=str(response.status_code),
-                       err_msg=response.reason)
-            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), err_msg))
+                       err_msg=response.reason))
+            logging.info("Got an error when uploading [{}]: [{}]".format(sample.get_id(), e))
             logging.info(response.text)
-            send_message(sample.upload_failed_topic, exception = e)
-            raise SequenceFileError(err_msg, [])
+            send_message(sample.upload_failed_topic, exception=e)
+            raise e
 
         return json_res
 
@@ -736,7 +800,6 @@ class ApiCalls(object):
                 del metadata_dict[key]
 
         json_obj = json.dumps(metadata_dict)
-
         response = self.session.post(url, json_obj, **headers)
         if response.status_code == httplib.CREATED:  # 201
             json_res = json.loads(response.text)
