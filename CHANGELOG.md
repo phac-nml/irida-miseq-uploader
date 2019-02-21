@@ -1,8 +1,8 @@
 2.0.0 to 2.1.4
 ==============
-* Internal Changes to how treads are started and killed
+* Internal Changes to how threads are started and killed
 * Added a timeout + retry to calls to IRIDA, so dropped conections will be retried.
-* Updated a couple libraries for security reasons
+* Updated the `requests` library for security patch
 * Changed the api layer to use a singleton so multiple instances of the api are not spun off.
 * Small bug fixes for GUI
 * Fixed UI hanging when recursive directories are searched for runs.
