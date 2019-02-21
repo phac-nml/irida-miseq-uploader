@@ -1,3 +1,6 @@
+2.1.0 to 2.2.0
+==============
+
 2.0.0 to 2.1.4
 ==============
 * Internal Changes to how threads are started and killed
