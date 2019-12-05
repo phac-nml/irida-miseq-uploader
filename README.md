@@ -1,6 +1,9 @@
 IRIDA Uploader
 ==============
 
+## NOTICE!
+### This repo will be deprecated as of January 1st 2020, as Python 2 will be End of Life.
+### Please use our new uploader https://github.com/phac-nml/irida-uploader
 
 Windows Installation
 --------------------
